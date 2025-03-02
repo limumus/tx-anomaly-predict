@@ -1,0 +1,212 @@
+[
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address guy, uint wad) public returns (bool) {\n        allowance[msg.sender][guy] = wad;\n        emit Approval(msg.sender, guy, wad);\n        return true;\n    }\n\n",
+    "description": "1. **Core functions:**  \n   This function allows the person calling it (the `msg.sender`) to give permission to another address (`guy`) to spend a specific amount of tokens (`wad`) on their behalf. It updates the `allowance` mapping to reflect this permission and triggers an event (`Approval`) to log the action.\n\n2. **Security mechanism:**  \n   The function uses the `public` modifier, meaning it can be called by anyone. However, it does not include additional security checks like `require` or `onlyOwner` to restrict access. The security relies on the caller ensuring they are granting the correct amount to the intended address.\n\n3. **Parameter Function:**  \n   - `guy`: The address of the person being granted permission to spend tokens.  \n   - `wad`: The amount of tokens the `guy` is allowed to spend.  \n\n4. **Return description:**  \n   The function always returns `true` to indicate that the approval operation was successful. This is a standard return value for such functions, even though the actual logic does not involve complex calculations.  \n\n**In summary,**  \nThis function is used to authorize another address to spend a specific amount of tokens on behalf of the caller. It updates the allowance mapping, emits an event, and returns `true` to confirm the operation. While it lacks advanced security measures, it serves its purpose of managing token permissions."
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit() public payable {\n        balanceOf[msg.sender] += msg.value;\n        emit Deposit(msg.sender, msg.value);\n    }\n",
+    "description": "1. **Core function**:  \nThe `deposit` function allows users to send Ether (the cryptocurrency used in Ethereum) to the smart contract. When a user sends Ether, the function increases the user's balance in the contract by the amount of Ether they sent. It also records this event by emitting a `Deposit` notification, which includes the sender's address and the amount deposited.\n\n2. **Security mechanism**:  \n- The function is marked as `payable`, which means it can receive Ether.  \n- It uses `msg.sender` to ensure the deposit is credited to the correct user's account, preventing unauthorized access.  \n- The `emit Deposit` statement logs the transaction, providing transparency and traceability.  \n\n3. **Parameter Function**:  \nThe function does not take any explicit parameters. Instead, it relies on two implicit parameters:  \n- `msg.sender`: The address of the user calling the function.  \n- `msg.value`: The amount of Ether sent by the user.  \n\n4. **Return description**:  \nThe function does not return any value. Its purpose is to update the user's balance in the contract and log the deposit event.  \n\n**In summary**, the `deposit` function enables users to send Ether to the contract, updates their balance, and records the transaction for transparency. It ensures security by using the sender's address and logging the event."
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "onERC1155Received",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view returns (uint) {\n        return address(this).balance;\n    }\n\n",
+    "description": "1. **Core functions:**  \n   The `totalSupply` function is designed to provide the total balance of Ether (the native cryptocurrency of Ethereum) held by the smart contract. It essentially tells you how much Ether is currently stored in the contract's address.\n\n2. **Security mechanism:**  \n   - The function is marked as `public`, meaning it can be called by anyone.  \n   - It is also marked as `view`, which ensures that the function does not modify the state of the contract or blockchain. This makes it safe to call without incurring gas costs or risking unintended changes.  \n\n3. **Parameter Function:**  \n   The function does not take any parameters. It simply checks the balance of the contract's address.  \n\n4. **Return description:**  \n   The function returns the balance of Ether in the contract's address. This is calculated by accessing `address(this).balance`, which retrieves the amount of Ether stored at the contract's address.  \n\n**In summary,**  \nThe `totalSupply` function is a simple and secure way to check the total amount of Ether held by the smart contract. It does not require any input and returns the contract's balance directly."
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address dst, uint wad) public returns (bool) {\n        return transferFrom(msg.sender, dst, wad);\n    }\n\n    function transferFrom(address src, address dst, uint wad)\n        public\n        returns (bool)\n    {\n        require(balanceOf[src] >= wad);\n\n        if (src != msg.sender && allowance[src][msg.sender] != uint(-1)) {\n            require(allowance[src][msg.sender] >= wad);\n            allowance[src][msg.sender] -= wad;\n        }\n\n        balanceOf[src] -= wad;\n        balanceOf[dst] += wad;\n\n        emit Transfer(src, dst, wad);\n\n        return true;\n    }\n}\n\n\n/*\n",
+    "description": "1. Core functions:  \nThe primary role of this code is to facilitate the transfer of tokens between two addresses. The `transfer` function allows the sender to move tokens directly to a specified destination address. The `transferFrom` function enables a third party (with permission) to transfer tokens from one address to another on behalf of the token owner. Both functions ensure that the sender or the approved party has enough tokens and updates the balances accordingly.\n\n2. Security mechanism:  \nThe code includes several security checks:  \n- `require(balanceOf[src] >= wad)`: Ensures the sender has sufficient tokens to transfer.  \n- `if (src != msg.sender && allowance[src][msg.sender] != uint(-1))`: Verifies if a third party is transferring tokens and checks if they have the necessary approval.  \n- `require(allowance[src][msg.sender] >= wad)`: Confirms the approved party has enough allowance to perform the transfer.  \n- `allowance[src][msg.sender] -= wad`: Deducts the transferred amount from the approved allowance.  \n\n3. Parameter Function:  \n- `transfer`:  \n  - `dst`: The destination address receiving the tokens.  \n  - `wad`: The amount of tokens to transfer.  \n- `transferFrom`:  \n  - `src`: The source address from which tokens are transferred.  \n  - `dst`: The destination address receiving the tokens.  \n  - `wad`: The amount of tokens to transfer.  \n\n4. Return description:  \nBoth functions return a boolean value (`true`) to indicate the transfer was successful. This is a standard practice to confirm the operation completed without errors.  \n\nIn summary, these functions enable secure token transfers, ensuring the sender or approved party has sufficient tokens and permissions. The parameters define the source, destination, and amount of tokens, while the return value confirms the success of the transfer."
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(address src, address dst, uint wad)\n        public\n        returns (bool)\n    {\n        require(balanceOf[src] >= wad);\n\n        if (src != msg.sender && allowance[src][msg.sender] != uint(-1)) {\n            require(allowance[src][msg.sender] >= wad);\n            allowance[src][msg.sender] -= wad;\n        }\n\n        balanceOf[src] -= wad;\n        balanceOf[dst] += wad;\n\n        emit Transfer(src, dst, wad);\n\n        return true;\n    }\n}\n\n\n/*\n",
+    "description": "1. Core functions:  \nThe `transferFrom` function is designed to move a specified amount of tokens (referred to as `wad`) from one address (`src`) to another address (`dst`). It ensures that the sender has enough tokens and, if the sender is not the owner of the tokens, checks that they have permission to transfer the tokens on behalf of the owner. This function is commonly used in scenarios where one party is authorized to manage tokens owned by another party.\n\n2. Security mechanism:  \nThe function includes several security checks:  \n- `require(balanceOf[src] >= wad)`: Ensures the source address has enough tokens to transfer.  \n- `if (src != msg.sender && allowance[src][msg.sender] != uint(-1))`: Checks if the caller is not the owner and if the owner has granted unlimited allowance.  \n- `require(allowance[src][msg.sender] >= wad)`: Ensures the caller has sufficient allowance to transfer the tokens.  \n- `allowance[src][msg.sender] -= wad`: Reduces the allowance after the transfer to prevent reuse.  \nThese measures ensure that tokens are only transferred under valid conditions and with proper authorization.\n\n3. Parameter Function:  \n- `src`: The address from which tokens are being transferred.  \n- `dst`: The address to which tokens are being sent.  \n- `wad`: The amount of tokens to be transferred.  \nThese parameters define the source, destination, and quantity of the token transfer, ensuring the function knows where to take the tokens from and where to send them.\n\n4. Return description:  \nThe function returns `true` to indicate that the transfer was successful. This is a standard practice in such functions to confirm that the operation completed as expected. The return value does not involve complex calculations; it simply signals success.  \n\nIn summary, the `transferFrom` function securely transfers tokens from one address to another, ensuring proper authorization and sufficient balance. It uses checks and updates to prevent unauthorized or invalid transfers and returns `true` to confirm success."
+  },
+  {
+    "contract/interface": "IWrapper",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint wad) public {\n        require(balanceOf[msg.sender] >= wad);\n        balanceOf[msg.sender] -= wad;\n        msg.sender.transfer(wad);\n        emit Withdrawal(msg.sender, wad);\n    }\n\n",
+    "description": "1. **Core functions**:  \n   This function allows a user to withdraw a specified amount of funds from their account. It checks if the user has enough balance, deducts the amount from their balance, and sends the funds to their address. It also logs the withdrawal event for tracking purposes.\n\n2. **Security mechanism**:  \n   - `require(balanceOf[msg.sender] >= wad)`: Ensures the user has sufficient balance before proceeding, preventing overdrafts.  \n   - `msg.sender.transfer(wad)`: Safely sends the specified amount of funds to the user’s address.  \n   - `emit Withdrawal(msg.sender, wad)`: Records the withdrawal in the blockchain for transparency and auditing.  \n\n3. **Parameter Function**:  \n   - `uint wad`: Represents the amount of funds the user wants to withdraw. It must be a positive value and cannot exceed the user’s balance.  \n\n4. **Return description**:  \n   This function does not return any value. It performs actions (checking balance, deducting funds, and transferring funds) and emits an event to record the withdrawal.  \n\n**In summary**, this function securely handles withdrawals by ensuring users have enough balance, transferring funds, and logging the transaction for accountability."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": "1. **Core functions**:  \nThis function is designed to retrieve and return a list of excluded artifacts. These artifacts are likely items or elements that are intentionally left out or ignored in some process or system. The function simply provides access to this predefined list.\n\n2. **Security mechanism**:  \nThe function uses the `public` and `view` modifiers. The `public` modifier allows anyone to call the function, while the `view` modifier ensures that the function does not modify the state of the contract, making it safe to call without risking any changes to the blockchain data.\n\n3. **Parameter Function**:  \nThis function does not take any parameters. It only reads and returns the stored list of excluded artifacts.\n\n4. **Return description**:  \nThe function returns an array of strings (`string[] memory`) that represents the list of excluded artifacts. The value returned is directly taken from the `_excludedArtifacts` variable, which is presumably defined elsewhere in the contract.\n\nIn summary, this function is a simple read-only utility that provides access to a list of excluded artifacts, ensuring no changes are made to the contract's state when called."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": "1. **Core function:**  \n   This function is designed to provide a list of contract addresses that have been excluded from certain operations or rules within the smart contract. It acts as a way to retrieve and view these excluded addresses.\n\n2. **Security mechanism:**  \n   The function uses the `public` and `view` modifiers. The `public` modifier allows anyone to call this function, while the `view` modifier ensures that the function does not modify the state of the contract, making it safe to call without risking any changes to the contract's data.\n\n3. **Parameter Function:**  \n   This function does not take any parameters. It simply retrieves and returns the list of excluded contract addresses stored in the `_excludedContracts` variable.\n\n4. **Return description:**  \n   The function returns an array of addresses (`address[] memory excludedContracts_`). The output is directly taken from the `_excludedContracts` variable, which holds the list of contract addresses that have been excluded.\n\n**In summary,**  \nThis function is a straightforward way to view the list of contract addresses that are excluded from certain operations. It is safe to call as it does not alter the contract's state and provides a read-only view of the excluded addresses."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": "1. **Core function:**  \nThis function is designed to provide a list of addresses that are excluded from certain operations or rules within the smart contract. It simply retrieves and returns the stored list of excluded addresses.\n\n2. **Security mechanism:**  \nThe function is marked as `public` and `view`, meaning it can be called by anyone but does not modify the state of the contract. This ensures that the function is safe to use without risking unintended changes to the contract's data.\n\n3. **Parameter Function:**  \nThe function does not take any parameters. It directly accesses and returns the stored list of excluded addresses.\n\n4. **Return description:**  \nThe function returns an array of addresses (`address[] memory excludedSenders_`). This array contains all the addresses that have been marked as excluded in the contract. The logic is straightforward: it retrieves the stored list and returns it as-is.\n\n**In summary,**  \nThis function is a simple read-only utility that provides a list of excluded addresses. It is safe to use as it does not alter the contract's state and does not require any input parameters."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": "1. **Core function**:  \n   The `failed()` function checks whether a failure condition has occurred. It first looks at a stored variable `_failed` to see if it indicates a failure. If `_failed` is not set, it then checks a specific value stored in a virtual machine (VM) to determine if a failure has been recorded there. Essentially, it acts as a failure detection mechanism.\n\n2. **Security mechanism**:  \n   The function uses the `view` modifier, which ensures that it does not modify the state of the contract, making it safe to call without risking unintended changes. Additionally, it relies on a virtual machine (VM) to securely load and verify the failure status, adding an extra layer of validation.\n\n3. **Parameter Function**:  \n   This function does not take any parameters. It operates solely based on internal state variables (`_failed`) and external data loaded from the VM.\n\n4. **Return description**:  \n   The function returns a boolean value (`true` or `false`). If `_failed` is `true`, it directly returns `true`. If `_failed` is not set, it checks a specific value in the VM. If the value in the VM is not zero, it returns `true`, indicating a failure. Otherwise, it returns `false`, meaning no failure has been detected.\n\n**In summary**, the `failed()` function is a simple yet effective way to check for failure conditions, using both internal state and external VM data to ensure accuracy. It is designed to be safe and non-disruptive, making it a reliable tool for monitoring the system's status."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"Base\", blocknumToForkFrom);\n        fundingToken = weth;\n    }\n\n",
+    "description": "1. **Core functions**:  \n   The `setUp` function is designed to initialize or configure certain settings for a smart contract. Specifically, it creates a fork of the blockchain at a specific block number and sets a token (in this case, `weth`) as the `fundingToken`. This is typically used in testing environments to simulate a specific state of the blockchain.\n\n2. **Security mechanism**:  \n   The function does not include explicit security modifiers or defense measures. However, it is marked as `public`, meaning it can be called by anyone. Since this function is likely used in a testing context, security measures may not be a primary concern here.\n\n3. **Parameter Function**:  \n   The function does not take any parameters directly. However, it relies on external variables like `blocknumToForkFrom` and `weth`, which are presumably defined elsewhere in the contract or environment. These variables determine the block number to fork from and the token to be used as `fundingToken`.\n\n4. **Return description**:  \n   The function does not return any value. Its purpose is purely to set up the environment by creating a blockchain fork and assigning a token.\n\n**In summary**,  \nThe `setUp` function initializes a testing environment by forking the blockchain at a specific block and assigning a token for funding. It does not take parameters or return values, and its security is minimal, likely because it is intended for testing purposes."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": "1. Core functions:  \nThis function is designed to provide a list of specific selectors (identifiers) for artifacts that are being targeted. It acts as a simple retrieval mechanism, allowing users or other parts of the system to access the stored selectors without modifying them.\n\n2. Security mechanism:  \nThe function uses the `view` modifier, which ensures that it does not alter the state of the contract. This prevents any unintended changes to the data. Additionally, since it only returns stored data, there are no complex operations that could introduce vulnerabilities.\n\n3. Parameter Function:  \nThis function does not take any parameters. It is a straightforward getter function that retrieves and returns the stored data without requiring any input.\n\n4. Return description:  \nThe function returns an array of `FuzzSelector` objects, which represent the targeted artifact selectors. The output is directly taken from the internal storage variable `_targetedArtifactSelectors`, meaning it simply mirrors the stored data without any additional calculations or transformations.\n\nIn summary, this function is a simple and secure way to access stored artifact selectors, ensuring no state changes occur while providing the necessary data to the caller."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": "1. **Core functions**:  \nThis function is designed to provide a list of specific items or targets (referred to as \"artifacts\") that are being focused on within the smart contract. It acts as a simple retrieval tool, allowing anyone to view the stored list of these targeted artifacts.\n\n2. **Security mechanism**:  \nThe function uses the `public` and `view` modifiers. The `public` modifier ensures that the function can be called by anyone, while the `view` modifier guarantees that the function does not modify the state of the contract, making it read-only and safe to use without any risk of altering data.\n\n3. **Parameter Function**:  \nThis function does not take any parameters. It simply retrieves and returns the stored list of targeted artifacts without requiring any input from the caller.\n\n4. **Return description**:  \nThe function returns a list of strings (`string[] memory`) that represent the targeted artifacts. The value returned is directly taken from the internal storage variable `_targetedArtifacts`, which holds the list of artifacts. No additional calculations or transformations are performed on the data before it is returned.\n\n**In summary**, this function is a straightforward tool for retrieving a list of targeted artifacts stored in the contract. It is secure, read-only, and does not require any input parameters to operate."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": "1. Core functions:  \nThis function is designed to provide a list of contract addresses that are being targeted or monitored. It allows users or other contracts to retrieve the addresses stored in the `_targetedContracts` array. Essentially, it acts as a simple data retrieval tool for accessing important contract addresses.\n\n2. Security mechanism:  \nThe function includes the `public` and `view` modifiers. The `public` modifier ensures that the function can be called by anyone, while the `view` modifier guarantees that the function does not modify the state of the contract, making it read-only. This prevents any unintended changes to the contract's data.\n\n3. Parameter Function:  \nThis function does not take any parameters. It simply accesses and returns the `_targetedContracts` array, which is already defined within the contract.\n\n4. Return description:  \nThe function returns the `_targetedContracts` array, which contains a list of addresses. The output is a direct copy of the array stored in the contract, so no additional calculations or transformations are performed.\n\nIn summary, this function is a straightforward tool for retrieving a list of targeted contract addresses, ensuring security by being read-only and accessible to all users."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": "1. **Core functions:**  \n   This function is designed to provide a list of specific interfaces that are being targeted or focused on within the smart contract. It allows external users or other contracts to view these interfaces without making any changes to the contract's state.\n\n2. **Security mechanism:**  \n   The function uses the `view` modifier, which ensures that it only reads data from the contract and does not modify any state. This prevents unintended changes to the contract's data. Additionally, since it is `public`, it can be accessed by anyone, but the `view` modifier ensures it remains safe for external calls.\n\n3. **Parameter Function:**  \n   This function does not take any parameters. It simply retrieves and returns the list of targeted interfaces stored in the contract.\n\n4. **Return description:**  \n   The function returns an array of `FuzzInterface` objects, which represents the list of interfaces being targeted. The value returned is directly taken from the internal variable `_targetedInterfaces`, meaning it reflects the current state of this variable at the time of the function call.\n\n**In summary,**  \nThis function serves as a read-only mechanism to fetch and display the list of targeted interfaces stored in the contract. It is secure due to its `view` modifier, ensuring no state changes occur, and it does not require any input parameters to operate."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": "1. **Core functions:**  \n   This function is designed to provide a list of specific selectors (essentially identifiers for functions) that are targeted for fuzz testing. Fuzz testing is a method used to find vulnerabilities by sending random or unexpected inputs to the system. The function simply retrieves and returns the list of these selectors that have been predefined for testing purposes.\n\n2. **Security mechanism:**  \n   The function uses the `view` modifier, which ensures that it does not modify the state of the contract. This is a safety measure to prevent any unintended changes to the contract’s data. Additionally, since it only reads and returns predefined data, it minimizes the risk of exposing sensitive information or introducing vulnerabilities.\n\n3. **Parameter Function:**  \n   This function does not take any parameters. It is a straightforward retrieval function that accesses and returns a predefined list of selectors stored in the contract.\n\n4. **Return description:**  \n   The function returns an array of `FuzzSelector` objects, which represent the selectors targeted for fuzz testing. The return value is directly taken from the `_targetedSelectors` variable, which is presumably set elsewhere in the contract. The logic is simple: it just fetches and returns the stored list without any additional calculations or transformations.\n\n**In summary,**  \nThis function is a simple retrieval tool that provides a list of function selectors intended for fuzz testing. It is designed to be safe and read-only, ensuring no state changes occur while accessing the data."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": "1. **Core functions**:  \nThis function is designed to provide a list of addresses that have been marked as \"targeted senders.\" It essentially retrieves and returns the list of addresses stored in the `_targetedSenders` variable. This could be used in a system where certain addresses are monitored or have special permissions.\n\n2. **Security mechanism**:  \nThe function is marked as `public` and `view`, meaning it can be called by anyone but does not modify the state of the contract. This ensures that the function is read-only and cannot alter any data, making it safe to use without risking unintended changes.\n\n3. **Parameter Function**:  \nThis function does not take any parameters. It simply accesses and returns the stored list of addresses from the `_targetedSenders` variable.\n\n4. **Return description**:  \nThe function returns the entire list of addresses stored in `_targetedSenders`. The list is directly copied into the `targetedSenders_` variable and then returned as an array of addresses.\n\nIn summary, this function is a simple read-only utility that provides access to a list of addresses stored in the contract, ensuring no changes are made to the data."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n",
+    "description": "1. **Core functions:**  \n   The `testExploit` function appears to be a test or demonstration function, likely designed to simulate or verify a specific behavior or scenario within the smart contract. Its primary role is to execute a set of actions that might represent an exploit or a specific use case, allowing developers or auditors to observe how the contract behaves under certain conditions.\n\n2. **Security mechanism:**  \n   The function includes a modifier called `balanceLog`. This modifier likely enforces certain checks or logging mechanisms before the function executes. It might ensure that the function only runs if specific conditions related to balances or other states are met, or it could log details about the function's execution for auditing or debugging purposes.\n\n3. **Parameter Function:**  \n   The `testExploit` function does not take any parameters. This means it operates solely based on the current state of the contract or predefined logic within the function itself, without requiring any external input to perform its actions.\n\n4. **Return description:**  \n   The function does not return any value. Its purpose is to execute internal logic or simulate a scenario rather than produce a specific output or result.\n\n**In summary,**  \nThe `testExploit` function is a test or demonstration function that executes specific actions, likely to simulate an exploit or use case. It uses the `balanceLog` modifier to enforce security or logging mechanisms, does not require any input parameters, and does not return any value. Its main purpose is to observe or verify contract behavior under certain conditions."
+  },
+  {
+    "contract/interface": "TsuruExploit",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3SwapCallback",
+    "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        require(msg.sender == address(UNISWAP_V3_POOL), \"Invalid caller\");\n        bool zeroForOne = data.length > 0;\n        address tokenOut = zeroForOne\n            ? IUniswapV3Pool(UNISWAP_V3_POOL).token0()\n            : IUniswapV3Pool(UNISWAP_V3_POOL).token0() == weth ? tsuruwrapper : weth;\n\n        uint256 amountOut = uint256(zeroForOne ? amount0Delta : amount1Delta);\n\n        IERC20(tokenOut).transfer(msg.sender, amountOut);\n    }\n",
+    "description": "1. Core functions:  \nThis function is a callback used during a swap on Uniswap V3. Its main role is to handle the transfer of tokens after a swap occurs. Specifically, it ensures the correct token is sent back to the caller based on the swap details provided. It also verifies that the caller is the authorized Uniswap V3 pool to prevent unauthorized access.\n\n2. Security mechanism:  \nThe function includes a `require` statement to check that the caller is the official Uniswap V3 pool (`UNISWAP_V3_POOL`). This ensures only the pool can trigger this callback, preventing malicious actors from exploiting it. Additionally, the function uses `calldata` for the `data` parameter, which is a secure way to handle external input without modifying the contract's state.\n\n3. Parameter Function:  \n- `amount0Delta` and `amount1Delta`: These represent the changes in the amounts of the two tokens involved in the swap. The function uses them to determine how much of the outgoing token needs to be transferred.  \n- `data`: This provides additional information about the swap, such as the direction of the swap (which token is being swapped for which). It helps the function decide which token to transfer.  \n\n4. Return description:  \nThe function does not return a value directly. Instead, it performs a token transfer using the `transfer` method of the ERC20 token contract. The amount to transfer is calculated based on the swap direction (`zeroForOne`) and the corresponding delta value (`amount0Delta` or `amount1Delta`). The token to transfer is determined by the swap direction and the presence of a specific token (`weth` or `tsuruwrapper`).  \n\nIn summary,  \nThis function is a secure callback for Uniswap V3 swaps, ensuring the correct token is transferred to the caller. It uses checks to verify the caller's identity and processes swap details to determine the token and amount to transfer."
+  },
+  {
+    "contract/interface": "IUniswapV3Pool",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUniswapV3Pool",
+    "source_type": "victim_contract",
+    "function_name": "token0",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUniswapV3Pool",
+    "source_type": "victim_contract",
+    "function_name": "token1",
+    "original_code": "",
+    "description": ""
+  }
+]

