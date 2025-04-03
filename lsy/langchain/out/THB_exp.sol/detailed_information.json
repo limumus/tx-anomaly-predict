@@ -1,0 +1,268 @@
+[
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_uint(\"Attacker THBR balance before exploit\", THBR.balanceOf(address(this)));\n\n        houseWallet.shoot{value: 0.32 ether}(randomNumber, gameId, feestate, _x, name, _add, nftcheck, dystopianCheck);\n        uint256 _amount = houseWallet.winners(gameId, add);\n        houseWallet.claimReward(gameId, add, _amount, _rewardStatus, _x1, name1, _add);\n\n        emit log_named_uint(\"Attacker THBR balance after exploit\", THBR.balanceOf(address(this)));\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to simulate an attack or exploit scenario. It first logs the attacker's balance of a specific token (THBR) before the exploit. Then, it interacts with a `houseWallet` contract by calling its `shoot` function with a specific value (0.32 ether) and several parameters. After that, it retrieves a winning amount from the `houseWallet` using the `winners` function and claims a reward by calling the `claimReward` function. Finally, it logs the attacker's THBR balance after the exploit to show the impact of the actions.\n\n2. **Security mechanism**:  \n   The function does not explicitly include security mechanisms like access control or input validation. However, it uses the `emit` keyword to log events, which can help track the attacker's actions and balance changes. The function also interacts with external contracts (`houseWallet`), so the security of the exploit depends on the robustness of those contracts. The use of `{value: 0.32 ether}` indicates that the function sends Ether, which could be a potential attack vector if not handled securely.\n\n3. **Parameter Function**:  \n   - `randomNumber`, `gameId`, `feestate`, `_x`, `name`, `_add`, `nftcheck`, `dystopianCheck`: These parameters are passed to the `shoot` function of the `houseWallet` contract. They likely represent game-related data or conditions needed for the exploit.  \n   - `add`: Used in both the `winners` and `claimReward` functions to identify the address or context for retrieving and claiming rewards.  \n   - `_amount`: Represents the amount of reward calculated by the `winners` function.  \n   - `_rewardStatus`, `_x1`, `name1`: Additional parameters passed to the `claimReward` function, possibly specifying reward details or conditions.  \n\n4. **Return description**:  \n   The function does not return any value directly. Instead, it logs the attacker's THBR balance before and after the exploit using `emit log_named_uint`. The balance is retrieved using `THBR.balanceOf(address(this))`, which calculates the THBR tokens held by the contract executing the function. The difference between the two logged balances indicates the success or impact of the exploit.\n\n**In summary**, the `testExploit` function simulates an exploit by interacting with a `houseWallet` contract, logging the attacker's THBR balance before and after the actions. It relies on external contract functions and lacks explicit security measures, making its safety dependent on the external contracts' design.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "820791",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2701",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "76175",
+        "args": "12345678000000000000000000 [1.234e25], 1, false, 2845798969920214568462001258446 [2.845e30], \"HATEFUCKINGHACKERSTHEYNEVERCANHACKTHISIHATEPREVIOUS\", 0x6Ee709bf229c7C2303128e88225128784c801ce1, true, true",
+        "original_code": "    function shoot(\n        uint256 random,\n        uint256 gameId,\n        bool feestate,\n        uint256 _x,\n        string memory name,\n        address _add,\n        bool nftcheck,\n        bool dystopianCheck\n    ) external payable {\n        require(gameMode);\n\n        if (0.32 * 10**18 >= msg.value && 0.006 * 10**18 <= msg.value) {\n            playerFee = ((msg.value * 38) / 1038);\n            holderFee = ((playerFee * 25) / 1000);\n            liquidityFee = ((playerFee * 1) / 1000);\n            ownerFee = ((playerFee * 125) / 100000);\n\n            bool checkWinstatus = guessWin(_x, name, _add);\n\n            if (checkWinstatus == true) {\n                winners[gameId][msg.sender] = (msg.value - playerFee);\n                winStatus = true;\n            }\n\n            if (feestate == true) {\n                payable(Fee_Wallet).transfer(holderFee);\n                payable(Liqudity_Address).transfer(liquidityFee);\n                payable(owner()).transfer(ownerFee);\n            }\n\n            randomNumber =\n                uint256(\n                    keccak256(\n                        abi.encodePacked(\n                            msg.sender,\n                            block.timestamp,\n                            randomNumber\n                        )\n                    )\n                ) %\n                10;\n            if (winStatus == true) {\n                if (nftcheck == true && randomNumber == random) {\n                    rewardStatus = true;\n                }\n                winStatus = false;\n            } else {\n                if (dystopianCheck == true && randomNumber == random) {\n                    rewardStatus = true;\n                }\n            }\n        } else {\n            fakeUsers.push(msg.sender);\n            gameMode = false;\n            dangerMode = true;\n        }\n    }\n\n",
+        "description": "1. **Core functions:**  \nThe `shoot` function is designed to handle a game-like interaction where users send a specific amount of cryptocurrency to participate. It checks if the sent amount is within a certain range, calculates fees, and determines if the user wins based on certain conditions. If the user wins, their reward is recorded, and fees are distributed to designated wallets. Additionally, it generates a random number to decide if the user qualifies for a special reward. If the sent amount is outside the required range, the user is flagged as a fake user, and the game mode is deactivated.\n\n2. **Security mechanism:**  \n- **`require(gameMode)`:** Ensures the function can only be executed if the game is active.  \n- **Value range check:** Validates that the sent cryptocurrency amount is within the specified range (0.006 to 0.32 ether).  \n- **Fee distribution:** Safely transfers calculated fees to predefined wallets only if `feestate` is true.  \n- **Random number generation:** Uses a combination of the sender\u2019s address, block timestamp, and a stored random number to generate a new random number, reducing predictability.  \n- **Fake user handling:** Flags and stores addresses of users who send incorrect amounts, preventing misuse.  \n\n3. **Parameter Function:**  \n- **`random`:** Used to compare against the generated random number for reward eligibility.  \n- **`gameId`:** Identifies the specific game instance for tracking winners.  \n- **`feestate`:** Determines whether fees should be distributed.  \n- **`_x`, `name`, `_add`:** Inputs used in the `guessWin` function to determine if the user wins.  \n- **`nftcheck` and `dystopianCheck`:** Flags that decide if the user is eligible for special rewards based on the random number.  \n\n4. **Return description:**  \nThe function does not return a value directly but updates several state variables:  \n- **`winners[gameId][msg.sender]`:** Stores the reward amount for the winning user.  \n- **`winStatus`:** Indicates if the user won the game.  \n- **`rewardStatus`:** Indicates if the user qualifies for a special reward.  \n- **`randomNumber`:** Generates a new random number for reward eligibility checks.  \n- **`fakeUsers`:** Records addresses of users who sent incorrect amounts.  \n- **`gameMode` and `dangerMode`:** Toggles game state based on user behavior.  \n\nIn summary, the `shoot` function manages a game interaction by validating user inputs, calculating fees, determining wins, and handling rewards while ensuring security through checks and state updates.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "132",
+        "args": "0x0000000000000000000000000000000000000023eb45bc3239b196147e963fce00000000000000000000000000000000000000000000000000000000000000600000000000000000000000006ee709bf229c7c2303128e88225128784c801ce10000000000000000000000000000000000000000000000000000000000000033484154454655434b494e474841434b455253544845594e4556455243414e4841434b54484953494841544550524556494f555300000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x52ed2f0b7486dfed2ec4abef928f81bc612c7564373fe2b9d42e74ff21d18265"
+    },
+    {
+        "id": "705",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "",
+        "description": "",
+        "return_value": "308285163776493257 [3.082e17]"
+    },
+    {
+        "id": "684689",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 308285163776493257 [3.082e17], true, 969820990102090205468486 [9.698e23], \"WELCOMETOTHUNDERBRAWLROULETTENOWYOUWINTHESHOOTINGGAME\", 0x6Ee709bf229c7C2303128e88225128784c801ce1",
+        "original_code": "    function claimReward(\n        uint256 _ID,\n        address payable _player,\n        uint256 _amount,\n        bool _rewardStatus,\n        uint256 _x,\n        string memory name,\n        address _add\n    ) external {\n        require(gameMode);\n        bool checkValidity = guess(_x, name, _add);\n\n        if (checkValidity == true) {\n            if (winners[_ID][_player] == _amount) {\n                _player.transfer(_amount * 2);\n                if (_rewardStatus == true) {\n                    sendReward();\n                }\n                delete winners[_ID][_player];\n            } else {\n                if (_rewardStatus == true) {\n                    sendRewardDys();\n                }\n            }\n            rewardStatus = false;\n        }\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `claimReward` function is designed to allow a player to claim a reward based on certain conditions. It checks if the game mode is active, verifies the validity of the player's guess, and then processes the reward if the player meets the criteria. If the player\u2019s stored winning amount matches the provided amount, they receive double the amount. Additionally, if a reward status is true, an extra reward is sent. After processing, the player\u2019s winning record is cleared.\n\n2. **Security mechanism**:  \n   - `require(gameMode)`: Ensures the function can only be executed if the game mode is active.  \n   - `guess(_x, name, _add)`: Validates the player's guess to ensure it meets specific conditions.  \n   - `winners[_ID][_player] == _amount`: Confirms the player\u2019s stored winning amount matches the provided amount before transferring funds.  \n   - `delete winners[_ID][_player]`: Removes the player\u2019s winning record after processing to prevent double claims.  \n   - `external`: Restricts the function to be called only from outside the contract.  \n\n3. **Parameter Function**:  \n   - `_ID`: Identifies the specific game or round.  \n   - `_player`: The address of the player claiming the reward.  \n   - `_amount`: The amount the player is claiming.  \n   - `_rewardStatus`: Determines if an additional reward should be sent.  \n   - `_x`, `name`, `_add`: Parameters used to validate the player\u2019s guess.  \n\n4. **Return description**:  \n   The function does not return a value. Instead, it performs actions based on the conditions:  \n   - If the player\u2019s guess is valid and their stored amount matches the provided amount, they receive double the amount.  \n   - If the reward status is true, an additional reward is sent.  \n   - The player\u2019s winning record is deleted to prevent future claims.  \n\nIn summary, the `claimReward` function allows players to claim rewards securely by validating their eligibility and ensuring proper fund transfers while preventing misuse through checks and record deletion.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "132",
+        "args": "0x00000000000000000000000000000000000000000000cd5e19e98606ca01974600000000000000000000000000000000000000000000000000000000000000600000000000000000000000006ee709bf229c7c2303128e88225128784c801ce1000000000000000000000000000000000000000000000000000000000000003557454c434f4d45544f5448554e444552425241574c524f554c455454454e4f57594f5557494e54484553484f4f54494e4747414d450000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x4061e8ae4207343a0e11b687633f43176cf1ef6309011db9b4a435bb7678c651"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "671621",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "545932",
+        "args": "0xae191Ca19F0f8E21d754c6CAb99107eD62B6fe53, 0x0000000000000000000000000000000000000000, 632, 0x",
+        "original_code": "    function onERC721Received(\n        address operator,\n        address from,\n        uint256 tokenId,\n        bytes calldata data\n    ) external returns (bytes4);\n}\n\ninterface HouseWallet {\n",
+        "description": "1. Core functions:  \nThe `onERC721Received` function is designed to handle the receipt of an ERC721 token, which is a type of non-fungible token (NFT). When an NFT is transferred to a contract, this function is called to confirm that the contract is capable of receiving and managing the token. It ensures that the contract is aware of the incoming token and can process it accordingly.\n\n2. Security mechanism:  \nThe function is marked as `external`, meaning it can only be called from outside the contract, ensuring that it is only triggered by external token transfers. Additionally, the function returns a specific value (`bytes4`) to confirm that the token has been successfully received, which acts as a safeguard against unauthorized or incorrect token transfers.\n\n3. Parameter Function:  \n- `operator`: The address of the entity initiating the token transfer (e.g., a user or another contract).  \n- `from`: The address of the current owner of the token.  \n- `tokenId`: A unique identifier for the specific NFT being transferred.  \n- `data`: Additional data sent along with the token transfer, which can be used for custom logic or instructions.  \n\n4. Return description:  \nThe function returns a fixed value (`bytes4`) that represents a specific identifier (`0x150b7a02`). This value is a standard response to confirm that the contract has successfully received the ERC721 token and is compliant with the ERC721 standard.  \n\nIn summary, the `onERC721Received` function ensures that a contract can properly handle incoming ERC721 tokens, verifies the transfer details, and confirms receipt by returning a standardized value.",
+        "return_value": "0x150b7a02"
+    },
+    {
+        "id": "705",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "308285163776493257 [3.082e17]"
+    },
+    {
+        "id": "539097",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 308285163776493257 [3.082e17], true, 969820990102090205468486 [9.698e23], \"WELCOMETOTHUNDERBRAWLROULETTENOWYOUWINTHESHOOTINGGAME\", 0x6Ee709bf229c7C2303128e88225128784c801ce1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "132",
+        "args": "0x00000000000000000000000000000000000000000000cd5e19e98606ca01974600000000000000000000000000000000000000000000000000000000000000600000000000000000000000006ee709bf229c7c2303128e88225128784c801ce1000000000000000000000000000000000000000000000000000000000000003557454c434f4d45544f5448554e444552425241574c524f554c455454454e4f57594f5557494e54484553484f4f54494e4747414d450000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x4061e8ae4207343a0e11b687633f43176cf1ef6309011db9b4a435bb7678c651"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "528029",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "411140",
+        "args": "0xae191Ca19F0f8E21d754c6CAb99107eD62B6fe53, 0x0000000000000000000000000000000000000000, 633, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x150b7a02"
+    },
+    {
+        "id": "705",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "308285163776493257 [3.082e17]"
+    },
+    {
+        "id": "404305",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 308285163776493257 [3.082e17], true, 969820990102090205468486 [9.698e23], \"WELCOMETOTHUNDERBRAWLROULETTENOWYOUWINTHESHOOTINGGAME\", 0x6Ee709bf229c7C2303128e88225128784c801ce1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "132",
+        "args": "0x00000000000000000000000000000000000000000000cd5e19e98606ca01974600000000000000000000000000000000000000000000000000000000000000600000000000000000000000006ee709bf229c7c2303128e88225128784c801ce1000000000000000000000000000000000000000000000000000000000000003557454c434f4d45544f5448554e444552425241574c524f554c455454454e4f57594f5557494e54484553484f4f54494e4747414d450000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x4061e8ae4207343a0e11b687633f43176cf1ef6309011db9b4a435bb7678c651"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "393237",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "276348",
+        "args": "0xae191Ca19F0f8E21d754c6CAb99107eD62B6fe53, 0x0000000000000000000000000000000000000000, 634, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x150b7a02"
+    },
+    {
+        "id": "705",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "308285163776493257 [3.082e17]"
+    },
+    {
+        "id": "269513",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 308285163776493257 [3.082e17], true, 969820990102090205468486 [9.698e23], \"WELCOMETOTHUNDERBRAWLROULETTENOWYOUWINTHESHOOTINGGAME\", 0x6Ee709bf229c7C2303128e88225128784c801ce1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "132",
+        "args": "0x00000000000000000000000000000000000000000000cd5e19e98606ca01974600000000000000000000000000000000000000000000000000000000000000600000000000000000000000006ee709bf229c7c2303128e88225128784c801ce1000000000000000000000000000000000000000000000000000000000000003557454c434f4d45544f5448554e444552425241574c524f554c455454454e4f57594f5557494e54484553484f4f54494e4747414d450000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x4061e8ae4207343a0e11b687633f43176cf1ef6309011db9b4a435bb7678c651"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "258445",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "141556",
+        "args": "0xae191Ca19F0f8E21d754c6CAb99107eD62B6fe53, 0x0000000000000000000000000000000000000000, 635, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x150b7a02"
+    },
+    {
+        "id": "705",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "308285163776493257 [3.082e17]"
+    },
+    {
+        "id": "134721",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 308285163776493257 [3.082e17], true, 969820990102090205468486 [9.698e23], \"WELCOMETOTHUNDERBRAWLROULETTENOWYOUWINTHESHOOTINGGAME\", 0x6Ee709bf229c7C2303128e88225128784c801ce1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "132",
+        "args": "0x00000000000000000000000000000000000000000000cd5e19e98606ca01974600000000000000000000000000000000000000000000000000000000000000600000000000000000000000006ee709bf229c7c2303128e88225128784c801ce1000000000000000000000000000000000000000000000000000000000000003557454c434f4d45544f5448554e444552425241574c524f554c455454454e4f57594f5557494e54484553484f4f54494e4747414d450000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x4061e8ae4207343a0e11b687633f43176cf1ef6309011db9b4a435bb7678c651"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "123653",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3964",
+        "args": "0xae191Ca19F0f8E21d754c6CAb99107eD62B6fe53, 0x0000000000000000000000000000000000000000, 636, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x150b7a02"
+    },
+    {
+        "id": "705",
+        "args": "1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "308285163776493257 [3.082e17]"
+    },
+    {
+        "id": "701",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5"
+    }
+]

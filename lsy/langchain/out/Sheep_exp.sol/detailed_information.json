@@ -1,0 +1,2221 @@
+[
+    {
+        "id": "1419512",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        DVM(dodo).flashLoan(380 * 1e18, 0, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\"Attacker WBNB balance after exploit\", WBNB.balanceOf(address(this)), 18);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to simulate an exploit scenario. It initiates a flash loan from a decentralized finance (DeFi) platform called DVM (likely a DODO protocol). The function borrows a specific amount of tokens (380 WBNB in this case) and performs some actions (not explicitly shown in the code) to potentially manipulate or exploit the system. After the exploit, it logs the attacker's WBNB balance to show the outcome.\n\n2. **Security mechanism**:  \n   The function does not explicitly include security mechanisms like access control or input validation. However, the use of `flashLoan` implies that the DVM protocol likely has its own safeguards, such as ensuring the loan is repaid within the same transaction. The function emits an event (`log_named_decimal_uint`) to track the attacker's WBNB balance, which can be useful for monitoring or debugging but does not act as a security measure.\n\n3. **Parameter Function**:  \n   - `380 * 1e18`: This specifies the amount of WBNB to borrow in the flash loan. The `1e18` multiplier converts the value to the token's smallest unit (wei).  \n   - `0`: This parameter likely represents the amount of another token to borrow, but here it is set to 0, meaning only WBNB is borrowed.  \n   - `address(this)`: This indicates that the contract itself is the recipient of the flash loan.  \n   - `new bytes(1)`: This is a placeholder for additional data that can be passed to the flash loan callback function, but here it is minimal (a single byte).\n\n4. **Return description**:  \n   The function does not return any value. Instead, it emits an event (`log_named_decimal_uint`) that logs the attacker's WBNB balance after the exploit. The balance is calculated by calling `WBNB.balanceOf(address(this))`, which retrieves the WBNB tokens held by the contract at that moment.\n\n**In summary**,  \nThe `testExploit` function simulates an exploit by borrowing WBNB via a flash loan and logging the attacker's balance afterward. It lacks explicit security measures but relies on the underlying protocol's safeguards. The parameters define the loan details, and the function emits an event to track the outcome rather than returning a value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "1408851",
+        "args": "380000000000000000000 [3.8e20], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "29962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 380000000000000000000 [3.8e20]",
+        "original_code": "    function transfer(address recipient, uint256 amount) public override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The main purpose of this function is to transfer a specified amount of tokens from the sender's account to the recipient's account. It acts as a bridge to call another internal function (`_transfer`) that handles the actual transfer logic.\n\n2. **Security mechanism**:  \n   - The function uses `public override`, meaning it is publicly accessible and overrides a function from a parent contract (likely an ERC-20 token standard).  \n   - It relies on `_msgSender()` to securely identify the caller, ensuring the correct sender address is used.  \n   - The function returns a boolean (`true`) to confirm the transfer was successful, providing a basic feedback mechanism.  \n\n3. **Parameter Function**:  \n   - `recipient`: This is the address of the person or contract receiving the tokens.  \n   - `amount`: This specifies the number of tokens to be transferred from the sender to the recipient.  \n\n4. **Return description**:  \n   The function always returns `true` after successfully calling the internal `_transfer` function. This indicates that the transfer process was initiated without errors.  \n\n**In summary**, this function securely transfers tokens from the sender to the recipient and confirms the action by returning `true`. It relies on internal mechanisms to ensure the transfer is valid and uses parameters to specify the recipient and the amount to be sent.",
+        "return_value": "true"
+    },
+    {
+        "id": "1349963",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 380000000000000000000 [3.8e20], 0, 0x00",
+        "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        WBNBToSHEEP();\n        while (SHEEP.balanceOf(address(Pair)) > 2) {\n            uint256 burnAmount = SHEEP.balanceOf(address(this));\n            SHEEP.burn(burnAmount);\n        }\n        Pair.sync();\n        SHEEPToWBNB();\n        WBNB.transfer(dodo, 380 * 1e18);\n    }\n\n",
+        "description": "1. Core functions:  \nThis function is designed to handle a flash loan operation, which is a type of loan where borrowed funds are used and returned within the same transaction. The function performs several key actions:  \n- It converts WBNB (Wrapped Binance Coin) to SHEEP tokens.  \n- It repeatedly burns (destroys) SHEEP tokens held by the contract until the balance of SHEEP tokens in a specific pair (Pair) is reduced to 2 or less.  \n- It synchronizes the state of the Pair to ensure accurate token balances.  \n- It converts the remaining SHEEP tokens back to WBNB.  \n- Finally, it transfers a fixed amount of WBNB (380 * 1e18) to a predefined address (dodo).  \n\n2. Security mechanism:  \n- The function is marked as `external`, meaning it can only be called from outside the contract, adding a layer of access control.  \n- The use of `Pair.sync()` ensures that the token balances in the Pair are updated correctly, preventing potential manipulation or inconsistencies.  \n- The loop that burns SHEEP tokens ensures that the balance in the Pair is reduced to a minimal amount, which could be a defensive measure against certain types of attacks or imbalances.  \n- The fixed transfer amount (380 * 1e18) to the `dodo` address suggests a predefined and controlled operation, reducing the risk of unexpected behavior.  \n\n3. Parameter Function:  \n- `sender`: Represents the address initiating the flash loan. This parameter is not used in the function, so its role is unclear in this context.  \n- `baseAmount` and `quoteAmount`: These likely represent the amounts of the two tokens involved in the flash loan. However, they are not directly used in the function, so their purpose here is not fully utilized.  \n- `data`: This is additional data passed to the function, which could be used for custom logic or instructions. In this function, it is not used, so its role is not active.  \n\n4. Return description:  \nThis function does not return any value. It performs a series of actions (conversion, burning, synchronization, and transfer) but does not produce an output that can be used outside the function.  \n\nIn summary, this function is a flash loan handler that converts tokens, burns excess SHEEP tokens, synchronizes the Pair, and transfers a fixed amount of WBNB to a specific address. It includes basic security measures like access control and state synchronization but does not utilize all its parameters or return any value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "24420",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint256 amount) public override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core function**:  \n   The `approve` function allows the caller (the owner of tokens) to give permission to another address (`spender`) to spend a specific amount of tokens on their behalf. This is a common function in token contracts to enable delegated spending.\n\n2. **Security mechanism**:  \n   - The function uses `public override`, meaning it is publicly accessible and overrides a function from a parent contract (likely an ERC-20 token standard).  \n   - It calls `_approve`, an internal function that handles the actual approval logic, ensuring the process is secure and consistent.  \n   - The `_msgSender()` function is used to securely identify the caller, preventing potential spoofing or manipulation.  \n\n3. **Parameter Function**:  \n   - `spender`: The address of the account that is being granted permission to spend tokens.  \n   - `amount`: The maximum number of tokens the `spender` is allowed to transfer.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval process was successful. This is a standard practice in ERC-20 token contracts to confirm the operation.  \n\n**In summary**, the `approve` function enables token owners to delegate spending permissions to another address, ensuring security through internal checks and returning a confirmation of success.",
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) public view override returns (uint256) {\n        if (_isExcluded[account]) return _tOwned[account];\n        return tokenFromReflection(_rOwned[account]);\n    }\n\n",
+        "description": "1. **Core function**:  \n   The `balanceOf` function is designed to check and return the token balance of a specific account. It first checks if the account is excluded from certain features (like rewards or fees). If the account is excluded, it directly returns the balance stored in `_tOwned`. If the account is not excluded, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function.\n\n2. **Security mechanism**:  \n   - The function uses the `public view` modifier, which means it can be called by anyone but does not modify the state of the contract, ensuring it is safe to use without risking unintended changes.  \n   - The `override` keyword indicates that this function is overriding a function from a parent contract, ensuring consistency with the expected behavior.  \n   - The function does not directly expose sensitive data or allow modifications, reducing potential vulnerabilities.  \n\n3. **Parameter Function**:  \n   The function takes one parameter, `account`, which is the address of the user whose token balance is being queried. This parameter is essential for identifying the specific account and retrieving its balance information.  \n\n4. **Return description**:  \n   The function returns a `uint256` value, which represents the token balance of the specified account. If the account is excluded, it returns the balance directly from `_tOwned`. If not, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function.  \n\n**In summary**, the `balanceOf` function safely retrieves the token balance of a given account, handling excluded accounts differently and ensuring no state changes occur during its execution.",
+        "return_value": "380000000000000000000 [3.8e20]"
+    },
+    {
+        "id": "165691",
+        "args": "380000000000000000000 [3.8e20], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x0025B42bfc22CbbA6c02d23d4Ec2aBFcf6E014d4], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1676025497 [1.676e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8225",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24, 380000000000000000000 [3.8e20]",
+        "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n}\n\n// File: contracts/lib/SafeMath.sol\n\n\n",
+        "description": "1. **Core functions**:  \n   The `transferFrom` function is designed to move a specific amount of tokens from one address (`sender`) to another address (`recipient`). This function is commonly used in token contracts to allow a third party (like an exchange or a smart contract) to transfer tokens on behalf of the token owner, provided the owner has approved the third party to do so.\n\n2. **Security mechanism**:  \n   - The function is marked as `external`, meaning it can only be called from outside the contract, ensuring it cannot be invoked internally by other functions within the same contract.  \n   - The function is expected to return a `bool` value, which indicates whether the transfer was successful or not. This helps in error handling and ensures the caller knows the outcome of the operation.  \n   - The function relies on the underlying token contract's logic to ensure that the `sender` has sufficient balance and that the caller has the necessary approval to transfer tokens on behalf of the `sender`.\n\n3. **Parameter Function**:  \n   - `sender`: The address from which the tokens are being transferred. This is the account that owns the tokens.  \n   - `recipient`: The address to which the tokens are being sent. This is the account that will receive the tokens.  \n   - `amount`: The number of tokens to be transferred. This value must be less than or equal to the balance of the `sender` and within the approved limit for the caller.\n\n4. **Return description**:  \n   The function returns a `bool` value:  \n   - `true` if the transfer was successful, meaning the tokens were moved from the `sender` to the `recipient` without any issues.  \n   - `false` if the transfer failed, which could happen if the `sender` does not have enough tokens, the caller is not approved to transfer tokens, or some other error occurs during the process.\n\n**In summary**, the `transferFrom` function facilitates the transfer of tokens from one address to another, with checks to ensure the operation is authorized and valid. It provides a way for third parties to manage token transfers on behalf of token owners securely.",
+        "return_value": "true"
+    },
+    {
+        "id": "12402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "30014300506936992470 [3.001e19], 38470984903412245858 [3.847e19], 1675722409 [1.675e9]"
+    },
+    {
+        "id": "534",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "418470984903412245858 [4.184e20]"
+    },
+    {
+        "id": "127043",
+        "args": "27248739628707193147 [2.724e19], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "90798",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 27248739628707193147 [2.724e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "2797524497609081132 [2.797e18]"
+    },
+    {
+        "id": "534",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "418470984903412245858 [4.184e20]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "25909852936496774794 [2.59e19]"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "2797524497609081132 [2.797e18]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "25909852936496774794 [2.59e19]"
+    },
+    {
+        "id": "3517",
+        "args": "25909852936496774794 [2.59e19]",
+        "original_code": "\tfunction burn(uint256 _value) public{\n\t\t_burn(msg.sender, _value);\n\t}\n\t\n\tfunction updateFee(uint256 _txFee,uint256 _burnFee,uint256 _charityFee) onlyOwner() public{\n        _TAX_FEE = _txFee* 100; \n        _BURN_FEE = _burnFee * 100;\n\t\t_CHARITY_FEE = _charityFee* 100;\n\t\tORIG_TAX_FEE = _TAX_FEE;\n\t\tORIG_BURN_FEE = _BURN_FEE;\n\t\tORIG_CHARITY_FEE = _CHARITY_FEE;\n\t}\n\t\n\n\tfunction _burn(address _who, uint256 _value) internal {\n\t\trequire(_value <= _rOwned[_who]);\n\t\t_rOwned[_who] = _rOwned[_who].sub(_value);\n\t\t_tTotal = _tTotal.sub(_value);\n\t\temit Transfer(_who, address(0), _value);\n\t}\n\n\n",
+        "description": "1. Core functions:  \n   - The `burn` function allows a user to destroy a specified amount of their tokens, effectively removing them from circulation.  \n   - The `updateFee` function is used by the contract owner to set or update three types of fees: transaction fee, burn fee, and charity fee. These fees are stored in the contract for future use.  \n   - The `_burn` function is an internal helper that performs the actual token burning process. It reduces the token balance of the specified address and updates the total supply of tokens.\n\n2. Security mechanism:  \n   - The `burn` function is public, meaning anyone can call it, but it relies on the internal `_burn` function to ensure the user has enough tokens to burn.  \n   - The `updateFee` function includes the `onlyOwner` modifier, which restricts access to the contract owner, preventing unauthorized changes to the fee structure.  \n   - The `_burn` function includes a `require` statement to ensure the user cannot burn more tokens than they own, safeguarding against invalid operations.\n\n3. Parameter Function:  \n   - In the `burn` function, `_value` represents the number of tokens the user wants to burn.  \n   - In the `updateFee` function, `_txFee`, `_burnFee`, and `_charityFee` are the new values for the transaction fee, burn fee, and charity fee, respectively. These values are scaled by 100 before being stored.  \n   - In the `_burn` function, `_who` is the address of the user whose tokens are being burned, and `_value` is the number of tokens to burn.\n\n4. Return description:  \n   - The `burn` and `_burn` functions do not return any values; they simply update the token balances and total supply.  \n   - The `updateFee` function also does not return any values; it updates the fee-related variables in the contract.  \n\nIn summary, these functions manage token burning and fee updates in a secure manner, ensuring only authorized actions are performed and preventing invalid operations.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1784422376532319554 [1.784e18]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "16526797671320020878 [1.652e19]"
+    },
+    {
+        "id": "3517",
+        "args": "16526797671320020878 [1.652e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1138207447545361224 [1.138e18]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10541744175012633967 [1.054e19]"
+    },
+    {
+        "id": "3517",
+        "args": "10541744175012633967 [1.054e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "726014317397942450 [7.26e17]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6724132070925074986 [6.724e18]"
+    },
+    {
+        "id": "3517",
+        "args": "6724132070925074986 [6.724e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "463093779788146941 [4.63e17]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4289039020166598766 [4.289e18]"
+    },
+    {
+        "id": "3517",
+        "args": "4289039020166598766 [4.289e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "295387905912226446 [2.953e17]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2735796311326889343 [2.735e18]"
+    },
+    {
+        "id": "3517",
+        "args": "2735796311326889343 [2.735e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "188415432829019490 [1.884e17]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1745048581250513104 [1.745e18]"
+    },
+    {
+        "id": "3517",
+        "args": "1745048581250513104 [1.745e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "120182223502053521 [1.201e17]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1113092571371835049 [1.113e18]"
+    },
+    {
+        "id": "3517",
+        "args": "1113092571371835049 [1.113e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "76659149566610959 [7.665e16]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "709994601729257388 [7.099e17]"
+    },
+    {
+        "id": "3517",
+        "args": "709994601729257388 [7.099e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "48897624299450716 [4.889e16]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "452875481743100988 [4.528e17]"
+    },
+    {
+        "id": "3517",
+        "args": "452875481743100988 [4.528e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "31189723283489542 [3.118e16]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "288870086426734887 [2.888e17]"
+    },
+    {
+        "id": "3517",
+        "args": "288870086426734887 [2.888e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "19894603315351202 [1.989e16]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "184257991867894891 [1.842e17]"
+    },
+    {
+        "id": "3517",
+        "args": "184257991867894891 [1.842e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "12689924738277479 [1.268e16]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "117530368018220175 [1.175e17]"
+    },
+    {
+        "id": "3517",
+        "args": "117530368018220175 [1.175e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "8094365457334276 [8.094e15]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "74967643283564495 [7.496e16]"
+    },
+    {
+        "id": "3517",
+        "args": "74967643283564495 [7.496e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "5163052855566407 [5.163e15]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "47818684092102119 [4.781e16]"
+    },
+    {
+        "id": "3517",
+        "args": "47818684092102119 [4.781e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "3293292714528785 [3.293e15]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "30501513028108862 [3.05e16]"
+    },
+    {
+        "id": "3517",
+        "args": "30501513028108862 [3.05e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "2100651921832505 [2.1e15]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "19455623145379545 [1.945e16]"
+    },
+    {
+        "id": "3517",
+        "args": "19455623145379545 [1.945e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1339916879307822 [1.339e15]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12409917882637481 [1.24e16]"
+    },
+    {
+        "id": "3517",
+        "args": "12409917882637481 [1.24e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "854676219698413 [8.546e14]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7915760944947165 [7.915e15]"
+    },
+    {
+        "id": "3517",
+        "args": "7915760944947165 [7.915e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "545161757269092 [5.451e14]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5049128602632934 [5.049e15]"
+    },
+    {
+        "id": "3517",
+        "args": "5049128602632934 [5.049e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "347735592425395 [3.477e14]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3220625259306156 [3.22e15]"
+    },
+    {
+        "id": "3517",
+        "args": "3220625259306156 [3.22e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "221805804657266 [2.218e14]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2054300430270682 [2.054e15]"
+    },
+    {
+        "id": "3517",
+        "args": "2054300430270682 [2.054e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "141480527306714 [1.414e14]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1310351226245890 [1.31e15]"
+    },
+    {
+        "id": "3517",
+        "args": "1310351226245890 [1.31e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "90244435387593 [9.024e13]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "835817541983315 [8.358e14]"
+    },
+    {
+        "id": "3517",
+        "args": "835817541983315 [8.358e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "57563102664793 [5.756e13]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "533132605590387 [5.331e14]"
+    },
+    {
+        "id": "3517",
+        "args": "533132605590387 [5.331e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "36717064871271 [3.671e13]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "340062706113040 [3.4e14]"
+    },
+    {
+        "id": "3517",
+        "args": "340062706113040 [3.4e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "23420260381234 [2.342e13]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "216911595494824 [2.169e14]"
+    },
+    {
+        "id": "3517",
+        "args": "216911595494824 [2.169e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "14938792037104 [1.493e13]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "138358718596064 [1.383e14]"
+    },
+    {
+        "id": "3517",
+        "args": "138358718596064 [1.383e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "9528822647363 [9.528e12]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "88253165847935 [8.825e13]"
+    },
+    {
+        "id": "3517",
+        "args": "88253165847935 [8.825e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "6078032334836 [6.078e12]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "56292956173741 [5.629e13]"
+    },
+    {
+        "id": "3517",
+        "args": "56292956173741 [5.629e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "3876919366689 [3.876e12]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "35906892226833 [3.59e13]"
+    },
+    {
+        "id": "3517",
+        "args": "35906892226833 [3.59e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "2472922641372 [2.472e12]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "22903485569494 [2.29e13]"
+    },
+    {
+        "id": "3517",
+        "args": "22903485569494 [2.29e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1577372602266 [1.577e12]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14609163274788 [1.46e13]"
+    },
+    {
+        "id": "3517",
+        "args": "14609163274788 [1.46e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1006139166974 [1.006e12]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9318566422645 [9.318e12]"
+    },
+    {
+        "id": "3517",
+        "args": "9318566422645 [9.318e12]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "641773555509 [6.417e11]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5943918795343 [5.943e12]"
+    },
+    {
+        "id": "3517",
+        "args": "5943918795343 [5.943e12]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "409360166138 [4.093e11]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3791374020769 [3.791e12]"
+    },
+    {
+        "id": "3517",
+        "args": "3791374020769 [3.791e12]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "261113509870 [2.611e11]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2418356888830 [2.418e12]"
+    },
+    {
+        "id": "3517",
+        "args": "2418356888830 [2.418e12]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "166553247424 [1.665e11]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1542567420074 [1.542e12]"
+    },
+    {
+        "id": "3517",
+        "args": "1542567420074 [1.542e12]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "106237261494 [1.062e11]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "983938415567 [9.839e11]"
+    },
+    {
+        "id": "3517",
+        "args": "983938415567 [9.839e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "67764248997 [6.776e10]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "627612636590 [6.276e11]"
+    },
+    {
+        "id": "3517",
+        "args": "627612636590 [6.276e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "43223944005 [4.322e10]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "400327515803 [4.003e11]"
+    },
+    {
+        "id": "3517",
+        "args": "400327515803 [4.003e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "27570722955 [2.757e10]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "255351964835 [2.553e11]"
+    },
+    {
+        "id": "3517",
+        "args": "255351964835 [2.553e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "17586196303 [1.758e10]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "162878201901 [1.628e11]"
+    },
+    {
+        "id": "3517",
+        "args": "162878201901 [1.628e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "11217489687 [1.121e10]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "103893105626 [1.038e11]"
+    },
+    {
+        "id": "3517",
+        "args": "103893105626 [1.038e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "7155161509 [7.155e9]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "66269011265 [6.626e10]"
+    },
+    {
+        "id": "3517",
+        "args": "66269011265 [6.626e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "4563974441 [4.563e9]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "42270195193 [4.227e10]"
+    },
+    {
+        "id": "3517",
+        "args": "42270195193 [4.227e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "2911165970 [2.911e9]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "26962366988 [2.696e10]"
+    },
+    {
+        "id": "3517",
+        "args": "26962366988 [2.696e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1856909458 [1.856e9]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "17198151802 [1.719e10]"
+    },
+    {
+        "id": "3517",
+        "args": "17198151802 [1.719e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1184443886 [1.184e9]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10969972537 [1.096e10]"
+    },
+    {
+        "id": "3517",
+        "args": "10969972537 [1.096e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "755506583 [7.555e8]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6997280803 [6.997e9]"
+    },
+    {
+        "id": "3517",
+        "args": "6997280803 [6.997e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "481905646 [4.819e8]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4463269026 [4.463e9]"
+    },
+    {
+        "id": "3517",
+        "args": "4463269026 [4.463e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "307387199 [3.073e8]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2846930252 [2.846e9]"
+    },
+    {
+        "id": "3517",
+        "args": "2846930252 [2.846e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "196069273 [1.96e8]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1815936215 [1.815e9]"
+    },
+    {
+        "id": "3517",
+        "args": "1815936215 [1.815e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "125064284 [1.25e8]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1158308790 [1.158e9]"
+    },
+    {
+        "id": "3517",
+        "args": "1158308790 [1.158e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "79773209 [7.977e7]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "738836112 [7.388e8]"
+    },
+    {
+        "id": "3517",
+        "args": "738836112 [7.388e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "50883951 [5.088e7]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "471272260 [4.712e8]"
+    },
+    {
+        "id": "3517",
+        "args": "471272260 [4.712e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "32456717 [3.245e7]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "300604612 [3.006e8]"
+    },
+    {
+        "id": "3517",
+        "args": "300604612 [3.006e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "20702765 [2.07e7]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "191742948 [1.917e8]"
+    },
+    {
+        "id": "3517",
+        "args": "191742948 [1.917e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "13205416 [1.32e7]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "122304705 [1.223e8]"
+    },
+    {
+        "id": "3517",
+        "args": "122304705 [1.223e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "8423176 [8.423e6]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "78012990 [7.801e7]"
+    },
+    {
+        "id": "3517",
+        "args": "78012990 [7.801e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "5372787 [5.372e6]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "49761182 [4.976e7]"
+    },
+    {
+        "id": "3517",
+        "args": "49761182 [4.976e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "3427073 [3.427e6]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "31740550 [3.174e7]"
+    },
+    {
+        "id": "3517",
+        "args": "31740550 [3.174e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "2185985 [2.185e6]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "20245953 [2.024e7]"
+    },
+    {
+        "id": "3517",
+        "args": "20245953 [2.024e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1394347 [1.394e6]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12914035 [1.291e7]"
+    },
+    {
+        "id": "3517",
+        "args": "12914035 [1.291e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "889395 [8.893e5]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8237316 [8.237e6]"
+    },
+    {
+        "id": "3517",
+        "args": "8237316 [8.237e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "567307 [5.673e5]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5254235 [5.254e6]"
+    },
+    {
+        "id": "3517",
+        "args": "5254235 [5.254e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "361861 [3.618e5]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3351454 [3.351e6]"
+    },
+    {
+        "id": "3517",
+        "args": "3351454 [3.351e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "230816 [2.308e5]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2137751 [2.137e6]"
+    },
+    {
+        "id": "3517",
+        "args": "2137751 [2.137e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "147227 [1.472e5]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1363581 [1.363e6]"
+    },
+    {
+        "id": "3517",
+        "args": "1363581 [1.363e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "93910 [9.391e4]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "869770 [8.697e5]"
+    },
+    {
+        "id": "3517",
+        "args": "869770 [8.697e5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "59901 [5.99e4]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "554790 [5.547e5]"
+    },
+    {
+        "id": "3517",
+        "args": "554790 [5.547e5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "38208 [3.82e4]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "353877 [3.538e5]"
+    },
+    {
+        "id": "3517",
+        "args": "353877 [3.538e5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "24371 [2.437e4]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "225723 [2.257e5]"
+    },
+    {
+        "id": "3517",
+        "args": "225723 [2.257e5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "15545 [1.554e4]"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "143979 [1.439e5]"
+    },
+    {
+        "id": "3517",
+        "args": "143979 [1.439e5]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "9915"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "91838 [9.183e4]"
+    },
+    {
+        "id": "3517",
+        "args": "91838 [9.183e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "6324"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "58580 [5.858e4]"
+    },
+    {
+        "id": "3517",
+        "args": "58580 [5.858e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "4034"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "37365 [3.736e4]"
+    },
+    {
+        "id": "3517",
+        "args": "37365 [3.736e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "2573"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "23834 [2.383e4]"
+    },
+    {
+        "id": "3517",
+        "args": "23834 [2.383e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1641"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15203 [1.52e4]"
+    },
+    {
+        "id": "3517",
+        "args": "15203 [1.52e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1047"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9697"
+    },
+    {
+        "id": "3517",
+        "args": "9697",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "667"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6185"
+    },
+    {
+        "id": "3517",
+        "args": "6185",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "426"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3945"
+    },
+    {
+        "id": "3517",
+        "args": "3945",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "271"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2517"
+    },
+    {
+        "id": "3517",
+        "args": "2517",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "173"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1605"
+    },
+    {
+        "id": "3517",
+        "args": "1605",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "110"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1024"
+    },
+    {
+        "id": "3517",
+        "args": "1024",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "70"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "653"
+    },
+    {
+        "id": "3517",
+        "args": "653",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "45"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "417"
+    },
+    {
+        "id": "3517",
+        "args": "417",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "28"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "266"
+    },
+    {
+        "id": "3517",
+        "args": "266",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "169"
+    },
+    {
+        "id": "3517",
+        "args": "169",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "11"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "108"
+    },
+    {
+        "id": "3517",
+        "args": "108",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "7"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "69"
+    },
+    {
+        "id": "3517",
+        "args": "69",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "4"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "44"
+    },
+    {
+        "id": "3517",
+        "args": "44",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "3"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "28"
+    },
+    {
+        "id": "3517",
+        "args": "28",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1"
+    },
+    {
+        "id": "10848",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "1"
+    },
+    {
+        "id": "534",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "418470984903412245858 [4.184e20]"
+    },
+    {
+        "id": "24666",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2402",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "76872",
+        "args": "18, 0, [0x0025B42bfc22CbbA6c02d23d4Ec2aBFcf6E014d4, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1676025497 [1.676e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "25241",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24, 18",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1, 418470984903412245858 [4.184e20], 1676025497 [1.676e9]"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "19"
+    },
+    {
+        "id": "40126",
+        "args": "0, 396393908411541380869 [3.963e20], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 396393908411541380869 [3.963e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2402",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "19"
+    },
+    {
+        "id": "534",
+        "args": "0x912DCfBf1105504fB4FF8ce351BEb4d929cE9c24",
+        "original_code": null,
+        "description": null,
+        "return_value": "22077076491870864989 [2.207e19]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "396393908411541380869 [3.963e20]"
+    },
+    {
+        "id": "3262",
+        "args": "0x0fe261aeE0d1C4DFdDee4102E82Dd425999065F4, 380000000000000000000 [3.8e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x0fe261aeE0d1C4DFdDee4102E82Dd425999065F4",
+        "original_code": null,
+        "description": null,
+        "return_value": "1327550825873668332029 [1.327e21]"
+    },
+    {
+        "id": "2531",
+        "args": "0x0fe261aeE0d1C4DFdDee4102E82Dd425999065F4",
+        "original_code": null,
+        "description": null,
+        "return_value": "375483906998026770968027 [3.754e23]"
+    },
+    {
+        "id": "534",
+        "args": "0x0fe261aeE0d1C4DFdDee4102E82Dd425999065F4",
+        "original_code": null,
+        "description": null,
+        "return_value": "1327550825873668332029 [1.327e21]"
+    },
+    {
+        "id": "531",
+        "args": "0x0fe261aeE0d1C4DFdDee4102E82Dd425999065F4",
+        "original_code": null,
+        "description": null,
+        "return_value": "375483906998026770968027 [3.754e23]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "16393908411541380869 [1.639e19]"
+    }
+]

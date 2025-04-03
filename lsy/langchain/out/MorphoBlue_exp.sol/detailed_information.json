@@ -1,0 +1,534 @@
+[
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": "    function testExploit() public balanceLog {\n        // Initiate a flash loan of PAXG from the Uniswap V2 pair\n        IUniswapV2Pair(PAXG_WETH_V2_PAIR).swap(PAXG_FLASHLOAN_AMOUNT, 0, address(this), new bytes(100));\n        //At the end we swap any PAXG if remaining to USDC\n        uint256 paxgBal = TokenHelper.getTokenBalance(PAXG, address(this));\n        if (paxgBal > 0) _v3Swap(PAXG, USDC, paxgBal, address(this));\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to perform a specific operation involving a flash loan and a token swap. It first initiates a flash loan of a specific token (PAXG) from a Uniswap V2 trading pair. After the flash loan is executed, it checks if there is any remaining PAXG token balance in the contract. If there is, it swaps the remaining PAXG for another token (USDC) using a Uniswap V3 swap function. The purpose of this function is to manage token balances efficiently by leveraging flash loans and swaps.\n\n2. **Security mechanism**:  \n   The function uses a custom modifier `balanceLog`, which likely ensures that certain conditions related to token balances are met before and after the function executes. This could include logging balance changes or verifying that the contract has sufficient funds to perform the operations. Additionally, the use of `new bytes(100)` in the `swap` function suggests that some arbitrary data is passed, which might be used for specific checks or operations during the flash loan. These mechanisms help ensure that the function operates securely and as intended.\n\n3. **Parameter Function**:  \n   - `PAXG_WETH_V2_PAIR`: This is the address of the Uniswap V2 trading pair for PAXG and WETH. It specifies where the flash loan is being initiated.  \n   - `PAXG_FLASHLOAN_AMOUNT`: This is the amount of PAXG tokens being borrowed in the flash loan.  \n   - `PAXG`: This is the address of the PAXG token, used to check the remaining balance after the flash loan.  \n   - `USDC`: This is the address of the USDC token, which is the target token for the swap operation.  \n   - `paxgBal`: This is the remaining balance of PAXG tokens in the contract after the flash loan, which is used to determine if a swap is needed.  \n\n4. **Return description**:  \n   The function does not explicitly return any value. Instead, it performs operations that modify the state of the contract, such as borrowing tokens via a flash loan and swapping tokens. The logic focuses on managing token balances by ensuring that any remaining PAXG is converted to USDC, leaving the contract with the desired token holdings.\n\n**In summary**,  \nThe `testExploit` function is a utility that leverages flash loans and token swaps to manage token balances efficiently. It uses security mechanisms like a custom modifier and specific parameters to ensure the operations are executed securely and as intended. The function does not return a value but instead modifies the contract's state by borrowing and swapping tokens.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "594877",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10370",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000045553444300000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "3081",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000045553444300000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "3339",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2553",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "3164",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000006"
+    },
+    {
+        "id": "2381",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000006"
+    },
+    {
+        "id": "487148",
+        "args": "132577813003136114 [1.325e17], 0, MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": "    function swap(\n        address recipient,\n        bool zeroForOne,\n        int256 amountSpecified,\n        uint160 sqrtPriceLimitX96,\n        bytes calldata data\n    ) external override noDelegateCall returns (int256 amount0, int256 amount1) {\n        require(amountSpecified != 0, 'AS');\n\n        Slot0 memory slot0Start = slot0;\n\n        require(slot0Start.unlocked, 'LOK');\n        require(\n            zeroForOne\n                ? sqrtPriceLimitX96 < slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 > TickMath.MIN_SQRT_RATIO\n                : sqrtPriceLimitX96 > slot0Start.sqrtPriceX96 && sqrtPriceLimitX96 < TickMath.MAX_SQRT_RATIO,\n            'SPL'\n        );\n\n        slot0.unlocked = false;\n\n        SwapCache memory cache =\n            SwapCache({\n                liquidityStart: liquidity,\n                blockTimestamp: _blockTimestamp(),\n                feeProtocol: zeroForOne ? (slot0Start.feeProtocol % 16) : (slot0Start.feeProtocol >> 4),\n                secondsPerLiquidityCumulativeX128: 0,\n                tickCumulative: 0,\n                computedLatestObservation: false\n            });\n\n        bool exactInput = amountSpecified > 0;\n\n        SwapState memory state =\n            SwapState({\n                amountSpecifiedRemaining: amountSpecified,\n                amountCalculated: 0,\n                sqrtPriceX96: slot0Start.sqrtPriceX96,\n                tick: slot0Start.tick,\n                feeGrowthGlobalX128: zeroForOne ? feeGrowthGlobal0X128 : feeGrowthGlobal1X128,\n                protocolFee: 0,\n                liquidity: cache.liquidityStart\n            });\n\n        // continue swapping as long as we haven't used the entire input/output and haven't reached the price limit\n        while (state.amountSpecifiedRemaining != 0 && state.sqrtPriceX96 != sqrtPriceLimitX96) {\n            StepComputations memory step;\n\n            step.sqrtPriceStartX96 = state.sqrtPriceX96;\n\n            (step.tickNext, step.initialized) = tickBitmap.nextInitializedTickWithinOneWord(\n                state.tick,\n                tickSpacing,\n                zeroForOne\n            );\n\n            // ensure that we do not overshoot the min/max tick, as the tick bitmap is not aware of these bounds\n            if (step.tickNext < TickMath.MIN_TICK) {\n                step.tickNext = TickMath.MIN_TICK;\n            } else if (step.tickNext > TickMath.MAX_TICK) {\n                step.tickNext = TickMath.MAX_TICK;\n            }\n\n            // get the price for the next tick\n            step.sqrtPriceNextX96 = TickMath.getSqrtRatioAtTick(step.tickNext);\n\n            // compute values to swap to the target tick, price limit, or point where input/output amount is exhausted\n            (state.sqrtPriceX96, step.amountIn, step.amountOut, step.feeAmount) = SwapMath.computeSwapStep(\n                state.sqrtPriceX96,\n                (zeroForOne ? step.sqrtPriceNextX96 < sqrtPriceLimitX96 : step.sqrtPriceNextX96 > sqrtPriceLimitX96)\n                    ? sqrtPriceLimitX96\n                    : step.sqrtPriceNextX96,\n                state.liquidity,\n                state.amountSpecifiedRemaining,\n                fee\n            );\n\n            if (exactInput) {\n                state.amountSpecifiedRemaining -= (step.amountIn + step.feeAmount).toInt256();\n                state.amountCalculated = state.amountCalculated.sub(step.amountOut.toInt256());\n            } else {\n                state.amountSpecifiedRemaining += step.amountOut.toInt256();\n                state.amountCalculated = state.amountCalculated.add((step.amountIn + step.feeAmount).toInt256());\n            }\n\n            // if the protocol fee is on, calculate how much is owed, decrement feeAmount, and increment protocolFee\n            if (cache.feeProtocol > 0) {\n                uint256 delta = step.feeAmount / cache.feeProtocol;\n                step.feeAmount -= delta;\n                state.protocolFee += uint128(delta);\n            }\n\n            // update global fee tracker\n            if (state.liquidity > 0)\n                state.feeGrowthGlobalX128 += FullMath.mulDiv(step.feeAmount, FixedPoint128.Q128, state.liquidity);\n\n            // shift tick if we reached the next price\n            if (state.sqrtPriceX96 == step.sqrtPriceNextX96) {\n                // if the tick is initialized, run the tick transition\n                if (step.initialized) {\n                    // check for the placeholder value, which we replace with the actual value the first time the swap\n                    // crosses an initialized tick\n                    if (!cache.computedLatestObservation) {\n                        (cache.tickCumulative, cache.secondsPerLiquidityCumulativeX128) = observations.observeSingle(\n                            cache.blockTimestamp,\n                            0,\n                            slot0Start.tick,\n                            slot0Start.observationIndex,\n                            cache.liquidityStart,\n                            slot0Start.observationCardinality\n                        );\n                        cache.computedLatestObservation = true;\n                    }\n                    int128 liquidityNet =\n                        ticks.cross(\n                            step.tickNext,\n                            (zeroForOne ? state.feeGrowthGlobalX128 : feeGrowthGlobal0X128),\n                            (zeroForOne ? feeGrowthGlobal1X128 : state.feeGrowthGlobalX128),\n                            cache.secondsPerLiquidityCumulativeX128,\n                            cache.tickCumulative,\n                            cache.blockTimestamp\n                        );\n                    // if we're moving leftward, we interpret liquidityNet as the opposite sign\n                    // safe because liquidityNet cannot be type(int128).min\n                    if (zeroForOne) liquidityNet = -liquidityNet;\n\n                    state.liquidity = LiquidityMath.addDelta(state.liquidity, liquidityNet);\n                }\n\n                state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;\n            } else if (state.sqrtPriceX96 != step.sqrtPriceStartX96) {\n                // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved\n                state.tick = TickMath.getTickAtSqrtRatio(state.sqrtPriceX96);\n            }\n        }\n\n        // update tick and write an oracle entry if the tick change\n        if (state.tick != slot0Start.tick) {\n            (uint16 observationIndex, uint16 observationCardinality) =\n                observations.write(\n                    slot0Start.observationIndex,\n                    cache.blockTimestamp,\n                    slot0Start.tick,\n                    cache.liquidityStart,\n                    slot0Start.observationCardinality,\n                    slot0Start.observationCardinalityNext\n                );\n            (slot0.sqrtPriceX96, slot0.tick, slot0.observationIndex, slot0.observationCardinality) = (\n                state.sqrtPriceX96,\n                state.tick,\n                observationIndex,\n                observationCardinality\n            );\n        } else {\n            // otherwise just update the price\n            slot0.sqrtPriceX96 = state.sqrtPriceX96;\n        }\n\n        // update liquidity if it changed\n        if (cache.liquidityStart != state.liquidity) liquidity = state.liquidity;\n\n        // update fee growth global and, if necessary, protocol fees\n        // overflow is acceptable, protocol has to withdraw before it hits type(uint128).max fees\n        if (zeroForOne) {\n            feeGrowthGlobal0X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token0 += state.protocolFee;\n        } else {\n            feeGrowthGlobal1X128 = state.feeGrowthGlobalX128;\n            if (state.protocolFee > 0) protocolFees.token1 += state.protocolFee;\n        }\n\n        (amount0, amount1) = zeroForOne == exactInput\n            ? (amountSpecified - state.amountSpecifiedRemaining, state.amountCalculated)\n            : (state.amountCalculated, amountSpecified - state.amountSpecifiedRemaining);\n\n        // do the transfers and collect payment\n        if (zeroForOne) {\n            if (amount1 < 0) TransferHelper.safeTransfer(token1, recipient, uint256(-amount1));\n\n            uint256 balance0Before = balance0();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance0Before.add(uint256(amount0)) <= balance0(), 'IIA');\n        } else {\n            if (amount0 < 0) TransferHelper.safeTransfer(token0, recipient, uint256(-amount0));\n\n            uint256 balance1Before = balance1();\n            IUniswapV3SwapCallback(msg.sender).uniswapV3SwapCallback(amount0, amount1, data);\n            require(balance1Before.add(uint256(amount1)) <= balance1(), 'IIA');\n        }\n\n        emit Swap(msg.sender, recipient, amount0, amount1, state.sqrtPriceX96, state.liquidity, state.tick);\n        slot0.unlocked = true;\n    }\n\n    /// @inheritdoc IUniswapV3PoolActions\n",
+        "description": "1. Core functions:  \nThe `swap` function is designed to facilitate the exchange of two tokens within a decentralized trading pool. It calculates the amount of tokens to be swapped based on the current price and liquidity in the pool. The function ensures that the swap is executed correctly by updating the pool's state, including the price, liquidity, and fees, and then transfers the tokens to the recipient. It also handles protocol fees and updates the pool's global fee tracker.\n\n2. Security mechanism:  \nThe function includes several security measures:  \n- `noDelegateCall`: Prevents the function from being called through a delegate call, ensuring it runs in the correct context.  \n- `require` statements: Validate inputs and conditions, such as ensuring the swap amount is not zero (`amountSpecified != 0`) and that the pool is unlocked (`slot0Start.unlocked`).  \n- Price limit checks: Ensure the swap does not exceed the specified price limits (`sqrtPriceLimitX96`).  \n- Balance checks: Verify that the correct amount of tokens is transferred after the swap, preventing invalid or malicious transfers.  \n- Locking mechanism: Temporarily locks the pool during the swap to prevent reentrancy attacks.  \n\n3. Parameter Function:  \n- `recipient`: The address that will receive the swapped tokens.  \n- `zeroForOne`: A boolean indicating the direction of the swap (e.g., token0 for token1 or vice versa).  \n- `amountSpecified`: The amount of tokens to be swapped, with a positive value indicating an exact input and a negative value indicating an exact output.  \n- `sqrtPriceLimitX96`: The price limit for the swap, ensuring the swap does not exceed a specified price.  \n- `data`: Additional data passed to the callback function, typically used for custom logic or validation.  \n\n4. Return description:  \nThe function returns two values, `amount0` and `amount1`, which represent the amounts of the two tokens involved in the swap. These values are calculated based on the remaining amount after the swap (`amountSpecifiedRemaining`) and the calculated amount (`amountCalculated`). The logic ensures that the correct amounts are returned depending on the swap direction (`zeroForOne`) and whether it was an exact input or output swap.  \n\nIn summary,  \nThe `swap` function enables token exchanges within a decentralized trading pool, ensuring correct calculations, security, and proper token transfers. It uses various checks and mechanisms to prevent errors and attacks, while updating the pool's state and handling fees. The parameters define the swap details, and the return values reflect the amounts of tokens exchanged.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "51352",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 132577813003136114 [1.325e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "44070",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 132577813003136114 [1.325e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "392609",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 132577813003136114 [1.325e17], 0, 0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": "    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        // Ensure the caller is the correct Uniswap V2 pair\n        require(msg.sender == PAXG_WETH_V2_PAIR, \"Invalid caller\");\n\n        // Approve PAXG transfer to Morpho Bundler\n        require(TokenHelper.approveToken(PAXG, MORPHO_BUNDLER, amount0), \"Approval failed\");\n\n        // Perform operations with Morpho protocol\n        performComplexOperation(\n            PAXG,\n            PAXG_FLASHLOAN_AMOUNT,\n            MarketParams({\n                loanToken: USDC,\n                collateralToken: PAXG,\n                oracle: MORPHO_ORACLE,\n                irm: MORPHO_IRM,\n                lltv: MORPHO_LTV\n            }),\n            address(this),\n            MORPHO_BUNDLER,\n            BORROW_ASSETS,\n            BORROW_SHARES,\n            BORROW_SLIPPAGE_AMOUNT,\n            address(this)\n        );\n\n        // Swap USDC for PAXG to repay the flash loan\n        _v3Swap(USDC, PAXG, USDC_SWAP_AMOUNT, address(this));\n\n        // Calculate and repay the flash loan fee\n        uint256 fee = ((amount0 * UNISWAP_V2_FEE_NUMERATOR) / UNISWAP_V2_FEE_DENOMINATOR) + 1;\n        uint256 repayAmount = amount0 + fee;\n        TokenHelper.transferToken(PAXG, PAXG_WETH_V2_PAIR, repayAmount);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   This function is designed to handle a flash loan operation using the Uniswap V2 protocol. It starts by verifying that the caller is a specific Uniswap V2 pair. Then, it approves the transfer of a token (PAXG) to a Morpho Bundler, which is a part of the Morpho protocol. After that, it performs a complex operation involving the Morpho protocol, which likely includes borrowing and lending activities. Finally, it swaps USDC for PAXG to repay the flash loan and calculates the fee to be paid back to the Uniswap V2 pair.\n\n2. **Security mechanism**:  \n   - **`require(msg.sender == PAXG_WETH_V2_PAIR, \"Invalid caller\")`**: Ensures that only the specified Uniswap V2 pair can call this function, preventing unauthorized access.  \n   - **`require(TokenHelper.approveToken(PAXG, MORPHO_BUNDLER, amount0), \"Approval failed\")`**: Checks if the token approval for the Morpho Bundler is successful, ensuring the operation can proceed safely.  \n   - **`performComplexOperation`**: Handles the core logic of the Morpho protocol, which likely includes additional internal checks and safeguards.  \n   - **`_v3Swap`**: Swaps USDC for PAXG to ensure the flash loan is repaid, reducing the risk of default.  \n   - **Fee calculation and repayment**: Ensures the flash loan fee is calculated and repaid correctly, maintaining the integrity of the transaction.  \n\n3. **Parameter Function**:  \n   - **`sender`**: Represents the address initiating the call, though it is not actively used in the function.  \n   - **`amount0`**: The amount of PAXG involved in the flash loan.  \n   - **`amount1`**: The amount of another token (likely WETH) involved in the flash loan, though it is not used in this function.  \n   - **`data`**: Additional data passed to the function, which is not used here but could provide context or instructions in other scenarios.  \n\n4. **Return description**:  \n   This function does not return any value directly. Instead, it performs a series of operations, including approving token transfers, interacting with the Morpho protocol, swapping tokens, and repaying the flash loan with a calculated fee. The success of these operations ensures the flash loan is handled correctly and the protocol remains secure.  \n\n**In summary**, this function manages a flash loan process by verifying the caller, approving token transfers, performing complex operations with the Morpho protocol, swapping tokens, and repaying the loan with a fee. Security measures ensure only authorized parties can execute the function and that all steps are completed safely.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "27967",
+        "args": "0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, 132577813003136114 [1.325e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "27185",
+        "args": "0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, 132577813003136114 [1.325e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "397",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb"
+    },
+    {
+        "id": "25690",
+        "args": "0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, true",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "216459",
+        "args": "[0x70dc41fe00000000000000000000000045804880de22913dafe09f4980848ece6ecbaf7800000000000000000000000000000000000000000000000001d702d189266c72, 0xca463673000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4800000000000000000000000045804880de22913dafe09f4980848ece6ecbaf78000000000000000000000000dd1778f71a4a1c6a0efebd8ae9f8848634ce1101000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc0000000000000000000000000000000000000000000000000cb2bba6f17b800000000000000000000000000000000000000000000000000001d702d189266c720000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000, 0x62577ad0000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4800000000000000000000000045804880de22913dafe09f4980848ece6ecbaf78000000000000000000000000dd1778f71a4a1c6a0efebd8ae9f8848634ce1101000000000000000000000000870ac11d48b15db9a138cf899d20f13f79ba00bc0000000000000000000000000000000000000000000000000cb2bba6f17b8000000000000000000000000000000000000000000000000000000000358d376d8e000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003261a90a69813c10000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496]",
+        "original_code": "    function multicall(bytes[] memory data) external payable {\n        require(_initiator == UNSET_INITIATOR, ErrorsLib.ALREADY_INITIATED);\n\n        _initiator = msg.sender;\n\n        _multicall(data);\n\n        _initiator = UNSET_INITIATOR;\n    }\n\n    /* INTERNAL */\n\n    /// @dev Executes a series of delegate calls to the contract itself.\n",
+        "description": "1. Core functions:\n   The `multicall` function allows a user to execute multiple operations in a single transaction. It first checks if the operation has already been initiated to prevent re-entry. If not, it sets the initiator to the current caller, processes the multiple calls using `_multicall`, and then resets the initiator to an unset state.\n\n2. Security mechanism:\n   The function uses a `require` statement to ensure that the operation has not been initiated before, preventing re-entry attacks. It also sets and resets the `_initiator` variable to track the caller and ensure that the operation is completed securely without interference.\n\n3. Parameter Function:\n   The `data` parameter is an array of byte sequences, each representing a specific operation or call that needs to be executed. This allows the function to handle multiple operations in one go, making it efficient and reducing transaction costs.\n\n4. Return description:\n   The function does not return any value directly. Its primary purpose is to execute a series of operations specified in the `data` array. The success of these operations is implied by the completion of the function without reverting.\n\nIn summary, the `multicall` function is designed to execute multiple operations securely and efficiently in a single transaction, with mechanisms in place to prevent re-entry and ensure the integrity of the process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "34938",
+        "args": "0x45804880De22913dAFE09f4980848ECE6EcbAf78, 132577813003136114 [1.325e17]",
+        "original_code": "    function erc20TransferFrom(address asset, uint256 amount) external payable protected {\n        address _initiator = initiator();\n        amount = Math.min(amount, ERC20(asset).balanceOf(_initiator));\n\n        require(amount != 0, ErrorsLib.ZERO_AMOUNT);\n\n        ERC20(asset).safeTransferFrom(_initiator, address(this), amount);\n    }\n}\n",
+        "description": "1. **Core functions**:  \n   This function is designed to transfer a specific amount of a token (ERC20) from one account to another. It ensures that the transfer is initiated by a specific user (the `initiator`) and that the tokens are moved from their account to the contract's address. The function also checks that the amount to be transferred is not zero and does not exceed the initiator's token balance.\n\n2. **Security mechanism**:  \n   - **`external`**: The function can only be called from outside the contract, ensuring it is not accessible internally.  \n   - **`payable`**: Allows the function to receive Ether, though it is not used in this specific function.  \n   - **`protected`**: A custom modifier (not shown in the code) likely adds additional security checks, such as verifying the caller's permissions or ensuring the contract is in a valid state.  \n   - **`require`**: Ensures the amount being transferred is not zero, preventing invalid or unnecessary transactions.  \n   - **`safeTransferFrom`**: A safe method for transferring tokens that includes checks to avoid common issues like failed transfers.  \n\n3. **Parameter Function**:  \n   - **`asset`**: Specifies the address of the ERC20 token to be transferred.  \n   - **`amount`**: Defines the quantity of tokens to transfer. The function ensures this amount does not exceed the initiator's balance.  \n\n4. **Return description**:  \n   The function does not return any value. Its primary purpose is to execute the token transfer from the initiator's account to the contract's address. If the transfer is successful, the tokens are moved; otherwise, the function reverts with an error.  \n\n**In summary**, this function securely transfers ERC20 tokens from a specific user to the contract, ensuring the amount is valid and within the user's balance. It uses multiple safety checks to prevent errors or unauthorized actions.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "1769",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d702d189266c72"
+    },
+    {
+        "id": "990",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d702d189266c72"
+    },
+    {
+        "id": "30938",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, 132577813003136114 [1.325e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "30150",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, 132577813003136114 [1.325e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "56191",
+        "args": "MarketParams({ loanToken: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, collateralToken: 0x45804880De22913dAFE09f4980848ECE6EcbAf78, oracle: 0xDd1778F71a4a1C6A0eFebd8AE9f8848634CE1101, irm: 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC, lltv: 915000000000000000 [9.15e17] }",
+        "original_code": "    function morphoSupplyCollateral(\n        MarketParams calldata marketParams,\n        uint256 assets,\n        address onBehalf,\n        bytes calldata data\n    ) external payable protected {\n        // Do not check `onBehalf` against the zero address as it's done at Morpho's level.\n        require(onBehalf != address(this), ErrorsLib.BUNDLER_ADDRESS);\n\n        // Don't always cap the assets to the bundler's balance because the liquidity can be transferred later\n        // (via the `onMorphoSupplyCollateral` callback).\n        if (assets == type(uint256).max) assets = ERC20(marketParams.collateralToken).balanceOf(address(this));\n\n        _approveMaxTo(marketParams.collateralToken, address(MORPHO));\n\n        MORPHO.supplyCollateral(marketParams, assets, onBehalf, data);\n    }\n\n    /// @notice Borrows `assets` of the loan asset on behalf of the initiator.\n    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the\n    /// initiator is guaranteed to borrow `assets` tokens, but the possibility to mint a specific amount of shares is\n    /// given for full compatibility and precision.\n    /// @dev Initiator must have previously authorized the bundler to act on their behalf on Morpho.\n    /// @param marketParams The Morpho market to borrow assets from.\n    /// @param assets The amount of assets to borrow.\n    /// @param shares The amount of shares to mint.\n    /// @param slippageAmount The maximum amount of borrow shares to mint in exchange for `assets` when it is used.\n    /// The minimum amount of assets to borrow in exchange for `shares` otherwise.\n    /// @param receiver The address that will receive the borrowed assets.\n",
+        "description": "1. **Core functions**:  \n   The `morphoSupplyCollateral` function is designed to supply collateral to a specific market on the Morpho platform. It allows a user (or a bundler acting on behalf of a user) to deposit a certain amount of assets as collateral. The function ensures that the assets are approved for transfer to Morpho and then calls Morpho's `supplyCollateral` function to complete the process.  \n\n2. **Security mechanism**:  \n   - The function uses the `protected` modifier, which likely ensures that only authorized users or contracts can call this function.  \n   - It includes a check to prevent the bundler from supplying collateral on its own behalf (`require(onBehalf != address(this), ErrorsLib.BUNDLER_ADDRESS)`), which helps avoid misuse.  \n   - The function does not cap the assets to the bundler's balance immediately, allowing flexibility for liquidity to be transferred later via a callback.  \n   - The `_approveMaxTo` function is used to approve the maximum amount of tokens for transfer to Morpho, ensuring smooth execution.  \n\n3. **Parameter Function**:  \n   - `marketParams`: Specifies the market details (e.g., collateral token) where the collateral will be supplied.  \n   - `assets`: The amount of collateral to supply. If set to `type(uint256).max`, it automatically uses the bundler's current balance of the collateral token.  \n   - `onBehalf`: The address on whose behalf the collateral is being supplied.  \n   - `data`: Additional data that can be passed to the Morpho platform for further processing.  \n\n4. **Return description**:  \n   The function does not return any value. Its primary purpose is to execute the collateral supply process by interacting with Morpho's `supplyCollateral` function.  \n\nIn summary, the `morphoSupplyCollateral` function facilitates the supply of collateral to a Morpho market, with built-in checks to ensure security and flexibility in handling asset amounts. It relies on parameters like `marketParams`, `assets`, and `onBehalf` to execute the operation effectively.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "4314",
+        "args": "0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xfffffffffffffffffffffffffffffffffffffffffffffff51a8256f6ff61ffff"
+    },
+    {
+        "id": "3532",
+        "args": "0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xfffffffffffffffffffffffffffffffffffffffffffffff51a8256f6ff61ffff"
+    },
+    {
+        "id": "48505",
+        "args": "(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0x45804880De22913dAFE09f4980848ECE6EcbAf78, 0xDd1778F71a4a1C6A0eFebd8AE9f8848634CE1101, 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC, 915000000000000000 [9.15e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "18638",
+        "args": "0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb, 132577813003136114 [1.325e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "17850",
+        "args": "0x4095F064B8d3c3548A3bebfd0Bbfd04750E30077, 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb, 132577813003136114 [1.325e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "116590",
+        "args": "MarketParams({ loanToken: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, collateralToken: 0x45804880De22913dAFE09f4980848ECE6EcbAf78, oracle: 0xDd1778F71a4a1C6A0eFebd8AE9f8848634CE1101, irm: 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC, lltv: 915000000000000000 [9.15e17] }",
+        "original_code": "    function morphoBorrow(\n        MarketParams calldata marketParams,\n        uint256 assets,\n        uint256 shares,\n        uint256 slippageAmount,\n        address receiver\n    ) external payable protected {\n        (uint256 borrowedAssets, uint256 borrowedShares) =\n            MORPHO.borrow(marketParams, assets, shares, initiator(), receiver);\n\n        if (assets > 0) require(borrowedShares <= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n        else require(borrowedAssets >= slippageAmount, ErrorsLib.SLIPPAGE_EXCEEDED);\n    }\n\n    /// @notice Repays `assets` of the loan asset on behalf of `onBehalf`.\n    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the\n    /// bundler is guaranteed to have `assets` tokens pulled from its balance, but the possibility to burn a specific\n    /// amount of shares is given for full compatibility and precision.\n    /// @param marketParams The Morpho market to repay assets to.\n    /// @param assets The amount of assets to repay. Pass `type(uint256).max` to repay the bundler's loan asset balance.\n    /// @param shares The amount of shares to burn.\n    /// @param slippageAmount The minimum amount of borrow shares to burn in exchange for `assets` when it is used.\n    /// The maximum amount of assets to deposit in exchange for `shares` otherwise.\n    /// @param onBehalf The address of the owner of the debt position.\n    /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.\n",
+        "description": "1. **Core functions:**\n   - The `morphoBorrow` function is designed to allow a user to borrow assets from a specific market on the Morpho platform. It takes in parameters like the market details, the amount of assets to borrow, the number of shares, a slippage limit, and the address of the receiver. The function then interacts with the Morpho protocol to execute the borrowing process.\n   - The function also includes a mechanism to ensure that the borrowing operation does not exceed the specified slippage limit, which helps protect the user from unfavorable market conditions.\n\n2. **Security mechanism:**\n   - The function is marked with the `protected` modifier, which likely ensures that only authorized users or contracts can call this function, adding a layer of security.\n   - The function includes a slippage check using `require` statements. If the borrowed shares or assets exceed the specified slippage limit, the transaction will revert, preventing the user from incurring unexpected losses.\n\n3. **Parameter Function:**\n   - `marketParams`: This parameter specifies the details of the market from which the user wants to borrow assets. It includes information necessary to identify the specific market on the Morpho platform.\n   - `assets`: This is the amount of assets the user wants to borrow. If set to zero, the function will focus on borrowing shares instead.\n   - `shares`: This is the number of shares the user wants to borrow. If set to zero, the function will focus on borrowing assets instead.\n   - `slippageAmount`: This parameter sets the maximum allowable slippage for the borrowing operation. It ensures that the user does not receive fewer assets or more shares than expected due to market fluctuations.\n   - `receiver`: This is the address that will receive the borrowed assets or shares.\n\n4. **Return description:**\n   - The function does not explicitly return any value. Instead, it interacts with the Morpho protocol to borrow assets or shares and then performs a slippage check. If the slippage check passes, the borrowed assets or shares are transferred to the receiver. If the check fails, the transaction is reverted, and no borrowing occurs.\n\n**In summary,**\nThe `morphoBorrow` function allows users to borrow assets or shares from a specific market on the Morpho platform while ensuring that the operation does not exceed a specified slippage limit. It includes security measures like the `protected` modifier and slippage checks to protect users from unauthorized access and unfavorable market conditions. The function parameters define the borrowing details, and the function ensures that the borrowing operation is executed safely and within the user's specified limits.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "114073",
+        "args": "(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0x45804880De22913dAFE09f4980848ECE6EcbAf78, 0xDd1778F71a4a1C6A0eFebd8AE9f8848634CE1101, 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC, 915000000000000000 [9.15e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000358d376d8e00000000000000000000000000000000000000000000000003261912b02cdf61"
+    },
+    {
+        "id": "13464",
+        "args": "(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0x45804880De22913dAFE09f4980848ECE6EcbAf78, 0xDd1778F71a4a1C6A0eFebd8AE9f8848634CE1101, 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC, 915000000000000000 [9.15e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000269b6e02"
+    },
+    {
+        "id": "33585",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000007d4cb214855e22e4ca177e8b6349a1854"
+    },
+    {
+        "id": "15940",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000670b9f7e0000000000000000000000000000000000000000000000000000003e0b46496900000000000000000000000000000000000000000000000000000000670b9f7e00000000000000000000000000000000000000000000000000000000670b9f7e00000000000000000000000000000000000000000000000000000000670b9f7e"
+    },
+    {
+        "id": "8042",
+        "args": "0x273717b49430906f4b0c230e99aa1007f83758e3199edbc887c0d06c3e332494",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000003e0b4649690000000000000000000000000000000000000000000000000000000020689c52fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff800000000000000000000000000000000000000000000000000000000670b9f7e"
+    },
+    {
+        "id": "3132",
+        "args": "0x273717b49430906f4b0c230e99aa1007f83758e3199edbc887c0d06c3e332494",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000003e0b4649690000000000000000000000000000000000000000000000000000000020689c52fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff800000000000000000000000000000000000000000000000000000000670b9f7e"
+    },
+    {
+        "id": "10245",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000670b9f7e0000000000000000000000000000000000000000000000000000000005f5d8be00000000000000000000000000000000000000000000000000000000670b9f7e00000000000000000000000000000000000000000000000000000000670b9f7e00000000000000000000000000000000000000000000000000000000670b9f7e"
+    },
+    {
+        "id": "3542",
+        "args": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000005f5d8be000000000000000000000000000000000000000000000000000000000001f008fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff800000000000000000000000000000000000000000000000000000000670b9f7e"
+    },
+    {
+        "id": "3132",
+        "args": "0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000005f5d8be000000000000000000000000000000000000000000000000000000000001f008fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff800000000000000000000000000000000000000000000000000000000670b9f7e"
+    },
+    {
+        "id": "32152",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 230002486670 [2.3e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "31363",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 230002486670 [2.3e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "90111",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], false, 420000000 [4.2e8], 1461446703485210103287273052203988822378723970341 [1.461e48], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "-156043732137761410 [-1.56e17], 420000000 [4.2e8]"
+    },
+    {
+        "id": "34852",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 156043732137761410 [1.56e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "34070",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 156043732137761410 [1.56e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "3339",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000001600415b7f"
+    },
+    {
+        "id": "2553",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000001600415b7f"
+    },
+    {
+        "id": "11822",
+        "args": "-156043732137761410 [-1.56e17], 420000000 [4.2e8], 0x",
+        "original_code": "    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {\n        // Ensure the caller is the correct Uniswap V3 pool\n        require(msg.sender == PAXG_USDC_V3_PAIR, \"Invalid caller\");\n\n        bool zeroForOne = data.length > 0;\n        address tokenOut = zeroForOne\n            ? IUniswapV3Pool(PAXG_USDC_V3_PAIR).token0()\n            : IUniswapV3Pool(PAXG_USDC_V3_PAIR).token0() == USDC ? PAXG : USDC;\n\n        uint256 amountOut = uint256(zeroForOne ? amount0Delta : amount1Delta);\n\n        // Transfer the required amount to the pool\n        TokenHelper.transferToken(tokenOut, msg.sender, amountOut);\n    }\n",
+        "description": "1. **Core functions**:  \n   This function is a callback used in a Uniswap V3 swap operation. Its main role is to handle the transfer of tokens after a swap is initiated. It ensures that the correct tokens are sent to the Uniswap pool based on the swap direction (either swapping token A for token B or vice versa). The function also verifies that the caller is the correct Uniswap V3 pool to prevent unauthorized access.\n\n2. **Security mechanism**:  \n   - **`require` statement**: Ensures that only the specific Uniswap V3 pool (`PAXG_USDC_V3_PAIR`) can call this function, preventing unauthorized or malicious calls.  \n   - **Token direction logic**: Determines the correct token to transfer based on the swap direction, ensuring the right token is sent to the pool.  \n   - **Token transfer**: Uses a helper function (`TokenHelper.transferToken`) to securely transfer the required amount of tokens to the pool.  \n\n3. **Parameter Function**:  \n   - **`amount0Delta` and `amount1Delta`**: These represent the amounts of the two tokens involved in the swap. The function uses these values to determine how much of each token needs to be transferred.  \n   - **`data`**: This parameter provides additional information about the swap direction. If `data.length > 0`, it indicates the swap is in one direction (e.g., token A for token B); otherwise, it\u2019s in the opposite direction.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it performs a token transfer to the Uniswap pool based on the swap details. The amount of tokens to transfer is calculated using `amount0Delta` or `amount1Delta`, depending on the swap direction.  \n\n**In summary**, this function ensures that the correct tokens are transferred to the Uniswap V3 pool after a swap, while also verifying that only the authorized pool can trigger this action. It uses input parameters to determine the swap direction and the required token amounts for the transfer.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "266",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "0x45804880De22913dAFE09f4980848ECE6EcbAf78"
+    },
+    {
+        "id": "8252",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4, 420000000 [4.2e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "7463",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4, 420000000 [4.2e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1339",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000016194a0c7f"
+    },
+    {
+        "id": "553",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000016194a0c7f"
+    },
+    {
+        "id": "8152",
+        "args": "0x9C4Fe5FFD9A9fC5678cFBd93Aa2D4FD684b67C4C, 132976743232834618 [1.329e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "7370",
+        "args": "0x9C4Fe5FFD9A9fC5678cFBd93Aa2D4FD684b67C4C, 132976743232834618 [1.329e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1769",
+        "args": "0x9C4Fe5FFD9A9fC5678cFBd93Aa2D4FD684b67C4C",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000b82951281030d1b601"
+    },
+    {
+        "id": "990",
+        "args": "0x9C4Fe5FFD9A9fC5678cFBd93Aa2D4FD684b67C4C",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000b82951281030d1b601"
+    },
+    {
+        "id": "2534",
+        "args": "0x9C4Fe5FFD9A9fC5678cFBd93Aa2D4FD684b67C4C",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000c7da8a89915356dea0"
+    },
+    {
+        "id": "1769",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000051f34ddfb74e48"
+    },
+    {
+        "id": "990",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000051f34ddfb74e48"
+    },
+    {
+        "id": "43929",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 23066988904926792 [2.306e16], 4295128740 [4.295e9], 0x31",
+        "original_code": null,
+        "description": null,
+        "return_value": "23066988904926792 [2.306e16], -61735512 [-6.173e7]"
+    },
+    {
+        "id": "5452",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 61735512 [6.173e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "4663",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 61735512 [6.173e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1769",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000248cf2d7f750cec6b"
+    },
+    {
+        "id": "990",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000248cf2d7f750cec6b"
+    },
+    {
+        "id": "11656",
+        "args": "23066988904926792 [2.306e16], -61735512 [-6.173e7], 0x31",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "266",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x45804880De22913dAFE09f4980848ECE6EcbAf78"
+    },
+    {
+        "id": "8152",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4, 23066988904926792 [2.306e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "7370",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4, 23066988904926792 [2.306e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1769",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000002492120cd54c43ab3"
+    },
+    {
+        "id": "990",
+        "args": "0xB431c70f800100D87554ac1142c4A94C5Fe4C0C4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000002492120cd54c43ab3"
+    },
+    {
+        "id": "1870",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000045553444300000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "1081",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000045553444300000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "1339",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000003577dcbee6"
+    },
+    {
+        "id": "553",
+        "args": "MorphoBlue: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000003577dcbee6"
+    },
+    {
+        "id": "1164",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000006"
+    },
+    {
+        "id": "381",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000006"
+    }
+]

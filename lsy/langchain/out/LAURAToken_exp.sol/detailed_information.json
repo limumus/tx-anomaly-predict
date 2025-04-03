@@ -1,0 +1,611 @@
+[
+    {
+        "id": "1858262",
+        "args": "",
+        "original_code": "    function testPoC() public {\n        vm.startPrank(attacker);\n        AttackerC0 attC0 = new AttackerC0();\n\n        console.log(\"Final balance in ETH :\", address(attC0).balance);\n    }\n",
+        "description": "1. **Core functions**:  \n   The `testPoC` function is designed to simulate a scenario where an attacker interacts with a smart contract. It starts by impersonating the attacker using a testing utility (`vm.startPrank`), then deploys a new contract (`AttackerC0`). Finally, it logs the balance of the deployed contract in Ether (ETH) to the console. This function is likely used for testing or demonstrating a proof of concept (PoC) related to an attack scenario.\n\n2. **Security mechanism**:  \n   The function uses `vm.startPrank(attacker)` to simulate the attacker's actions, which is a common testing tool in frameworks like Foundry. This allows the function to act as if it is being called by the attacker without requiring actual malicious activity. However, there are no explicit security measures within the function itself, as it appears to be focused on testing rather than implementing defenses.\n\n3. **Parameter Function**:  \n   The function does not take any parameters. It operates entirely within its defined scope, using predefined variables like `attacker` and the `AttackerC0` contract.\n\n4. **Return description**:  \n   The function does not return any value. Instead, it logs the balance of the deployed `AttackerC0` contract in Ether to the console. The balance is calculated by checking the ETH held in the contract's address (`address(attC0).balance`).\n\nIn summary, the `testPoC` function simulates an attacker deploying a contract and logs its ETH balance, primarily for testing or demonstration purposes. It uses a testing utility to impersonate the attacker but does not include explicit security measures or return any values.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "attacker: [0x9dF0C6b0066D5317aA5b38B36850548DaCCa6B4e]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1815195",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1343895",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6574 bytes of code"
+    },
+    {
+        "id": "24420",
+        "args": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint value) external returns (bool) {\n        _approve(msg.sender, spender, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `approve` function allows the caller (the owner of tokens) to authorize another address (called the `spender`) to spend a specific amount of tokens on their behalf. This is a common feature in token contracts to enable delegated spending.\n\n2. **Security mechanism**:  \n   - The function uses the `external` modifier, meaning it can only be called from outside the contract, ensuring internal logic is not bypassed.  \n   - It relies on the `_approve` internal function, which handles the actual approval logic, ensuring consistency and reducing the risk of errors.  \n   - The function does not directly modify state but delegates to `_approve`, which likely includes checks to prevent overflows or invalid inputs.  \n\n3. **Parameter Function**:  \n   - `spender`: The address of the account that is being authorized to spend tokens.  \n   - `value`: The maximum amount of tokens the spender is allowed to spend on behalf of the caller.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval was successful. This is a standard practice in ERC-20 token contracts to confirm the operation completed as expected.  \n\n**In summary**, the `approve` function enables token owners to delegate spending rights to another address, ensuring secure and controlled token transfers. It uses a simple and standardized approach to handle approvals, returning `true` to confirm success.",
+        "return_value": "true"
+    },
+    {
+        "id": "423318",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2381",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "0x05641E33Fd15BAf819729dF55500b07b82Eb8E89"
+    },
+    {
+        "id": "27315",
+        "args": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24637",
+        "args": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "364238",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [30000000000000000000000 [3e22]], 0x000000000000000000000000b292678438245ec863f9fea64affcea887144240",
+        "original_code": "    function flashLoan(\n        IFlashLoanRecipient recipient,\n        IERC20[] memory tokens,\n        uint256[] memory amounts,\n        bytes memory userData\n    ) external override nonReentrant whenNotPaused {\n        InputHelpers.ensureInputLengthMatch(tokens.length, amounts.length);\n\n        uint256[] memory feeAmounts = new uint256[](tokens.length);\n        uint256[] memory preLoanBalances = new uint256[](tokens.length);\n\n        // Used to ensure `tokens` is sorted in ascending order, which ensures token uniqueness.\n        IERC20 previousToken = IERC20(0);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 amount = amounts[i];\n\n            _require(token > previousToken, token == IERC20(0) ? Errors.ZERO_TOKEN : Errors.UNSORTED_TOKENS);\n            previousToken = token;\n\n            preLoanBalances[i] = token.balanceOf(address(this));\n            feeAmounts[i] = _calculateFlashLoanFeeAmount(amount);\n\n            _require(preLoanBalances[i] >= amount, Errors.INSUFFICIENT_FLASH_LOAN_BALANCE);\n            token.safeTransfer(address(recipient), amount);\n        }\n\n        recipient.receiveFlashLoan(tokens, amounts, feeAmounts, userData);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 preLoanBalance = preLoanBalances[i];\n\n            // Checking for loan repayment first (without accounting for fees) makes for simpler debugging, and results\n            // in more accurate revert reasons if the flash loan protocol fee percentage is zero.\n            uint256 postLoanBalance = token.balanceOf(address(this));\n            _require(postLoanBalance >= preLoanBalance, Errors.INVALID_POST_LOAN_BALANCE);\n\n            // No need for checked arithmetic since we know the loan was fully repaid.\n            uint256 receivedFeeAmount = postLoanBalance - preLoanBalance;\n            _require(receivedFeeAmount >= feeAmounts[i], Errors.INSUFFICIENT_FLASH_LOAN_FEE_AMOUNT);\n\n            _payFeeAmount(token, receivedFeeAmount);\n            emit FlashLoan(recipient, token, amounts[i], receivedFeeAmount);\n        }\n    }\n}\n",
+        "description": "1. **Core functions**:  \nThe `flashLoan` function allows users to borrow multiple tokens temporarily (a \"flash loan\") and return them within the same transaction. It ensures the borrowed tokens are sent to the recipient, who must repay the loan plus a fee before the transaction ends. The function also checks that the tokens are unique and sorted, verifies the contract has enough tokens to lend, and ensures the loan is repaid correctly.\n\n2. **Security mechanism**:  \n- **`nonReentrant`**: Prevents reentrancy attacks, where a malicious contract could call this function repeatedly before the first call completes.  \n- **`whenNotPaused`**: Ensures the function can only be executed when the contract is not paused, adding a layer of control during emergencies.  \n- **Input validation**: Checks that the lengths of `tokens` and `amounts` arrays match and ensures tokens are sorted and unique.  \n- **Balance checks**: Verifies the contract has enough tokens to lend and that the loan is fully repaid with the correct fee.  \n\n3. **Parameter Function**:  \n- **`recipient`**: The address of the contract or account that will receive the borrowed tokens and must repay the loan.  \n- **`tokens`**: An array of token addresses representing the tokens to be borrowed.  \n- **`amounts`**: An array of amounts corresponding to the tokens to be borrowed.  \n- **`userData`**: Additional data that can be passed to the recipient for custom logic during the loan process.  \n\n4. **Return description**:  \nThe function does not return a value directly but performs several actions:  \n- It calculates the fee for each token based on the borrowed amount.  \n- It transfers the borrowed tokens to the recipient.  \n- It ensures the recipient repays the loan plus the fee by checking the contract's token balance before and after the loan.  \n- If the repayment is successful, it emits an event (`FlashLoan`) with details about the loan, including the recipient, token, amount, and fee.  \n\nIn summary, the `flashLoan` function facilitates temporary token borrowing, enforces security measures to prevent misuse, and ensures the loan is repaid with the correct fee.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+        "original_code": "",
+        "description": "",
+        "return_value": "32977545748157180924438 [3.297e22]"
+    },
+    {
+        "id": "2350",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "27962",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 30000000000000000000000 [3e22]",
+        "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   - The `transfer` function allows the sender to move a specified amount of tokens to another address. It directly calls an internal `_transfer` function to handle the actual transfer.  \n   - The `transferFrom` function enables a third party (like a smart contract) to move tokens on behalf of the token owner, provided they have been granted permission (allowance). It checks and updates the allowance before performing the transfer using the `_transfer` function.  \n\n2. **Security mechanism:**  \n   - Both functions use the `external` modifier, meaning they can only be called from outside the contract, ensuring internal logic is not bypassed.  \n   - The `transferFrom` function includes a check to ensure the caller has sufficient allowance to transfer the tokens. If the allowance is not unlimited (represented by `uint(-1)`), it deducts the transferred amount from the allowance to prevent overuse.  \n   - The `sub` function (likely from a safe math library) is used to prevent underflow, ensuring the allowance does not go below zero.  \n\n3. **Parameter Function:**  \n   - For `transfer`:  \n     - `to`: The address receiving the tokens.  \n     - `value`: The amount of tokens to be transferred.  \n   - For `transferFrom`:  \n     - `from`: The address from which tokens are being transferred (the token owner).  \n     - `to`: The address receiving the tokens.  \n     - `value`: The amount of tokens to be transferred.  \n\n4. **Return description:**  \n   - Both functions return a boolean value (`true`) to indicate the transfer was successful. This is a standard practice in ERC-20 token contracts to confirm the operation completed without errors.  \n\n**In summary,**  \nThe `transfer` function allows direct token transfers between addresses, while `transferFrom` enables delegated transfers with allowance checks. Both functions ensure security through modifiers, allowance management, and safe math operations, returning `true` to confirm successful execution.",
+        "return_value": "true"
+    },
+    {
+        "id": "312853",
+        "args": "[0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], [30000000000000000000000 [3e22]], [0], 0x000000000000000000000000b292678438245ec863f9fea64affcea887144240",
+        "original_code": "    function receiveFlashLoan(\n        IERC20[] memory tokens,\n        uint256[] memory amounts,\n        uint256[] memory feeAmounts,\n        bytes memory userData\n    ) external;\n}\n",
+        "description": "1. **Core functions**:  \n   The `receiveFlashLoan` function is designed to handle the receipt of a flash loan. A flash loan is a type of loan where borrowed funds must be returned within the same transaction. This function is called when the flash loan is received, allowing the contract to process the borrowed tokens, perform actions with them, and ensure they are repaid along with any fees.\n\n2. **Security mechanism**:  \n   - The function is marked as `external`, meaning it can only be called from outside the contract, ensuring it is not misused internally.  \n   - The function does not include explicit access control (e.g., `onlyOwner`), which means it relies on the caller to be a trusted flash loan provider. This is a potential security consideration, as unauthorized calls could lead to misuse.  \n   - The function does not directly handle funds but processes the loan details, leaving the actual repayment logic to be implemented elsewhere in the contract.  \n\n3. **Parameter Function**:  \n   - `tokens`: An array of token addresses representing the borrowed assets.  \n   - `amounts`: An array of values indicating the quantity of each token borrowed.  \n   - `feeAmounts`: An array of values representing the fees associated with each token loan.  \n   - `userData`: Additional data passed by the caller, which can be used for custom logic or instructions.  \n\n4. **Return description**:  \n   The function does not return any value. Its purpose is to process the flash loan details and execute the necessary logic (e.g., using the borrowed tokens and preparing for repayment).  \n\n**In summary**, the `receiveFlashLoan` function is a critical part of handling flash loans, allowing the contract to receive borrowed tokens, process them, and prepare for repayment. It relies on external callers to provide the necessary loan details and fees, but its security depends on proper implementation and trust in the caller.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "381",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x05641E33Fd15BAf819729dF55500b07b82Eb8E89"
+    },
+    {
+        "id": "534",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "30000000000000000000000 [3e22]"
+    },
+    {
+        "id": "2534",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "16466070319256275422 [1.646e19]"
+    },
+    {
+        "id": "85322",
+        "args": "11526249223479392795400 [1.152e22], 0, [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 0x05641E33Fd15BAf819729dF55500b07b82Eb8E89], AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function swapExactTokensForTokensSupportingFeeOnTransferTokens(\n        uint amountIn,\n        uint amountOutMin,\n        address[] calldata path,\n        address to,\n        uint deadline\n    ) external virtual override ensure(deadline) {\n        TransferHelper.safeTransferFrom(\n            path[0], msg.sender, UniswapV2Library.pairFor(factory, path[0], path[1]), amountIn\n        );\n        uint balanceBefore = IERC20(path[path.length - 1]).balanceOf(to);\n        _swapSupportingFeeOnTransferTokens(path, to);\n        require(\n            IERC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,\n            'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT'\n        );\n    }\n",
+        "description": "1. **Core functions**:  \n   This function allows users to swap one type of token for another on a decentralized exchange (DEX) while supporting tokens that charge fees on transfers. It ensures that the user receives at least a specified minimum amount of the output token after the swap. The function handles the transfer of tokens, performs the swap, and checks that the received amount meets the user's expectations.\n\n2. **Security mechanism**:  \n   - **`ensure(deadline)`**: This modifier ensures that the transaction is executed before a specified deadline, preventing outdated or stale transactions.  \n   - **`safeTransferFrom`**: A helper function that safely transfers tokens, reducing the risk of errors or vulnerabilities.  \n   - **`require` statement**: Checks that the user receives at least the minimum expected amount of tokens, protecting against unfavorable swaps.  \n\n3. **Parameter Function**:  \n   - **`amountIn`**: The amount of input tokens the user wants to swap.  \n   - **`amountOutMin`**: The minimum amount of output tokens the user expects to receive.  \n   - **`path`**: An array of token addresses representing the swap route (e.g., Token A \u2192 Token B \u2192 Token C).  \n   - **`to`**: The address that will receive the output tokens.  \n   - **`deadline`**: The latest time (in Unix timestamp) by which the transaction must be executed.  \n\n4. **Return description**:  \n   The function does not return a value directly. Instead, it ensures that the user receives at least the `amountOutMin` of the output token. It calculates the difference in the recipient's token balance before and after the swap to verify this condition. If the received amount is insufficient, the transaction reverts with an error message.  \n\n**In summary**, this function facilitates token swaps on a DEX while supporting fee-charging tokens, ensuring users receive a minimum expected amount, and includes safeguards like deadlines and balance checks to protect users.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "6225",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0xb292678438245Ec863F9FEa64AFfcEA887144240, 11526249223479392795400 [1.152e22]",
+        "original_code": "    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThis function is designed to transfer a specified amount of tokens from one address (`from`) to another address (`to`). It is typically used when a third party (the caller) is authorized to move tokens on behalf of the token owner. The function ensures that the transfer is valid and updates the allowance if necessary.\n\n2. Security mechanism:  \nThe function includes a check to ensure that the caller (`msg.sender`) has sufficient allowance to transfer the tokens. If the allowance is not set to the maximum value (`uint(-1)`), it reduces the allowance by the transferred amount. This prevents unauthorized transfers and ensures that the caller does not exceed their approved limit.\n\n3. Parameter Function:  \n- `from`: The address from which tokens are being transferred.  \n- `to`: The address receiving the tokens.  \n- `value`: The amount of tokens to be transferred.  \n\n4. Return description:  \nThe function returns `true` to indicate that the transfer was successful. This is a standard return value for such operations, signaling that the process completed without errors.  \n\nIn summary, this function securely transfers tokens between addresses while managing allowances to prevent unauthorized or excessive transfers.",
+        "return_value": "true"
+    },
+    {
+        "id": "2751",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2579",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6099572126618875527765833 [6.099e24], 16466070319256275422 [1.646e19], 1735736063 [1.735e9]"
+    },
+    {
+        "id": "534",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "11542715293798649070822 [1.154e22]"
+    },
+    {
+        "id": "65365",
+        "args": "6090844737683950823905816 [6.09e24], 0, AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "34757",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 6090844737683950823905816 [6.09e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "34579",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 6090844737683950823905816 [6.09e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "751",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "8727388934924703860017 [8.727e21]"
+    },
+    {
+        "id": "579",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "8727388934924703860017 [8.727e21]"
+    },
+    {
+        "id": "534",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "11542715293798649070822 [1.154e22]"
+    },
+    {
+        "id": "751",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6090844737683950823905816 [6.09e24]"
+    },
+    {
+        "id": "579",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6090844737683950823905816 [6.09e24]"
+    },
+    {
+        "id": "751",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6090844737683950823905816 [6.09e24]"
+    },
+    {
+        "id": "579",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6090844737683950823905816 [6.09e24]"
+    },
+    {
+        "id": "73181",
+        "args": "0x05641E33Fd15BAf819729dF55500b07b82Eb8E89, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 6090844737683950823905816 [6.09e24], 11526249223479392795400 [1.152e22], 0, 0, AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function addLiquidity(\n        address tokenA,\n        address tokenB,\n        uint amountADesired,\n        uint amountBDesired,\n        uint amountAMin,\n        uint amountBMin,\n        address to,\n        uint deadline\n    ) external virtual override ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {\n        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);\n        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);\n        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);\n        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);\n        liquidity = IUniswapV2Pair(pair).mint(to);\n    }\n    function addLiquidityETH(\n        address token,\n        uint amountTokenDesired,\n        uint amountTokenMin,\n        uint amountETHMin,\n        address to,\n        uint deadline\n    ) external virtual override payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {\n        (amountToken, amountETH) = _addLiquidity(\n            token,\n            WETH,\n            amountTokenDesired,\n            msg.value,\n            amountTokenMin,\n            amountETHMin\n        );\n        address pair = UniswapV2Library.pairFor(factory, token, WETH);\n        TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);\n        IWETH(WETH).deposit{value: amountETH}();\n        assert(IWETH(WETH).transfer(pair, amountETH));\n        liquidity = IUniswapV2Pair(pair).mint(to);\n        // refund dust eth, if any\n        if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);\n    }\n\n    // **** REMOVE LIQUIDITY ****\n",
+        "description": "1. Core functions:\nThe `addLiquidity` function allows users to add liquidity to a trading pair by depositing two tokens into a decentralized exchange (DEX) pool. It calculates the optimal amounts of each token to add, transfers them to the pool, and issues liquidity tokens to the user. The `addLiquidityETH` function is similar but specifically handles cases where one of the tokens is Ethereum (ETH). It converts ETH into a wrapped version (WETH) and adds it to the pool along with another token. Both functions ensure that the liquidity is added before a specified deadline.\n\n2. Security mechanism:\nThe functions use the `ensure(deadline)` modifier to ensure that the transaction is executed before the specified deadline, preventing outdated transactions. They also use `TransferHelper.safeTransferFrom` and `TransferHelper.safeTransferETH` to securely transfer tokens and ETH, reducing the risk of errors or attacks. Additionally, `addLiquidityETH` includes a refund mechanism to return any excess ETH to the user, ensuring no funds are lost.\n\n3. Parameter Function:\n- `tokenA`, `tokenB`, `token`: These are the addresses of the tokens being added to the liquidity pool.\n- `amountADesired`, `amountBDesired`, `amountTokenDesired`: The desired amounts of each token the user wants to add.\n- `amountAMin`, `amountBMin`, `amountTokenMin`, `amountETHMin`: The minimum amounts of each token the user is willing to add, ensuring they don\u2019t get a bad deal.\n- `to`: The address that will receive the liquidity tokens.\n- `deadline`: The latest time by which the transaction must be executed.\n- `msg.value`: The amount of ETH sent by the user in `addLiquidityETH`.\n\n4. Return description:\nThe functions return three values: `amountA` and `amountB` (or `amountToken` and `amountETH`), which are the actual amounts of tokens added to the pool, and `liquidity`, which represents the amount of liquidity tokens issued to the user. These values are calculated based on the optimal amounts determined by the `_addLiquidity` function and the actual transfer of tokens to the pool.\n\nIn summary, these functions enable users to add liquidity to a DEX pool, ensuring secure and efficient token transfers while providing flexibility in the amounts added and protecting against outdated transactions.",
+        "return_value": "8714939022036080887320 [8.714e21], 11526249223479392795400 [1.152e22], 9985734664764621968615 [9.985e21]"
+    },
+    {
+        "id": "2564",
+        "args": "0x05641E33Fd15BAf819729dF55500b07b82Eb8E89, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xb292678438245Ec863F9FEa64AFfcEA887144240"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "8727388934924703860017 [8.727e21], 11542715293798649070822 [1.154e22], 1735737743 [1.735e9]"
+    },
+    {
+        "id": "11053",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0xb292678438245Ec863F9FEa64AFfcEA887144240, 8714939022036080887320 [8.714e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "10869",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0xb292678438245Ec863F9FEa64AFfcEA887144240, 8714939022036080887320 [8.714e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3425",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0xb292678438245Ec863F9FEa64AFfcEA887144240, 11526249223479392795400 [1.152e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "46784",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9985734664764621968615 [9.985e21]"
+    },
+    {
+        "id": "751",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "17442327956960784747337 [1.744e22]"
+    },
+    {
+        "id": "579",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "17442327956960784747337 [1.744e22]"
+    },
+    {
+        "id": "534",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "23068964517278041866222 [2.306e22]"
+    },
+    {
+        "id": "2314",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000"
+    },
+    {
+        "id": "14325",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "14162",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "17442327956960784747337 [1.744e22], 23068964517278041866222 [2.306e22], 1735737743 [1.735e9]"
+    },
+    {
+        "id": "357",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    },
+    {
+        "id": "7803",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "751",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "4334828289544710831315 [4.334e21]"
+    },
+    {
+        "id": "579",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "4334828289544710831315 [4.334e21]"
+    },
+    {
+        "id": "534",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "23068964517278041866222 [2.306e22]"
+    },
+    {
+        "id": "24442",
+        "args": "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "480",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9985734664764621968615 [9.985e21]"
+    },
+    {
+        "id": "53516",
+        "args": "0x05641E33Fd15BAf819729dF55500b07b82Eb8E89, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 9985734664764621968615 [9.985e21], 0, 0, AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function removeLiquidity(\n        address tokenA,\n        address tokenB,\n        uint liquidity,\n        uint amountAMin,\n        uint amountBMin,\n        address to,\n        uint deadline\n    ) public virtual override ensure(deadline) returns (uint amountA, uint amountB) {\n        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);\n        IUniswapV2Pair(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair\n        (uint amount0, uint amount1) = IUniswapV2Pair(pair).burn(to);\n        (address token0,) = UniswapV2Library.sortTokens(tokenA, tokenB);\n        (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);\n        require(amountA >= amountAMin, 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');\n        require(amountB >= amountBMin, 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');\n    }\n    function removeLiquidityETH(\n        address token,\n        uint liquidity,\n        uint amountTokenMin,\n        uint amountETHMin,\n        address to,\n        uint deadline\n    ) public virtual override ensure(deadline) returns (uint amountToken, uint amountETH) {\n        (amountToken, amountETH) = removeLiquidity(\n            token,\n            WETH,\n            liquidity,\n            amountTokenMin,\n            amountETHMin,\n            address(this),\n            deadline\n        );\n        TransferHelper.safeTransfer(token, to, amountToken);\n        IWETH(WETH).withdraw(amountETH);\n        TransferHelper.safeTransferETH(to, amountETH);\n    }\n    function removeLiquidityWithPermit(\n        address tokenA,\n        address tokenB,\n        uint liquidity,\n        uint amountAMin,\n        uint amountBMin,\n        address to,\n        uint deadline,\n        bool approveMax, uint8 v, bytes32 r, bytes32 s\n    ) external virtual override returns (uint amountA, uint amountB) {\n        address pair = UniswapV2Library.pairFor(factory, tokenA, tokenB);\n        uint value = approveMax ? uint(-1) : liquidity;\n        IUniswapV2Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);\n        (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);\n    }\n    function removeLiquidityETHWithPermit(\n        address token,\n        uint liquidity,\n        uint amountTokenMin,\n        uint amountETHMin,\n        address to,\n        uint deadline,\n        bool approveMax, uint8 v, bytes32 r, bytes32 s\n    ) external virtual override returns (uint amountToken, uint amountETH) {\n        address pair = UniswapV2Library.pairFor(factory, token, WETH);\n        uint value = approveMax ? uint(-1) : liquidity;\n        IUniswapV2Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);\n        (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);\n    }\n\n    // **** REMOVE LIQUIDITY (supporting fee-on-transfer tokens) ****\n    function removeLiquidityETHSupportingFeeOnTransferTokens(\n        address token,\n        uint liquidity,\n        uint amountTokenMin,\n        uint amountETHMin,\n        address to,\n        uint deadline\n    ) public virtual override ensure(deadline) returns (uint amountETH) {\n        (, amountETH) = removeLiquidity(\n            token,\n            WETH,\n            liquidity,\n            amountTokenMin,\n            amountETHMin,\n            address(this),\n            deadline\n        );\n        TransferHelper.safeTransfer(token, to, IERC20(token).balanceOf(address(this)));\n        IWETH(WETH).withdraw(amountETH);\n        TransferHelper.safeTransferETH(to, amountETH);\n    }\n    function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(\n        address token,\n        uint liquidity,\n        uint amountTokenMin,\n        uint amountETHMin,\n        address to,\n        uint deadline,\n        bool approveMax, uint8 v, bytes32 r, bytes32 s\n    ) external virtual override returns (uint amountETH) {\n        address pair = UniswapV2Library.pairFor(factory, token, WETH);\n        uint value = approveMax ? uint(-1) : liquidity;\n        IUniswapV2Pair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);\n        amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(\n            token, liquidity, amountTokenMin, amountETHMin, to, deadline\n        );\n    }\n\n    // **** SWAP ****\n    // requires the initial amount to have already been sent to the first pair\n",
+        "description": "1. **Core functions:**\n   - **removeLiquidity**: This function allows a user to withdraw their provided liquidity from a trading pair (tokenA and tokenB) and receive back the two tokens in proportion to their share of the pool. It ensures the user gets at least the minimum specified amounts of each token.\n   - **removeLiquidityETH**: Similar to `removeLiquidity`, but specifically handles cases where one of the tokens is ETH (Wrapped ETH, or WETH). It converts WETH back to ETH and sends both tokens to the user.\n   - **removeLiquidityWithPermit**: This function allows users to remove liquidity without needing a separate approval transaction. It uses a signed message (permit) to authorize the transfer of liquidity tokens.\n   - **removeLiquidityETHWithPermit**: Combines the functionality of `removeLiquidityETH` and `removeLiquidityWithPermit`, allowing users to remove liquidity involving ETH with a signed permit.\n   - **removeLiquidityETHSupportingFeeOnTransferTokens**: Handles liquidity removal for tokens that charge fees on transfers. It ensures the correct amount of tokens is sent to the user after accounting for fees.\n   - **removeLiquidityETHWithPermitSupportingFeeOnTransferTokens**: Combines the permit functionality with support for fee-on-transfer tokens, allowing users to remove liquidity involving ETH with a signed permit while handling transfer fees.\n\n2. **Security mechanism:**\n   - **ensure(deadline)**: Ensures the transaction is executed before a specified deadline, preventing stale or delayed transactions.\n   - **require statements**: These checks ensure the user receives at least the minimum specified amounts of tokens, protecting against unfavorable trades.\n   - **permit mechanism**: Allows users to authorize transactions with a signed message, reducing the need for separate approval transactions and improving user experience.\n   - **safeTransfer and safeTransferETH**: These functions ensure tokens and ETH are transferred safely, preventing errors or losses during the transfer process.\n\n3. **Parameter Function:**\n   - **tokenA, tokenB**: The addresses of the two tokens in the liquidity pool.\n   - **liquidity**: The amount of liquidity tokens the user wants to remove.\n   - **amountAMin, amountBMin**: The minimum amounts of tokenA and tokenB the user expects to receive.\n   - **to**: The address where the withdrawn tokens will be sent.\n   - **deadline**: The latest time by which the transaction must be executed.\n   - **approveMax**: A boolean indicating whether to approve the maximum possible amount of liquidity tokens.\n   - **v, r, s**: Components of the signed permit message used for authorization.\n\n4. **Return description:**\n   - **amountA, amountB**: The actual amounts of tokenA and tokenB received after removing liquidity. These values are calculated based on the user\u2019s share of the liquidity pool and must meet the minimum specified amounts.\n   - **amountToken, amountETH**: The amounts of the token and ETH received when removing liquidity involving ETH.\n   - **amountETH**: The amount of ETH received when removing liquidity with support for fee-on-transfer tokens.\n\nIn summary, these functions allow users to withdraw liquidity from trading pairs, ensuring they receive the expected amounts of tokens while incorporating security measures like deadline checks, minimum amount requirements, and permit-based authorization. They also handle special cases like ETH and fee-on-transfer tokens, providing flexibility and safety in liquidity management.",
+        "return_value": "2165867096846036817930 [2.165e21], 11526249223479392795399 [1.152e22]"
+    },
+    {
+        "id": "25270",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0xb292678438245Ec863F9FEa64AFfcEA887144240, 9985734664764621968615 [9.985e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "25889",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2165867096846036817930 [2.165e21], 11526249223479392795399 [1.152e22]"
+    },
+    {
+        "id": "751",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "4334828289544710831315 [4.334e21]"
+    },
+    {
+        "id": "579",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "4334828289544710831315 [4.334e21]"
+    },
+    {
+        "id": "534",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "23068964517278041866222 [2.306e22]"
+    },
+    {
+        "id": "314",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000"
+    },
+    {
+        "id": "4057",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 2165867096846036817930 [2.165e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3879",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 2165867096846036817930 [2.165e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3262",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 11526249223479392795399 [1.152e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "751",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "2168961192698674013385 [2.168e21]"
+    },
+    {
+        "id": "579",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "2168961192698674013385 [2.168e21]"
+    },
+    {
+        "id": "534",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "11542715293798649070823 [1.154e22]"
+    },
+    {
+        "id": "751",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6084295665758760779836426 [6.084e24]"
+    },
+    {
+        "id": "579",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "6084295665758760779836426 [6.084e24]"
+    },
+    {
+        "id": "33172",
+        "args": "6084295665758760779836426 [6.084e24], 0, [0x05641E33Fd15BAf819729dF55500b07b82Eb8E89, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "7053",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0xb292678438245Ec863F9FEa64AFfcEA887144240, 6084295665758760779836426 [6.084e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6869",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0xb292678438245Ec863F9FEa64AFfcEA887144240, 6084295665758760779836426 [6.084e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "18473750776520607204599 [1.847e22]"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "2168961192698674013385 [2.168e21], 11542715293798649070823 [1.154e22], 1735737743 [1.735e9]"
+    },
+    {
+        "id": "751",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "6086464626951459453849811 [6.086e24]"
+    },
+    {
+        "id": "579",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "6086464626951459453849811 [6.086e24]"
+    },
+    {
+        "id": "16654",
+        "args": "0, 11538589580556677100607 [1.153e22], AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3262",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2], 11538589580556677100607 [1.153e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "751",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "6086464626951459453849811 [6.086e24]"
+    },
+    {
+        "id": "579",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "6086464626951459453849811 [6.086e24]"
+    },
+    {
+        "id": "534",
+        "args": "0xb292678438245Ec863F9FEa64AFfcEA887144240",
+        "original_code": null,
+        "description": null,
+        "return_value": "4125713241971970216 [4.125e18]"
+    },
+    {
+        "id": "534",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "30012340357077284305206 [3.001e22]"
+    },
+    {
+        "id": "3262",
+        "args": "0xBA12222222228d8Ba445958a75a0704d566BF2C8, 30000000000000000000000 [3e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "32977545748157180924438 [3.297e22]"
+    },
+    {
+        "id": "534",
+        "args": "AttackerC1: [0x9F96E1Bd8579e11Dc6D012945b65C954738b00a2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "12340357077284305206 [1.234e19]"
+    },
+    {
+        "id": "9195",
+        "args": "12340357077284305206 [1.234e19]",
+        "original_code": "    function withdraw(uint wad) public {\n        require(balanceOf[msg.sender] >= wad);\n        balanceOf[msg.sender] -= wad;\n        msg.sender.transfer(wad);\n        Withdrawal(msg.sender, wad);\n    }\n\n",
+        "description": "1. **Core function:**  \n   This function allows a user to withdraw a specific amount of tokens (referred to as `wad`) from their account. It checks if the user has enough tokens in their balance, deducts the requested amount, and then transfers the tokens to the user's address. Additionally, it logs the withdrawal event for record-keeping.\n\n2. **Security mechanism:**  \n   - `require(balanceOf[msg.sender] >= wad)`: Ensures the user has sufficient tokens to withdraw. If not, the transaction is stopped.  \n   - `balanceOf[msg.sender] -= wad`: Safely reduces the user's balance after confirming they have enough tokens.  \n   - `msg.sender.transfer(wad)`: Sends the tokens to the user's address securely.  \n\n3. **Parameter Function:**  \n   - `uint wad`: Represents the amount of tokens the user wants to withdraw. It must be a positive number and cannot exceed the user's balance.  \n\n4. **Return description:**  \n   This function does not return a value. Instead, it performs actions: it updates the user's balance, transfers the tokens, and logs a withdrawal event.  \n\n**In summary,**  \nThis function securely handles token withdrawals by ensuring users have enough tokens, updating their balance, and transferring the requested amount. It also logs the transaction for transparency.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "\"Final balance in ETH :\", 12340357077284305206 [1.234e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

