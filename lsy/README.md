@@ -14,3 +14,13 @@ tx_link：transaction hash、tx links、交易的address
 other：杂项，里面就是整理的link_reference
 
 invocation_flow：事后真实调用流
+
+
+
+
+
+前端部分：
+
+JINA2_1中包含对JINA2的改动部分
+
+完整内容由于其中较多是环境，包所以并未打包上传（next）
