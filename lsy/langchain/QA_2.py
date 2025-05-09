@@ -359,12 +359,36 @@ class ResultSaver:
 
 
 # ============== 主执行流程 ==============
-def load_system_input(file_path):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return json.dumps(json.load(f), ensure_ascii=False)
-    except Exception as e:
-        return f"错误: 无法读取 JSON 文件: {e}"
+def load_system_input(file_name_without_ext):
+    """
+    在指定根目录及其所有子目录中查找名为 file_name_without_ext.txt.json 的文件，并返回其 JSON 字符串内容。
+    参数:
+        file_name_without_ext: 不带扩展名的文件名（如 'system_input_path'）
+    返回:
+        JSON 字符串（非 ASCII 转义），或错误信息
+    """
+    base_dir = r"E:\code\tx-anomaly-predict\lsy\invocation_flow\output"
+    target_file = f"{file_name_without_ext}.txt.json"
+
+    for root, dirs, files in os.walk(base_dir):
+        if target_file in files:
+            full_path = os.path.join(root, target_file)
+            try:
+                with open(full_path, 'r', encoding='utf-8') as f:
+                    return json.dumps(json.load(f), ensure_ascii=False)
+            except Exception as e:
+                return f"错误: 无法读取 JSON 文件: {e}"
+
+    return f"错误: 未找到文件 {target_file}（已在所有子目录中查找）"
+
+
+def format_to_html(text):
+    # 先将 \n\n 转换为 <p> 标签表示段落
+    paragraphs = text.split("\n\n")
+    html_paragraphs = [f"<p>{p.replace('\n', '<br>')}</p>" for p in paragraphs]
+    return "\n".join(html_paragraphs)
+
+
 
 def run(system_input_path):
     embedding = JinaEmbedding()
@@ -378,8 +402,9 @@ def run(system_input_path):
         csv_file_path=CONFIG["CSV_PATH"]
     )
 
-    query = "Please analyze the current input in the context of the preceding and following text to determine whether it pertains to attack contracts?and please answer in chinese."
+    query = "Please analyze the current input in the context of the preceding and following text to determine whether it pertains to attack contracts?You are the one who makes the decision and gives a clear yes or no answer.Please answer in chinese."
     reference_text = load_system_input(system_input_path)
+    print(reference_text)
 
     result = conversational_chain.invoke({
         "input": query,
