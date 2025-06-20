@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>区块链攻击分析 | 深色简约风</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.0.2/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true });
+    </script>
+    <style>
+        :root {
+            --primary: #4a6cf7;
+            --primary-dark: #3a56e0;
+            --secondary: #9c7cf6;
+            --dark: #1e1e1e;
+            --darker: #151515;
+            --light: #f0f0f0;
+            --gray: #888;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --card-bg: rgba(30, 30, 30, 0.8);
+            --border: rgba(100, 100, 100, 0.3);
+            --code-bg: #1a1a1a;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background: radial-gradient(circle at top left, #000000, #000000, #000000);
+            color: var(--light);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+            line-height: 1.6;
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+            position: relative;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            color: var(--gray);
+            font-size: 1.15rem;
+            margin: 0 auto;
+            font-weight: 300;
+            line-height: 1.8;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0.7;
+        }
+        
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            border-color: rgba(100, 100, 255, 0.2);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .step-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 12px;
+            margin-right: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            box-shadow: 0 6px 15px rgba(74, 108, 247, 0.4);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+        }
+        
+        .card-content {
+            margin-top: 1.5rem;
+        }
+        
+        .code-container {
+            position: relative;
+            margin: 1.5rem 0;
+            border-radius: 10px;
+            overflow: hidden;
+            max-height: 320px;
+            overflow-y: auto;
+            border: 1px solid rgba(80, 80, 80, 0.5);
+            background: var(--code-bg);
+        }
+        
+        .code-header {
+            background: #222;
+            padding: 0.8rem 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .code-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .code-btn {
+            background: rgba(100, 100, 100, 0.3);
+            border: none;
+            color: #aaa;
+            padding: 0.4rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .code-btn:hover {
+            background: rgba(100, 100, 255, 0.25);
+            color: #ddd;
+        }
+        
+        .code-block {
+            padding: 1.5rem;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+        
+        .code-key {
+            color: #60a5fa;
+        }
+        
+        .code-value {
+            color: #fbbf24;
+        }
+        
+        .code-string {
+            color: #34d399;
+        }
+        
+        .code-comment {
+            color: #777;
+            font-style: italic;
+        }
+        
+        .intent-box {
+            background: rgba(30, 64, 175, 0.15);
+            border-left: 3px solid var(--primary);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin-top: 1.8rem;
+            backdrop-filter: blur(4px);
+        }
+        
+        .intent-title {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: #93c5fd;
+            gap: 12px;
+            font-size: 1.1rem;
+        }
+        
+        .intent-box p {
+            line-height: 1.8;
+        }
+        
+        .summary-section {
+            margin-top: 4rem;
+            padding-top: 2.5rem;
+            border-top: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .section-title {
+            font-size: 2.2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--primary);
+        }
+        
+        .section-title i {
+            background: rgba(74, 108, 247, 0.15);
+            width: 55px;
+            height: 55px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+        }
+        
+        .mermaid-container {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 2rem;
+            margin: 2.5rem 0;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .mermaid-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0.7;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2.5rem 0;
+            background: var(--card-bg);
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        
+        th {
+            background: rgba(37, 99, 235, 0.25);
+            padding: 1.3rem 1.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: #a3c4ff;
+            border-bottom: 1px solid var(--border);
+            font-size: 1.05rem;
+        }
+        
+        td {
+            padding: 1.3rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        tr:hover {
+            background: rgba(50, 50, 50, 0.4);
+        }
+        
+        .profit-loss {
+            display: inline-block;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .profit {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .loss {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .flow-list {
+            list-style: none;
+            counter-reset: flow-counter;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.8rem;
+            margin: 2.5rem 0;
+        }
+        
+        .flow-list li {
+            counter-increment: flow-counter;
+            padding: 1.8rem;
+            background: var(--card-bg);
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            position: relative;
+            padding-left: 5rem;
+            transition: all 0.3s;
+        }
+        
+        .flow-list li:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
+            border-color: rgba(100, 100, 255, 0.3);
+        }
+        
+        .flow-list li:before {
+            content: counter(flow-counter);
+            position: absolute;
+            left: 1.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            box-shadow: 0 6px 15px rgba(74, 108, 247, 0.4);
+        }
+        
+        .flow-list li strong {
+            display: block;
+            margin-bottom: 0.8rem;
+            color: var(--primary);
+            font-size: 1.15rem;
+        }
+        
+        .vulnerability-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.8rem;
+            margin: 2.5rem 0;
+        }
+        
+        .vulnerability-list li {
+            padding: 2rem;
+            background: rgba(25, 25, 35, 0.8);
+            border-left: 4px solid var(--danger);
+            border-radius: 0 10px 10px 0;
+            transition: all 0.3s;
+            backdrop-filter: blur(4px);
+        }
+        
+        .vulnerability-list li:hover {
+            transform: translateY(-7px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        .vulnerability-list li:nth-child(1) {
+            border-left-color: var(--danger);
+        }
+        
+        .vulnerability-list li:nth-child(2) {
+            border-left-color: var(--warning);
+            background: rgba(35, 30, 25, 0.8);
+        }
+        
+        .vulnerability-list li:nth-child(3) {
+            border-left-color: var(--primary);
+            background: rgba(25, 30, 40, 0.8);
+        }
+        
+        .vulnerability-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.2rem;
+        }
+        
+        .vulnerability-title i {
+            font-size: 1.4rem;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 5rem;
+            padding-top: 3rem;
+            color: var(--gray);
+            font-size: 1rem;
+            border-top: 1px solid var(--border);
+            position: relative;
+        }
+        
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 250px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0.5;
+            border-radius: 2px;
+        }
+        
+
+        /* 调用链容器 */
+        .call-chain-container {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2.5rem;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .call-chain-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0.7;
+        }
+        
+        /* 调用链样式 */
+        .call-chain {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            position: relative;
+        }
+        
+        .call-chain::before {
+            content: '';
+            position: absolute;
+            left: 50px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            z-index: 1;
+        }
+        
+        .chain-step {
+            display: flex;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            padding-left: 100px;
+            min-height: 100px;
+        }
+        
+        .step-number {
+            position: absolute;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(74, 108, 247, 0.5);
+        }
+        
+        .step-content {
+            background: rgba(40, 40, 60, 0.7);
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            flex: 1;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .chain-step:hover .step-content {
+            transform: translateX(10px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 25px rgba(74, 108, 247, 0.4);
+        }
+        
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .step-description {
+            color: var(--gray);
+            line-height: 1.7;
+        }
+        
+        .step-highlight {
+            background: rgba(239, 68, 68, 0.15);
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            color: #ef4444;
+            display: inline-block;
+            margin-top: 0.8rem;
+            font-weight: 500;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .arrow {
+            position: absolute;
+            left: 50px;
+            top: 100%;
+            width: 4px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            z-index: 1;
+        }
+        
+        .arrow::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -8px;
+            width: 20px;
+            height: 20px;
+            border-right: 4px solid var(--primary);
+            border-bottom: 4px solid var(--primary);
+            transform: rotate(45deg);
+        }
+        
+        .chain-step:last-child .arrow {
+            display: none;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .chain-step {
+                padding-left: 80px;
+            }
+            
+            .step-number {
+                left: 15px;
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+            
+            .call-chain::before {
+                left: 35px;
+            }
+            
+            .section-title {
+                font-size: 1.7rem;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .call-chain-container {
+                padding: 1.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .chain-step {
+                padding-left: 70px;
+                min-height: 120px;
+            }
+            
+            .step-number {
+                left: 10px;
+            }
+            
+            .call-chain::before {
+                left: 25px;
+            }
+            
+            .step-title {
+                font-size: 1.1rem;
+            }
+            
+            .step-description {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>闪电贷攻击深度分析</h1>
+                <p class="subtitle">针对LAURA/WETH流动性池的价格操纵攻击技术解析</p>
+            </div>
+        </header>
+        
+        <body>
+                <div class="grid">
+                    <!-- 卡片1：闪电贷 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="step-badge">1</div>
+                            <h2 class="card-title">闪电贷获取攻击资金</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <div><i class="fas fa-code"></i> 函数调用流</div>
+                                    <div class="code-actions">
+                                        <button class="code-btn"><i class="fas fa-copy"></i> 复制</button>
+                                        <button class="code-btn"><i class="fas fa-expand"></i> 展开</button>
+                                    </div>
+                                </div>
+                                <pre class="code-block">{
+          <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+          <span class="code-key">"contract"</span>: <span class="code-string">"Balancer: Vault"</span>,
+          <span class="code-key">"function"</span>: <span class="code-string">"flashLoan"</span>,
+          <span class="code-key">"args"</span>: <span class="code-string">"amounts=[\"30,000,000,000,000,000,000,000\"]"</span>,
+          <span class="code-key">"internal_calls"</span>: [
+            {
+              <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+              <span class="code-key">"contract"</span>: <span class="code-string">"0x55877cf2f24286dba2acb64311beca39728fbd10"</span>,
+              <span class="code-key">"function"</span>: <span class="code-string">"receiveFlashLoan"</span>,
+              <span class="code-key">"args"</span>: <span class="code-string">"tokens=[Wrapped Ether], amounts=[\"30,000,000,000,000,000,000,000\"]"</span>
+            }
+          ]
+        }</pre>
+                            </div>
+                            <div class="intent-box">
+                                <div class="intent-title">
+                                    <i class="fas fa-crosshairs"></i>
+                                    <span>攻击意图</span>
+                                </div>
+                                <p>获取巨额操作资金（30,000 WETH，约9000万美元），用于后续操纵市场。这是闪电贷攻击的标准起始操作，允许攻击者无需自有资金即可进行大规模操作。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 卡片2：首次兑换 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="step-badge">2</div>
+                            <h2 class="card-title">首次兑换拉高代币价格</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <div><i class="fas fa-code"></i> 函数调用流</div>
+                                    <div class="code-actions">
+                                        <button class="code-btn"><i class="fas fa-copy"></i> 复制</button>
+                                        <button class="code-btn"><i class="fas fa-expand"></i> 展开</button>
+                                    </div>
+                                </div>
+                                <pre class="code-block">{
+          <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+          <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: Router 2"</span>,
+          <span class="code-key">"function"</span>: <span class="code-string">"swapExactTokensForTokensSupportingFeeOnTransferTokens"</span>,
+          <span class="code-key">"args"</span>: <span class="code-string">"amountIn=11,526,249,223,479,392,795,400, path=[Wrapped Ether, LAURA]"</span>,
+          <span class="code-key">"internal_calls"</span>: [
+            {
+              <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+              <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: LAURA 5"</span>,
+              <span class="code-key">"function"</span>: <span class="code-string">"swap"</span>,
+              <span class="code-key">"args"</span>: <span class="code-string">"amount0Out=6,090,844,737,683,950,823,905,816"</span>,
+              <span class="code-key">"internal_calls"</span>: [
+                {
+                  <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+                  <span class="code-key">"contract"</span>: <span class="code-string">"LAURA"</span>,
+                  <span class="code-key">"function"</span>: <span class="code-string">"transfer"</span>,
+                  <span class="code-key">"args"</span>: <span class="code-string">"amount=6,090,844,737,683,950,823,905,816"</span>
+                }
+              ]
+            }
+          ]
+        }</pre>
+                            </div>
+                            <div class="intent-box">
+                                <div class="intent-title">
+                                    <i class="fas fa-crosshairs"></i>
+                                    <span>攻击意图</span>
+                                </div>
+                                <p>用11,526 WETH大量买入LAURA代币，人为制造需求拉高价格。此操作在流动性池中制造了显著的价格偏差，为后续套利创造了必要条件。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 卡片3：添加流动性 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="step-badge">3</div>
+                            <h2 class="card-title">添加流动性获取LP</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <div><i class="fas fa-code"></i> 函数调用流</div>
+                                    <div class="code-actions">
+                                        <button class="code-btn"><i class="fas fa-copy"></i> 复制</button>
+                                        <button class="code-btn"><i class="fas fa-expand"></i> 展开</button>
+                                    </div>
+                                </div>
+                                <pre class="code-block">{
+          <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+          <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: Router 2"</span>,
+          <span class="code-key">"function"</span>: <span class="code-string">"addLiquidity"</span>,
+          <span class="code-key">"args"</span>: <span class="code-string">"amountADesired=6,090,844,737,683,950,823,905,816, amountBDesired=11,526,249,223,479,392,795,400"</span>,
+          <span class="code-key">"internal_calls"</span>: [
+            {
+              <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+              <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: LAURA 5"</span>,
+              <span class="code-key">"function"</span>: <span class="code-string">"mint"</span>,
+              <span class="code-key">"args"</span>: <span class="code-string">"liquidity=9,985,734,664,764,621,968,615"</span>,
+              <span class="code-key">"internal_calls"</span>: [
+                {
+                  <span class="code-key">"type"</span>: <span class="code-string">"EVENT"</span>,
+                  <span class="code-key">"function"</span>: <span class="code-string">"Sync"</span>,
+                  <span class="code-key">"args"</span>: <span class="code-string">"reserve0=17,442,327,956,960,784,747,337, reserve1=23,068,964,517,278,041,866,222"</span>
+                }
+              ]
+            }
+          ]
+        }</pre>
+                            </div>
+                            <div class="intent-box">
+                                <div class="intent-title">
+                                    <i class="fas fa-crosshairs"></i>
+                                    <span>攻击意图</span>
+                                </div>
+                                <p>将拉高价格后的资产注入流动性池，获取流动性提供者(LP)凭证。此步骤使攻击者能够直接与流动性池交互，并为后续的关键攻击步骤建立基础。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 卡片4：恶意修改储备金 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="step-badge">4</div>
+                            <h2 class="card-title">恶意修改储备金</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <div><i class="fas fa-code"></i> 函数调用流</div>
+                                    <div class="code-actions">
+                                        <button class="code-btn"><i class="fas fa-copy"></i> 复制</button>
+                                        <button class="code-btn"><i class="fas fa-expand"></i> 展开</button>
+                                    </div>
+                                </div>
+                                <pre class="code-block">{
+          <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+          <span class="code-key">"contract"</span>: <span class="code-string">"LAURA"</span>,
+          <span class="code-key">"function"</span>: <span class="code-string">"removeLiquidityWhenKIncreases"</span>,
+          <span class="code-key">"internal_calls"</span>: [
+            {
+              <span class="code-key">"type"</span>: <span class="code-string">"DELEGATECALL"</span>,
+              <span class="code-key">"contract"</span>: <span class="code-string">"PumpToken"</span>,
+              <span class="code-key">"function"</span>: <span class="code-string">"removeLiquidityWhenKIncreases"</span>,
+              <span class="code-key">"internal_calls"</span>: [
+                {
+                  <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+                  <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: LAURA 5"</span>,
+                  <span class="code-key">"function"</span>: <span class="code-string">"sync"</span>,
+                  <span class="code-key">"internal_calls"</span>: [
+                    {
+                      <span class="code-key">"type"</span>: <span class="code-string">"EVENT"</span>,
+                      <span class="code-key">"function"</span>: <span class="code-string">"Sync"</span>,
+                      <span class="code-key">"args"</span>: <span class="code-string">"reserve0=4,334,828,289,544,710,831,315, reserve1=23,068,964,517,278,041,866,222"</span>
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }</pre>
+                            </div>
+                            <div class="intent-box">
+                                <div class="intent-title">
+                                    <i class="fas fa-crosshairs"></i>
+                                    <span>攻击意图</span>
+                                </div>
+                                <p>利用代币合约后门函数和DELEGATECALL执行恶意逻辑，强制修改Uniswap池的储备金数据。此步骤将LAURA储备从17.44e18修改为4.33e18（减少75%），而WETH储备保持不变，制造了虚假价格偏差。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 卡片5：移除流动性 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="step-badge">5</div>
+                            <h2 class="card-title">移除流动性获利</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <div><i class="fas fa-code"></i> 函数调用流</div>
+                                    <div class="code-actions">
+                                        <button class="code-btn"><i class="fas fa-copy"></i> 复制</button>
+                                        <button class="code-btn"><i class="fas fa-expand"></i> 展开</button>
+                                    </div>
+                                </div>
+                                <pre class="code-block">{
+          <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+          <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: Router 2"</span>,
+          <span class="code-key">"function"</span>: <span class="code-string">"removeLiquidity"</span>,
+          <span class="code-key">"args"</span>: <span class="code-string">"liquidity=9,985,734,664,764,621,968,615"</span>,
+          <span class="code-key">"internal_calls"</span>: [
+            {
+              <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+              <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: LAURA 5"</span>,
+              <span class="code-key">"function"</span>: <span class="code-string">"burn"</span>,
+              <span class="code-key">"args"</span>: <span class="code-string">"amount0=2,165,867,096,846,036,817,930, amount1=11,526,249,223,479,392,795,399"</span>,
+              <span class="code-key">"internal_calls"</span>: [
+                {
+                  <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+                  <span class="code-key">"contract"</span>: <span class="code-string">"LAURA"</span>,
+                  <span class="code-key">"function"</span>: <span class="code-string">"transfer"</span>,
+                  <span class="code-key">"args"</span>: <span class="code-string">"amount=2,165,867,096,846,036,817,930"</span>
+                },
+                {
+                  <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+                  <span class="code-key">"contract"</span>: <span class="code-string">"Wrapped Ether"</span>,
+                  <span class="code-key">"function"</span>: <span class="code-string">"transfer"</span>,
+                  <span class="code-key">"args"</span>: <span class="code-string">"wad=11,526,249,223,479,392,795,399"</span>
+                }
+              ]
+            }
+          ]
+        }</pre>
+                            </div>
+                            <div class="intent-box">
+                                <div class="intent-title">
+                                    <i class="fas fa-crosshairs"></i>
+                                    <span>攻击意图</span>
+                                </div>
+                                <p>利用虚假储备金比例移除流动性，获得超额WETH。由于储备金被恶意修改，移除流动性时获得的WETH数量远高于正常比例，这是整个攻击套利的关键步骤。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 卡片6：最终套现 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="step-badge">6</div>
+                            <h2 class="card-title">最终套现</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <div><i class="fas fa-code"></i> 函数调用流</div>
+                                    <div class="code-actions">
+                                        <button class="code-btn"><i class="fas fa-copy"></i> 复制</button>
+                                        <button class="code-btn"><i class="fas fa-expand"></i> 展开</button>
+                                    </div>
+                                </div>
+                                <pre class="code-block">{
+          <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+          <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: Router 2"</span>,
+          <span class="code-key">"function"</span>: <span class="code-string">"swapExactTokensForTokensSupportingFeeOnTransferTokens"</span>,
+          <span class="code-key">"args"</span>: <span class="code-string">"amountIn=6,084,295,665,758,760,779,836,426, path=[LAURA, Wrapped Ether]"</span>,
+          <span class="code-key">"internal_calls"</span>: [
+            {
+              <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+              <span class="code-key">"contract"</span>: <span class="code-string">"Uniswap V2: LAURA 5"</span>,
+              <span class="code-key">"function"</span>: <span class="code-string">"swap"</span>,
+              <span class="code-key">"args"</span>: <span class="code-string">"amount1Out=11,538,589,580,556,677,100,607"</span>
+            }
+          ]
+        },
+        {
+          <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+          <span class="code-key">"contract"</span>: <span class="code-string">"Wrapped Ether"</span>,
+          <span class="code-key">"function"</span>: <span class="code-string">"transfer"</span>,
+          <span class="code-key">"args"</span>: <span class="code-string">"dst=Balancer: Vault, wad=30,000,000,000,000,000,000,000"</span>
+        }</pre>
+                            </div>
+                            <div class="intent-box">
+                                <div class="intent-title">
+                                    <i class="fas fa-crosshairs"></i>
+                                    <span>攻击意图</span>
+                                </div>
+                                <p>将剩余LAURA兑换回WETH，完成套利循环并归还闪电贷。此步骤确保攻击者能够保留利润同时偿还初始借款，完成整个攻击的经济循环。</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 卡片7：利润提取 -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="step-badge">7</div>
+                            <h2 class="card-title">利润提取</h2>
+                        </div>
+                        <div class="card-content">
+                            <div class="code-container">
+                                <div class="code-header">
+                                    <div><i class="fas fa-code"></i> 函数调用流</div>
+                                    <div class="code-actions">
+                                        <button class="code-btn"><i class="fas fa-copy"></i> 复制</button>
+                                        <button class="code-btn"><i class="fas fa-expand"></i> 展开</button>
+                                    </div>
+                                </div>
+                                <pre class="code-block">{
+          <span class="code-key">"type"</span>: <span class="code-string">"CALL"</span>,
+          <span class="code-key">"contract"</span>: <span class="code-string">"Wrapped Ether"</span>,
+          <span class="code-key">"function"</span>: <span class="code-string">"withdraw"</span>,
+          <span class="code-key">"args"</span>: <span class="code-string">"wad=12,340,357,077,284,305,206"</span>,
+          <span class="code-key">"internal_calls"</span>: [
+            {
+              <span class="code-key">"type"</span>: <span class="code-string">"CALLvalue"</span>,
+              <span class="code-key">"value"</span>: <span class="code-string">"12.340357077284305206"</span>,
+              <span class="code-key">"contract"</span>: <span class="code-string">"[Sender] Exploiter"</span>
+            }
+          ]
+}</pre>
+                    </div>
+                    <div class="intent-box">
+                        <div class="intent-title">
+                            <i class="fas fa-crosshairs"></i>
+                            <span>攻击意图</span>
+                        </div>
+                        <p>提取攻击所得利润，完成整个攻击流程，最终获利12.34 ETH（约3.7万美元）。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="summary-section">
+            <h2 class="section-title">
+                <i class="fas fa-project-diagram"></i>
+                <span>恶意函数调用链</span>
+            </h2>
+            
+            <div class="call-chain-container">
+                <div class="call-chain">
+                    <!-- 步骤1 -->
+                    <div class="chain-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h3 class="step-title">
+                                <i class="fas fa-code"></i>
+                                LAURA.removeLiquidityWhenKIncreases
+                            </h3>
+                            <p class="step-description">
+                                攻击者调用LAURA代币合约中的可疑函数，作为攻击的起始点。
+                            </p>
+                            <div class="step-highlight">攻击入口点</div>
+                        </div>
+                        <div class="arrow"></div>
+                    </div>
+                    
+                    <!-- 步骤2 -->
+                    <div class="chain-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h3 class="step-title">
+                                <i class="fas fa-exchange-alt"></i>
+                                DELEGATECALL PumpToken.removeLiquidityWhenKIncreases
+                            </h3>
+                            <p class="step-description">
+                                通过DELEGATECALL操作码执行PumpToken合约中的恶意逻辑，绕过权限检查。
+                            </p>
+                            <div class="step-highlight">关键攻击手段</div>
+                        </div>
+                        <div class="arrow"></div>
+                    </div>
+                    
+                    <!-- 步骤3 -->
+                    <div class="chain-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h3 class="step-title">
+                                <i class="fas fa-sync-alt"></i>
+                                UniswapPool.sync
+                            </h3>
+                            <p class="step-description">
+                                恶意调用Uniswap流动性池的sync函数，强制更新储备数据。
+                            </p>
+                            <div class="step-highlight">储备修改操作</div>
+                        </div>
+                        <div class="arrow"></div>
+                    </div>
+                    
+                    <!-- 步骤4 -->
+                    <div class="chain-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h3 class="step-title">
+                                <i class="fas fa-database"></i>
+                                修改reserve0=4.33e18
+                            </h3>
+                            <p class="step-description">
+                                将LAURA储备从17.44e18修改为4.33e18（减少75%），同时保持WETH储备不变，制造虚假价格。
+                            </p>
+                            <div class="step-highlight">攻击成功</div>
+                        </div>
+                    </div>
+
+                    <!-- 影响步骤1 -->
+                    <div class="chain-step">
+                        <div class="step-number"><i class="fas fa-arrow-down"></i></div>
+                        <div class="step-content">
+                            <h3 class="step-title">
+                                <i class="fas fa-chart-line"></i>
+                                价格操纵
+                            </h3>
+                            <p class="step-description">
+                                LAURA储备减少75%，导致价格人为上涨710%（1 WETH = 5.32e18 LAURA）
+                            </p>
+                        </div>
+                        <div class="arrow"></div>
+                    </div>
+                    
+                    <!-- 影响步骤2 -->
+                    <div class="chain-step">
+                        <div class="step-number"><i class="fas fa-arrow-down"></i></div>
+                        <div class="step-content">
+                            <h3 class="step-title">
+                                <i class="fas fa-coins"></i>
+                                移除流动性获利
+                            </h3>
+                            <p class="step-description">
+                                攻击者利用虚假价格移除流动性，获得超额WETH
+                            </p>
+                        </div>
+                        <div class="arrow"></div>
+                    </div>
+                    
+                    <!-- 影响步骤3 -->
+                    <div class="chain-step">
+                        <div class="step-number"><i class="fas fa-arrow-down"></i></div>
+                        <div class="step-content">
+                            <h3 class="step-title">
+                                <i class="fas fa-money-bill-wave"></i>
+                                最终获利
+                            </h3>
+                            <p class="step-description">
+                                攻击者套现获利12.34 ETH（约3.7万美元），池内损失约75%的LAURA储备
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            // 添加动画效果
+            document.addEventListener('DOMContentLoaded', function() {
+                const steps = document.querySelectorAll('.chain-step');
+                
+                steps.forEach((step, index) => {
+                    // 初始状态
+                    step.style.opacity = '0';
+                    step.style.transform = 'translateY(30px)';
+                    
+                    // 延迟显示
+                    setTimeout(() => {
+                        step.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                        step.style.opacity = '1';
+                        step.style.transform = 'translateY(0)';
+                    }, 300 + index * 200);
+                });
+                
+                // 添加悬停效果
+                const stepContents = document.querySelectorAll('.step-content');
+                stepContents.forEach(content => {
+                    content.addEventListener('mouseenter', function() {
+                        this.style.transform = 'translateX(10px)';
+                        this.style.borderColor = '#4a6cf7';
+                        this.style.boxShadow = '0 8px 25px rgba(74, 108, 247, 0.4)';
+                    });
+                    
+                    content.addEventListener('mouseleave', function() {
+                        this.style.transform = 'translateX(0)';
+                        this.style.borderColor = 'rgba(100, 100, 255, 0.2)';
+                        this.style.boxShadow = '0 5px 20px rgba(0, 0, 0, 0.3)';
+                    });
+                });
+            });
+        </script>
+
+    <script>
+        // 添加动画效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const steps = document.querySelectorAll('.chain-step');
+            
+            steps.forEach((step, index) => {
+                // 初始状态
+                step.style.opacity = '0';
+                step.style.transform = 'translateY(30px)';
+                
+                // 延迟显示
+                setTimeout(() => {
+                    step.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    step.style.opacity = '1';
+                    step.style.transform = 'translateY(0)';
+                }, 300 + index * 200);
+            });
+            
+            // 添加悬停效果
+            const stepContents = document.querySelectorAll('.step-content');
+            stepContents.forEach(content => {
+                content.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateX(10px)';
+                    this.style.borderColor = '#4a6cf7';
+                    this.style.boxShadow = '0 8px 25px rgba(74, 108, 247, 0.4)';
+                });
+                
+                content.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateX(0)';
+                    this.style.borderColor = 'rgba(100, 100, 255, 0.2)';
+                    this.style.boxShadow = '0 5px 20px rgba(0, 0, 0, 0.3)';
+                });
+            });
+        });
+    </script>
+            
+            <h2 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                <span>价格操纵证据</span>
+            </h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>阶段</th>
+                        <th>LAURA 储备</th>
+                        <th>WETH 储备</th>
+                        <th>价格比例</th>
+                        <th>变化幅度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>添加流动性</td>
+                        <td>17.44e18</td>
+                        <td>23.06e18</td>
+                        <td>1 WETH = 0.75e18 LAURA</td>
+                        <td>基准</td>
+                    </tr>
+                    <tr>
+                        <td>恶意sync后</td>
+                        <td>4.33e18</td>
+                        <td>23.06e18</td>
+                        <td>1 WETH = 5.32e18 LAURA</td>
+                        <td><span class="profit-loss loss">↓75% LAURA</span><br><span class="profit-loss profit">↑710% 价格</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h2 class="section-title">
+                <i class="fas fa-sitemap"></i>
+                <span>套利路径闭环</span>
+            </h2>
+            <ol class="flow-list">
+                <li><strong>闪电贷借入</strong> - 30,000 WETH作为攻击资金</li>
+                <li><strong>首次兑换</strong> - 用11,526 WETH买入LAURA拉高价格</li>
+                <li><strong>添加流动性</strong> - 注入流动性获取LP凭证</li>
+                <li><strong>恶意函数调用</strong> - 修改储备金制造价格偏差</li>
+                <li><strong>移除流动性</strong> - 利用虚假价格获得超额资产</li>
+                <li><strong>卖出LAURA</strong> - 兑换回WETH实现套利</li>
+                <li><strong>归还闪电贷</strong> - 归还初始借入资金</li>
+                <li><strong>利润提取</strong> - 最终获利12.34 ETH</li>
+            </ol>
+            
+            <h2 class="section-title">
+                <i class="fas fa-bug"></i>
+                <span>安全漏洞根源</span>
+            </h2>
+            <ul class="vulnerability-list">
+                <li>
+                    <div class="vulnerability-title">
+                        <i class="fas fa-door-open"></i>
+                        <span>代币合约后门</span>
+                    </div>
+                    <p><code>removeLiquidityWhenKIncreases</code>函数暴露危险功能，允许恶意操作，这是攻击的主要入口点。</p>
+                </li>
+                <li>
+                    <div class="vulnerability-title">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Uniswap池权限缺陷</span>
+                    </div>
+                    <p>允许外部合约直接调用<code>sync()</code>修改储备，缺乏必要的权限验证机制。</p>
+                </li>
+                <li>
+                    <div class="vulnerability-title">
+                        <i class="fas fa-radar"></i>
+                        <span>闪电贷监控缺失</span>
+                    </div>
+                    <p>未检测大额贷款后的异常储备变动，使攻击者能够利用价格偏差套利。</p>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>区块链安全分析报告 | 生成时间: 2025年6月12日</p>
+            <p>© 2025 区块链安全 - 本报告仅用于安全研究目的</p>
+        </div>
+    </div>
+</body>
+</html>
