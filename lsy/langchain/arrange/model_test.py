@@ -13,24 +13,6 @@ from contract_analyzer import load_system_input, load_or_create_vector_store, cr
 
 # ============== 模型专用配置 ==============
 MODEL_CONFIG = {
-    # 百度文心ERNIE配置
-    "BAIDU_ACCESS_KEY": "hoxYjdAGl1u5ijV9WmuSa5Ld",  # 百度API Access Key
-    "BAIDU_SECRET_KEY": "GImapGj06l7YK13nQgYN7Fsc6p1jm1Si",  # 百度API Secret Key
-    "BAIDU_API_URL": "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-speed-128k",
-    
-    # OpenAI配置
-    "OPENAI_API_KEY": "your_openai_api_key_here",
-    "OPENAI_API_URL": "https://api.openai.com/v1/chat/completions",
-    "OPENAI_MODEL": "gpt-4o",
-    
-    # DeepSeek配置
-    "DEEPSEEK_API_KEY": "sk_eevcJPk1gMUEMlBeAaG4Qj-jBP2kEN3N5FYXrkrzEfI",
-    "DEEPSEEK_API_URL": "https://api.deepseek.com/v1/chat/completions",
-    "DEEPSEEK_MODEL": "deepseek-chat",
-    
-    # Jina Embedding配置
-    "JINA_API_KEY": "jina_a60e90b9537440739995b0bfae0b8468xf3mIgPUeB2TCH9Ahnyu1NjbQ9sL",
-    "EMBEDDING_MODEL": "jina-embeddings-v3",
     
     # 其他配置
     "PERSIST_DIR": "./vector_store_realtime_0",
